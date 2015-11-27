@@ -1,0 +1,25 @@
+
+STATICALLY LINK ALL LIBS: Qt, boost, etc.
+
+READ-ONLY files: warn the user and/or remove read-only attrib
+
+FUNC. DECOMPOSITION: deleteBtnClicked(), etc.
+
+Add back & forward buttons (to the navigation layout, which is above Search Folder control)
+
+ENTER key: Start searching when Enter key is pressed
+
+SEARCH WITHIN RESULTS
+
+Add Regular Expressions option to Search Words
+
+see also ONLINE / PHONE NOTES 
+
+--------------------------------------------------------------------------------
+
+DONE: Use QLineEdit and its PlaceholderText
+DONE: Search Folder control must be up the top (same/similar to Search.Files win store app)
+DONE: Max Subfolder Depth must be two RADIO BUTTONS: Unlimited & Limited
+DONE: Move Match Case check box to the right of Search Words line edit
+DONE: Search button must be separated from Stop button
+DONE: FUNC. DECOMPOSITION: findFilesRec() and findItem()
