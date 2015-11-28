@@ -12,6 +12,7 @@
 #include "getinfo.h"
 #include "config.h"
 #include "util.h"
+#include <map>
 #include <QDesktopServices>
 #include <QtGui>
 #include <QtWidgets>
@@ -40,8 +41,6 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     , _unlimSubDirDepth(true)
     , _stopped(true)
 {
-  try
-  {
     setWindowTitle( QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR + "." + OvSk_FsOp_APP_BUILD_NBR_STR); // + " by " + OvSk_FsOp_COPMANY_NAME_TXT);
 
     const QString savedPath = Cfg::St().value( Cfg::origDirPathKey).toString();
@@ -74,8 +73,6 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     findButton->setDefault(true);
     findButton->setFocus();
     setStopped(true);
-  }
-  catch (...) { Q_ASSERT(false); }
 }
 
 void FindInFilesDlg::createSubDirLayout()
@@ -284,58 +281,42 @@ void FindInFilesDlg::setAllTips(QWidget * widget, const QString & text)
 
 void FindInFilesDlg::scopeCheckClicked(int /*newCheckState*/)
 {
-  try
-  {
     const bool filesChecked = (filesCheck->checkState() == Qt::Checked);
     wordsLineEdit->setEnabled(filesChecked);
     matchCaseCheck->setEnabled(filesChecked);
     exclByFileNameCombo->setEnabled(filesChecked);
     exclFilesByTextCombo->setEnabled(filesChecked);
-  }
-  catch (...) { Q_ASSERT(false); }
 }
 
 void FindInFilesDlg::goUpBtnClicked()
 {
-  try
-  {
-        const QString dirPath = dirComboBox->currentText();
-        if (dirPath.isEmpty())
-            return;
-        QDir dir(dirPath);
+    const QString dirPath = dirComboBox->currentText();
+    if (dirPath.isEmpty())
+        return;
+    QDir dir(dirPath);
 
-        const bool ok = dir.cdUp();
-        if (ok)
-            SetDirPath( QDir::toNativeSeparators( dir.absolutePath()));
-        else if (dirPath.length() <= eCod_MIN_PATH_LEN)
-            SetDirPath( "");
-  }
-  catch (...) { Q_ASSERT(false); }
+    const bool ok = dir.cdUp();
+    if (ok)
+        SetDirPath( QDir::toNativeSeparators( dir.absolutePath()));
+    else if (dirPath.length() <= eCod_MIN_PATH_LEN)
+        SetDirPath( "");
 }
 
 void FindInFilesDlg::browseBtnClicked()
 {
-    try
-    {
-        const QString selDir = QFileDialog::getExistingDirectory(this, tr("Select Folder"), dirComboBox->currentText());
-        if (!selDir.isEmpty())
-            SetDirPath(selDir);
-    }
-    catch (...) { Q_ASSERT(false); }
+    const QString selDir = QFileDialog::getExistingDirectory(this, tr("Select Folder"), dirComboBox->currentText());
+    if (!selDir.isEmpty())
+        SetDirPath(selDir);
 }
 
 void FindInFilesDlg::showMoreOptions(bool show)
 {
-  try
-  {
     toggleExclBtn->setText(show ? "-" : "+");
     toggleExclBtn->setToolTip(show ? eCod_SHOW_EXCL_OPTS_TIP : eCod_HIDE_EXCL_OPTS_TIP);
     exclByFolderNameCombo->setVisible(show);
     exclByFileNameCombo->setVisible(show);
     exclFilesByTextCombo->setVisible(show);
     exclHiddenCheck->setVisible(show);
-  }
-  catch (...) { Q_ASSERT(false); }
 }
 
 void FindInFilesDlg::toggleExclClicked()
@@ -352,7 +333,7 @@ static void updateComboBox(QComboBox *comboBox)
         comboBox->addItem(comboBox->currentText());
 }
 
-void FindInFilesDlg::GetFileInfos( QFileInfoList & fileInfos) const
+void FindInFilesDlg::GetFileInfos(QFileInfoList & fileInfos) const
 {
     const QList<QTableWidgetItem *>  selectedItems = filesTable->selectedItems();
     foreach (const QTableWidgetItem * item, selectedItems) {
@@ -363,61 +344,11 @@ void FindInFilesDlg::GetFileInfos( QFileInfoList & fileInfos) const
 
 /////////////////////////////////////////////////
 
-class LengthKey
-{
-public:
-    explicit LengthKey(int length_)
-        : length(length_)
-    {}
-    bool operator<(const LengthKey & other) const
-    {
-        return this->length > other.length;
-    }
-private:
-    int length;
-};
-
-class PathAndRow
-{
-public:
-    PathAndRow(const QString & path_, int row_)
-        : path(path_), row(row_)
-    {}
-    //QString Path() const { return path; }
-//private:
-    QString path;
-    int row;
-};
-
-class Thread : public QThread
-{
-public:
-    static void msleep(unsigned long msecs)
-    {
-        QThread::msleep(msecs);
-    }
-};
-
-/////////////////////////////////////////////////
-
-#include <map>
-
-template<class _Ty>
-struct bigger : public std::binary_function<_Ty, _Ty, bool>
-{
-    bool operator()(const _Ty& left, const _Ty& right) const
-    {
-        return (left > right);
-    }
-};
-
 void FindInFilesDlg::deleteBtnClicked()
 {
-    try
-    {
+    try {
         _opType = Overskys::Op::deletePerm;
-        if (filesTable->selectedItems().isEmpty())
-        {
+        if (filesTable->selectedItems().isEmpty()) {
             QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
             return;
         }
@@ -427,78 +358,17 @@ void FindInFilesDlg::deleteBtnClicked()
         qApp->processEvents();
 
         std::map< int, QString, bigger<int> > itemList;
-        const int origRowCount = filesTable->rowCount();
-        int selectCount = 0;
 
-        // GET SELECTED ITEMS
-        int delCnt = 0;
-        const QList<QTableWidgetItem *>  selectedItems = filesTable->selectedItems();
-        foreach (const QTableWidgetItem * item, selectedItems)
-        {
-            if (filesTable->column( item) == RELPATH_COL_IDX)
-            {
-                if (_stopped)
-                    break;
-                ++selectCount;
-                const QString path = item->data(Qt::UserRole).toString(); //item->text();
-                const int row = filesTable->row(item);
-                Q_ASSERT(itemList.find(row) == itemList.end());
-                if (itemList.find(row) == itemList.end())
-                    itemList.insert(std::pair<int, QString>(row, path));
-                if (isTimeToReport())
-                    qApp->processEvents();
-            }
-        }
-        const int nonSelectCount = origRowCount - selectCount;
+        getSelectedItems(itemList); // GET SELECTED ITEMS
+        const int nonSelectCount = filesTable->rowCount() - filesTable->selectedItems().count();
 
-        // REMOVE ITEMS
-        for (std::map<int, QString, bigger<int> >::const_iterator it = itemList.cbegin(); it != itemList.cend(); ++it)
-        {
-            try
-            {
-                if (_stopped)
-                    break;
-                const QString path = it->second;
-                if (!QFileInfo(path).isDir())
-                {
-                    // RM FILE
-                    QFile file( it->second);
-                    const bool rmok = file.remove();
-                    if (rmok)
-                    {
-                        filesTable->removeRow( it->first);
-                        ++delCnt;
-                        if ((delCnt % 5) == 0)
-                            emit filesTable->itemSelectionChanged();
-                    }
-                }
-                else
-                {
-                    // RM DIR
-                    QDir dir( path);
-                    bool rmok = dir.rmdir( path);
-                    if (!rmok)
-                         rmok = dir.removeRecursively();
-                    if ( rmok)
-                    {
-                        filesTable->removeRow( it->first);
-                        ++delCnt;
-                        if ((delCnt % 5) == 0)
-                            emit filesTable->itemSelectionChanged();
-                    }
-                }
-                if (isTimeToReport())
-                    qApp->processEvents();
-            }
-            catch (...) { Q_ASSERT(false); }
-        }
+        removeItems(itemList); // REMOVE ITEMS
 
         emit filesTable->itemSelectionChanged();
         qApp->processEvents();
         setStopped(true);
 
-        if (filesTable->rowCount() != nonSelectCount)
-        {
+        if (filesTable->rowCount() != nonSelectCount) {
             if (nonSelectCount <= 0)
                 filesTable->clear();
             else
@@ -507,8 +377,67 @@ void FindInFilesDlg::deleteBtnClicked()
         else
             setFilesFoundLabel();
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (...) { Q_ASSERT(false); } // TODO tell the user
     setStopped(true);
+}
+
+void FindInFilesDlg::getSelectedItems(std::map<int, QString, bigger<int>> & itemList)
+{
+    const QList<QTableWidgetItem *>  selectedItems = filesTable->selectedItems();
+    foreach (const QTableWidgetItem * item, selectedItems)
+    {
+        if (filesTable->column( item) == RELPATH_COL_IDX)
+        {
+            if (_stopped)
+                break;
+            const QString path = item->data(Qt::UserRole).toString(); //item->text();
+            const int row = filesTable->row(item);
+            Q_ASSERT(itemList.find(row) == itemList.end());
+            if (itemList.find(row) == itemList.end())
+                itemList.insert(std::pair<int, QString>(row, path));
+            if (isTimeToReport())
+                qApp->processEvents();
+        }
+    }
+}
+void FindInFilesDlg::removeItems(const std::map<int, QString, bigger<int>>& itemList)
+{
+    int delCnt = 0;
+    for (std::map<int, QString, bigger<int> >::const_iterator it = itemList.cbegin(); it != itemList.cend(); ++it)
+    {
+        try {
+            if (_stopped) break;
+            const QString path = it->second;
+
+            if (!QFileInfo(path).isDir()) {
+                // RM FILE
+                QFile file( it->second);
+                const bool rmok = file.remove();
+                if (rmok) {
+                    filesTable->removeRow( it->first);
+                    ++delCnt;
+                    if ((delCnt % 5) == 0)
+                        emit filesTable->itemSelectionChanged();
+                }
+            }
+            else {
+                // RM DIR
+                QDir dir( path);
+                bool rmok = dir.rmdir( path);
+                if (!rmok)
+                     rmok = dir.removeRecursively();
+                if ( rmok) {
+                    filesTable->removeRow( it->first);
+                    ++delCnt;
+                    if ((delCnt % 5) == 0)
+                        emit filesTable->itemSelectionChanged();
+                }
+            }
+            if (isTimeToReport())
+                qApp->processEvents();
+        }
+        catch (...) { Q_ASSERT(false); } // TODO tell the user
+    }
 }
 
 void FindInFilesDlg::shredBtnClicked()
@@ -626,27 +555,8 @@ void FindInFilesDlg::setFilesFoundLabel(const QString & prefix/*= QString()*/)
     }
 }
 
-void FindInFilesDlg::findBtnClicked()
+void FindInFilesDlg::findFilesPrep()
 {
-  try
-  {
-    if (!_stopped) {
-        filesTable->sortByColumn( -1, Qt::AscendingOrder);
-        filesTable->setSortingEnabled( true);
-        setStopped(true);
-        setFilesFoundLabel(tr("Stopped. "));
-        return;
-    }
-    if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
-        filesTable->sortByColumn( -1, Qt::AscendingOrder);
-        filesTable->setSortingEnabled( true);
-        QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
-        return;
-    }
-    filesTable->setSortingEnabled( false);
-    Clear();
-    setStopped(false);
-
     _fileNameFilter = namesLineEdit->text();
     updateComboBox( dirComboBox);
 
@@ -679,6 +589,30 @@ void FindInFilesDlg::findBtnClicked()
     bool maxValid = false;
     _maxSubDirDepth =  maxSubDirDepthEdt->text().toInt(&maxValid);
     _unlimSubDirDepth = (!maxValid || unlimSubDirDepthBtn->isChecked());
+}
+
+void FindInFilesDlg::findBtnClicked()
+{
+  try
+  {
+    if (!_stopped) {
+        filesTable->sortByColumn( -1, Qt::AscendingOrder);
+        filesTable->setSortingEnabled( true);
+        setStopped(true);
+        setFilesFoundLabel(tr("Stopped. "));
+        return;
+    }
+    if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
+        filesTable->sortByColumn( -1, Qt::AscendingOrder);
+        filesTable->setSortingEnabled( true);
+        QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
+        return;
+    }
+    filesTable->setSortingEnabled( false);
+    Clear();
+    setStopped(false);
+
+    findFilesPrep();
 
     // PROCESS FILES
     findFilesRecursive( _origDirPath, 0);
@@ -689,7 +623,7 @@ void FindInFilesDlg::findBtnClicked()
     filesTable->sortByColumn( -1, Qt::AscendingOrder);
     filesTable->setSortingEnabled( true);
   }
-  catch (...) { Q_ASSERT(false); }
+  catch (...) { Q_ASSERT(false); } // TODO tell the user
 }
 
 bool FindInFilesDlg::findItem(const QString & dirPath, const QFileInfo& fileInfo)
@@ -729,7 +663,7 @@ bool FindInFilesDlg::findItem(const QString & dirPath, const QFileInfo& fileInfo
         }
         return true;
     }
-    catch (...) { Q_ASSERT(false); return false; }
+    catch (...) { Q_ASSERT(false); return false; } // TODO tell the user
 }
 
 quint64 FindInFilesDlg::combinedSize(const QFileInfoList& items)
@@ -790,40 +724,30 @@ void FindInFilesDlg::findFilesRecursive( const QString & dirPath, qint32 subDirD
 QStringList FindInFilesDlg::GetSimpleNamePatterns( const QString & rawNamePatters) const
 {
     QStringList outPatters;
-    try
+    const QStringList tempPatterns = rawNamePatters.split(";", QString::SkipEmptyParts);
+    foreach (QString tempPat, tempPatterns)
     {
-        const QStringList tempPatterns = rawNamePatters.split(";", QString::SkipEmptyParts);
-        foreach (QString tempPat, tempPatterns)
-        {
-            QString trimmedPat = tempPat.trimmed();
-            QString & procPat = trimmedPat.remove(QChar('*'), Qt::CaseInsensitive);
-            outPatters.append( procPat);
-        }
-        return outPatters;
+        QString trimmedPat = tempPat.trimmed();
+        QString & procPat = trimmedPat.remove(QChar('*'), Qt::CaseInsensitive);
+        outPatters.append( procPat);
     }
-    catch (...) { Q_ASSERT(false); }
+    return outPatters;
     return outPatters;
 }
 
 bool FindInFilesDlg::StringContainsAnyWord(const QString & theString, const QStringList & wordList) const
 {
-    try
+    foreach (QString word, wordList)
     {
-        foreach (QString word, wordList)
-        {
-            if (theString.contains(word, Qt::CaseInsensitive))
-                return true;
-        }
-        return false;
+        if (theString.contains(word, Qt::CaseInsensitive))
+            return true;
     }
-    catch (...) { Q_ASSERT(false); }
+    return false;
     return false;
 }
 
 bool FindInFilesDlg::fileContainsAllWords( const QString & filePath, const QStringList & wordList)
 {
-  try
-  {
     QFile file( filePath);
     if (!file.open(QIODevice::ReadOnly))
         return false;
@@ -834,9 +758,6 @@ bool FindInFilesDlg::fileContainsAllWords( const QString & filePath, const QStri
             return false;
     }
     return true;
-  }
-  catch (...) { Q_ASSERT(false); }
-  return false;
 }
 
 bool FindInFilesDlg::fileContainsWord( QFile & file, const QString & word)
@@ -870,7 +791,7 @@ bool FindInFilesDlg::fileContainsAnyWord( const QString & filePath, const QStrin
 
         return fileContainsAnyWord( file, wordList);
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (...) { Q_ASSERT(false); } // TODO tell the user
     return true;
 }
 
@@ -1059,18 +980,13 @@ void FindInFilesDlg::completerTimeout()
 
 QFileSystemModel * FindInFilesDlg::newFileSystemModel(QCompleter * completer, const QString & currentDir)
 {
-    try
-    {
-        fileSystemModel = new QFileSystemModel(completer);
-        fileSystemModel->setReadOnly( true);
-        fileSystemModel->setResolveSymlinks( false);
-        fileSystemModel->setFilter( QDir::Dirs | QDir::Drives  | QDir::Hidden  | QDir::System | QDir::NoDotAndDotDot);
-        fileSystemModel->setRootPath(currentDir);
-        //fileSystemModel->sort(0, Qt::AscendingOrder);
-        return fileSystemModel;
-    }
-    catch(...) { Q_ASSERT(false); }
-    return 0;
+    fileSystemModel = new QFileSystemModel(completer);
+    fileSystemModel->setReadOnly( true);
+    fileSystemModel->setResolveSymlinks( false);
+    fileSystemModel->setFilter( QDir::Dirs | QDir::Drives  | QDir::Hidden  | QDir::System | QDir::NoDotAndDotDot);
+    fileSystemModel->setRootPath(currentDir);
+    //fileSystemModel->sort(0, Qt::AscendingOrder);
+    return fileSystemModel;
 }
 
 QComboBox * FindInFilesDlg::createComboBoxFSys(const QString & text, bool setCompleter)

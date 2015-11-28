@@ -44,6 +44,14 @@ private:
     }
 };
 
+template<class _Ty>
+struct bigger : public std::binary_function<_Ty, _Ty, bool>
+{
+    bool operator()(const _Ty& left, const _Ty& right) const
+    {
+        return (left > right);
+    }
+};
 
 class FindInFilesDlg : public QMainWindow
 {
@@ -90,6 +98,7 @@ private:
     void createFilesTable();
     void appendFileToTable(const QString filePath, const QFileInfo & fileInfo);
 
+    void findFilesPrep();
     void findFilesRecursive( const QString & dirPath, qint32 subDirDepth);
     bool findItem(const QString & dirPath, const QFileInfo& fileInfo);
     inline bool isTimeToReport();
@@ -116,8 +125,10 @@ private:
     void createNavigLayout();
     void createExclLayout();
     void createMainLayout();
-
     void createRightClickMenu();
+
+    void getSelectedItems( std::map<int, QString, bigger<int>>& itemList);
+    void removeItems(const std::map<int, QString, bigger<int>>& itemList);
 
 private:
     QLineEdit*  namesLineEdit;
