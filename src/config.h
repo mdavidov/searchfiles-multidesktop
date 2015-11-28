@@ -1,5 +1,15 @@
-#ifndef _OVERSKYS_FILERCONFIG_H
-#define _OVERSKYS_FILERCONFIG_H
+/****************************************************************************
+**
+** Copyright (c) 2012 Milivoj (Mike) Davidov
+** All rights reserved.
+**
+** THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+** EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+** WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
+**
+****************************************************************************/
+#ifndef _OVSK_FSOP_FILERCONFIG_H
+#define _OVSK_FSOP_FILERCONFIG_H
 
 #include "version.h"
 

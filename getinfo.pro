@@ -50,5 +50,5 @@ RESOURCES += \
 OTHER_FILES += \
     ginfo.todo.txt \
     src/aboutdialog.html \
-    installers/inno/getinfo.geninst.bat \
+    installers/inno/getinfo.bat \
     installers/inno/getinfo.iss

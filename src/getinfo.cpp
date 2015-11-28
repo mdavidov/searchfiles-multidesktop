@@ -3,17 +3,9 @@
 ** Copyright (c) 2010 Milivoj (Mike) Davidov
 ** All rights reserved.
 **
-** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS
-** "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-** LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-** A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-** OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-** SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-** LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-** DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-** THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-** (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-** OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+** THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+** EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+** WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 **
 ****************************************************************************/
 #include "precompiled.h"
@@ -50,27 +42,44 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
 {
   try
   {
-    bool c = false;
-    //c = connect(this, SIGNAL(finished(int)), this, SLOT(dlgFinished(int))); Q_ASSERT(c); (void)c;
-
     setWindowTitle( QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR + "." + OvSk_FsOp_APP_BUILD_NBR_STR); // + " by " + OvSk_FsOp_COPMANY_NAME_TXT);
 
     const QString savedPath = Cfg::St().value( Cfg::origDirPathKey).toString();
     if (!savedPath.isEmpty())
         _origDirPath = savedPath;
-
     if (_origDirPath.length() > eCod_MIN_PATH_LEN && _origDirPath.endsWith( QDir::separator()))
         _origDirPath.chop(1);
 
-    itmTypeLbl = new QLabel(tr("Types:"));
-    setAllTips(itmTypeLbl, eCod_SEARCH_BY_TYPE_TIP);
-    filesCheck    = new QCheckBox(tr("&Files"));
-    foldersCheck  = new QCheckBox(tr("Folders"));
-    symlinksCheck = new QCheckBox(OvSk_FsOp_SYMLINKS_TXT);
-    filesCheck->setChecked( true);
-    foldersCheck->setChecked( true);
-    symlinksCheck->setChecked( true);
+    createSubDirLayout();
+    createItemTypeCheckLayout();
+    createNavigLayout();
+    createExclLayout();
+    createFilesTable();
+    createMainLayout();
 
+    showMoreOptions(false);
+    itemSelectionChanged();
+    SetDirPath(_origDirPath);
+
+    _completerTimer.setSingleShot(true);
+    bool c = connect(&_completerTimer, SIGNAL(timeout()), this, SLOT(completerTimeout())); Q_ASSERT(c);
+    _editTextTimeDiff.restart();
+
+    c = connect(filesCheck,    SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int))); Q_ASSERT(c); (void)c;
+    c = connect(foldersCheck,  SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int))); Q_ASSERT(c); (void)c;
+    c = connect(symlinksCheck, SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int))); Q_ASSERT(c); (void)c;
+
+    createRightClickMenu();
+
+    findButton->setDefault(true);
+    findButton->setFocus();
+    setStopped(true);
+  }
+  catch (...) { Q_ASSERT(false); }
+}
+
+void FindInFilesDlg::createSubDirLayout()
+{
     maxSubDirDepthLbl = new QLabel(tr("Max Subfolder Depth: "));
     setAllTips(maxSubDirDepthLbl, tr("Specify unlimited or maximum sub-folder depth."));
     unlimSubDirDepthBtn = new QRadioButton(tr("Unlimited "));
@@ -86,33 +95,49 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     subDirDepthGrp->setExclusive(true);
     subDirDepthGrp->addButton(unlimSubDirDepthBtn, 0);
     subDirDepthGrp->addButton(limSubDirDepthBtn,   1);
-    QHBoxLayout * subDirDepthLout = new QHBoxLayout();
+
+    subDirDepthLout = new QHBoxLayout();
     subDirDepthLout->addWidget( maxSubDirDepthLbl);
     subDirDepthLout->addWidget( unlimSubDirDepthBtn);
     subDirDepthLout->addWidget( limSubDirDepthBtn);
     subDirDepthLout->addWidget( maxSubDirDepthEdt);
     subDirDepthLout->addStretch();
-    c = connect(unlimSubDirDepthBtn, &QRadioButton::toggled, this, &FindInFilesDlg::unlimSubDirDepthToggled); Q_ASSERT(c);
+    bool c = connect(unlimSubDirDepthBtn, &QRadioButton::toggled, this, &FindInFilesDlg::unlimSubDirDepthToggled); Q_ASSERT(c);
+}
 
-    QHBoxLayout * itmTypeCheckLout = new QHBoxLayout();
+void FindInFilesDlg::createItemTypeCheckLayout()
+{
+    itmTypeLbl = new QLabel(tr("Types:"));
+    setAllTips(itmTypeLbl, eCod_SEARCH_BY_TYPE_TIP);
+    filesCheck    = new QCheckBox(tr("&Files"));
+    foldersCheck  = new QCheckBox(tr("Folders"));
+    symlinksCheck = new QCheckBox(OvSk_FsOp_SYMLINKS_TXT);
+    filesCheck->setChecked( true);
+    foldersCheck->setChecked( true);
+    symlinksCheck->setChecked( true);
+
+    itmTypeCheckLout = new QHBoxLayout();
     itmTypeCheckLout->addWidget( filesCheck);
     itmTypeCheckLout->addWidget( foldersCheck);
     itmTypeCheckLout->addWidget( symlinksCheck);
     itmTypeCheckLout->addSpacing(40);
     itmTypeCheckLout->addLayout( subDirDepthLout);
     itmTypeCheckLout->addStretch();
+}
 
+void FindInFilesDlg::createNavigLayout()
+{
     goUpButton = new QToolButton();
     goUpButton->setText(tr("Up"));
     setAllTips(goUpButton, "Go up in the folder hierarchy and set it as the search folder. ");
-    c = connect(goUpButton, SIGNAL(clicked()), this, SLOT(goUpBtnClicked())); Q_ASSERT(c);
+    bool c = connect(goUpButton, SIGNAL(clicked()), this, SLOT(goUpBtnClicked())); Q_ASSERT(c);
 
     browseButton = new QToolButton();
     browseButton->setText(tr("..."));
     setAllTips(browseButton, eCod_BROWSE_FOLDERS_TIP);
     c = connect(browseButton, SIGNAL(clicked()), this, SLOT(browseBtnClicked())); Q_ASSERT(c);
 
-    QHBoxLayout * navigLout = new QHBoxLayout();
+    navigLout = new QHBoxLayout();
     navigLout->addWidget( goUpButton);
     navigLout->addWidget( browseButton);
     navigLout->addStretch();
@@ -136,7 +161,7 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     matchCaseCheck = new QCheckBox(tr("&Match Case"));
     setAllTips(matchCaseCheck, "Match or ignore the case of letters in search words. Does not affect file/folder names. ");
 
-    QHBoxLayout * wordsLout = new QHBoxLayout();
+    wordsLout = new QHBoxLayout();
     wordsLout->addWidget(wordsLineEdit);
     wordsLout->addWidget(matchCaseCheck);
 
@@ -144,11 +169,14 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     namesLineEdit->setPlaceholderText("File/Folder Names");
     setAllTips(namesLineEdit, OvSk_FsOp_NAME_FILTERS_TIP);
     modifyFont(namesLineEdit, +0.0, true, false, false);
+}
 
+void FindInFilesDlg::createExclLayout()
+{
     toggleExclBtn = new QToolButton();
     toggleExclBtn->setText(tr("-"));
     setAllTips(toggleExclBtn, eCod_SHOW_EXCL_OPTS_TIP);
-    c = connect(toggleExclBtn, SIGNAL(clicked()), this, SLOT(toggleExclClicked())); Q_ASSERT(c);
+    bool c = connect(toggleExclBtn, SIGNAL(clicked()), this, SLOT(toggleExclClicked())); Q_ASSERT(c);
 
     exclFilesByTextCombo = new QLineEdit(); //createComboBoxText();
     exclFilesByTextCombo->setPlaceholderText("Exclude Files with Words");
@@ -170,11 +198,12 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     exclHiddenCheck->setText("Exclude Hidden");
     setAllTips(exclHiddenCheck, eCod_EXCL_HIDDEN_ITEMS);
     modifyFont(exclHiddenCheck, +0.0, false, false, false);
+}
 
+void FindInFilesDlg::createMainLayout()
+{
     filesFoundLabel = new QLabel;
     modifyFont(filesFoundLabel, +0.0, true, false, false);
-
-    createFilesTable();
 
     QHBoxLayout *buttonsLayout = new QHBoxLayout();
     buttonsLayout->addStretch();
@@ -230,28 +259,6 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     setCentralWidget(centralWgt);
     centralWgt->setLayout(mainLayout);
     resize(920, 410);
-
-    showMoreOptions(false);
-
-    itemSelectionChanged();
-    SetDirPath( _origDirPath);
-
-    _completerTimer.setSingleShot(true);
-    c = connect(&_completerTimer, SIGNAL(timeout()), this, SLOT(completerTimeout())); Q_ASSERT(c);
-
-    _editTextTimeDiff.restart();
-
-    c = connect(filesCheck,    SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int))); Q_ASSERT(c); (void)c;
-    c = connect(foldersCheck,  SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int))); Q_ASSERT(c); (void)c;
-    c = connect(symlinksCheck, SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int))); Q_ASSERT(c); (void)c;
-
-    createRightClickMenu();
-
-    findButton->setDefault(true);
-    findButton->setFocus();
-    setStopped(true);
-  }
-  catch (...) { Q_ASSERT(false); }
 }
 
 void FindInFilesDlg::modifyFont(QWidget * widget, qreal ptSzDelta, bool bold, bool italic, bool underline)

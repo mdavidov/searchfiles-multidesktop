@@ -1,12 +1,15 @@
-#ifndef _OVSK_FSOP_FILERCONFIG_H
-#define _OVSK_FSOP_FILERCONFIG_H
 /****************************************************************************
 **
 ** Copyright (c) 2012 Milivoj (Mike) Davidov
 ** All rights reserved.
 **
+** THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+** EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+** WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
+**
 ****************************************************************************/
-// .h file for pre-compiled headers
+#ifndef _OVSK_FSOP_PRECOMPILED_H
+#define _OVSK_FSOP_PRECOMPILED_H
 
 #include <vector>
 #include <ctime>
@@ -15,9 +18,9 @@
 #include <string>
 #include <sstream>
 #include <stack>
-#include <assert.h>
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QElapsedTimer>
 #include <QString>
 #include <QDir>

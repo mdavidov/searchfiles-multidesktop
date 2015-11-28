@@ -39,8 +39,8 @@
 **
 ****************************************************************************/
 
-#ifndef URLLINEEDIT_H
-#define URLLINEEDIT_H
+#ifndef _OVSK_FSOP_URLLINEEDIT_H
+#define _OVSK_FSOP_URLLINEEDIT_H
 
 #include <QtCore/QUrl>
 #include <QtWidgets/QWidget>

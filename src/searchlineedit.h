@@ -39,8 +39,8 @@
 **
 ****************************************************************************/
 
-#ifndef SEARCHLINEEDIT_H
-#define SEARCHLINEEDIT_H
+#ifndef _OVSK_FSOP_SEARCHLINEEDIT_H
+#define _OVSK_FSOP_SEARCHLINEEDIT_H
 
 #include "exlineedit.h"
 
