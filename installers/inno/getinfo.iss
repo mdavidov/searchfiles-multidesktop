@@ -8,8 +8,8 @@
 #define APP_NM          OvSk_FsOp_APP_NM_TXT
 #define APP_EXE         OvSk_FsOp_APP_EXE_TXT
 
-#define APP_INPUT_DIR   "C:\Build\getinfo\Desktop-Qt5.3.1-vs2012-win32\release"
-#define INPUT_3RDP_DIR  "C:\Build\Qt5.3.1-vs2012-win32"
+#define APP_INPUT_DIR   "C:\build\getinfo\desktop-qt5.5.1-vs2013-x64\release"
+#define INPUT_3RDP_DIR  "C:\qt\qt5.5.1-vs2013-x64\5.5\msvc2013_64"
 
 [Setup]
 AppPublisher={#APP_PUBLISHER}
@@ -35,13 +35,13 @@ VersionInfoCopyright={#APP_COPYRIGHT}
 [Files]
 Source: "{#APP_INPUT_DIR}\{#APP_EXE}"; DestDir: "{app}"
 
-Source: "{#INPUT_3RDP_DIR}\Qt5Core.dll"; DestDir: "{app}"
-Source: "{#INPUT_3RDP_DIR}\Qt5Gui.dll"; DestDir: "{app}"
-Source: "{#INPUT_3RDP_DIR}\Qt5Widgets.dll"; DestDir: "{app}"
-Source: "{#INPUT_3RDP_DIR}\platforms\qwindows.dll"; DestDir: "{app}\platforms"
-Source: "{#INPUT_3RDP_DIR}\icudt52.dll"; DestDir: "{app}"
-Source: "{#INPUT_3RDP_DIR}\icuin52.dll"; DestDir: "{app}"
-Source: "{#INPUT_3RDP_DIR}\icuuc52.dll"; DestDir: "{app}"
+Source: "{#INPUT_3RDP_DIR}\bin\Qt5Core.dll"; DestDir: "{app}"
+Source: "{#INPUT_3RDP_DIR}\bin\Qt5Gui.dll"; DestDir: "{app}"
+Source: "{#INPUT_3RDP_DIR}\bin\Qt5Widgets.dll"; DestDir: "{app}"
+Source: "{#INPUT_3RDP_DIR}\plugins\platforms\qwindows.dll"; DestDir: "{app}\platforms"
+Source: "{#INPUT_3RDP_DIR}\bin\icudt54.dll"; DestDir: "{app}"
+Source: "{#INPUT_3RDP_DIR}\bin\icuin54.dll"; DestDir: "{app}"
+Source: "{#INPUT_3RDP_DIR}\bin\icuuc54.dll"; DestDir: "{app}"
 
 ; --- Source: "ginfo.chm"; DestDir: "{app}"
 ; --- Source: "Readme.txt"; DestDir: "{app}"; Flags: isreadme

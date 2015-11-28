@@ -99,7 +99,7 @@ void FindInFilesDlg::createSubDirLayout()
     subDirDepthLout->addWidget( limSubDirDepthBtn);
     subDirDepthLout->addWidget( maxSubDirDepthEdt);
     subDirDepthLout->addStretch();
-    bool c = connect(unlimSubDirDepthBtn, &QRadioButton::toggled, this, &FindInFilesDlg::unlimSubDirDepthToggled); Q_ASSERT(c);
+    bool c = connect(unlimSubDirDepthBtn, &QRadioButton::toggled, this, &FindInFilesDlg::unlimSubDirDepthToggled); Q_ASSERT(c); (void)c;
 }
 
 void FindInFilesDlg::createItemTypeCheckLayout()
@@ -173,7 +173,7 @@ void FindInFilesDlg::createExclLayout()
     toggleExclBtn = new QToolButton();
     toggleExclBtn->setText(tr("-"));
     setAllTips(toggleExclBtn, eCod_SHOW_EXCL_OPTS_TIP);
-    bool c = connect(toggleExclBtn, SIGNAL(clicked()), this, SLOT(toggleExclClicked())); Q_ASSERT(c);
+    bool c = connect(toggleExclBtn, SIGNAL(clicked()), this, SLOT(toggleExclClicked())); Q_ASSERT(c); (void)c;
 
     exclFilesByTextCombo = new QLineEdit(); //createComboBoxText();
     exclFilesByTextCombo->setPlaceholderText("Exclude Files with Words");
