@@ -52,3 +52,6 @@ OTHER_FILES += \
     src/aboutdialog.html \
     installers/inno/getinfo.bat \
     installers/inno/getinfo.iss
+
+DISTFILES += \
+    README.txt
