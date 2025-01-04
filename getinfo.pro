@@ -26,8 +26,8 @@ SOURCES  =  \
 # RESOURCES = src/dockwidgets.qrc
 
 macx {
-    INCLUDEPATH += /opt/local/include
-    LIBS += -L/opt/local/lib
+    INCLUDEPATH += /opt/qt/6.8.1/include
+    LIBS += -L/opt/qt/6.8.1/lib
 }
 
 unix:!macx {

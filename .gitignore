@@ -1,12 +1,20 @@
 
 # Qt files
 .qmake.stash
-.vs/
 Makefile
 Makefile.Debug
 Makefile.Release
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+
+# Mac C & C++ build files
+*.app/
+*.o
 
 #Visual Studio files
+.vs/
+.vscode/
 *.[Oo]bj
 *.user
 *.aps
