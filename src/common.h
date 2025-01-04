@@ -12,8 +12,8 @@
 #define _OVSK_FSOP_COMMON_H
 
 #include "config.h"
-#include <QtGlobal>
-#include <QString>
+#include <QtCore/QtGlobal>
+#include <QtCore/QString>
 
 
 namespace Overskys

@@ -1,6 +1,10 @@
-#OS junk files
-[Tt]humbs.db
-*.DS_Store
+
+# Qt files
+.qmake.stash
+.vs/
+Makefile
+Makefile.Debug
+Makefile.Release
 
 #Visual Studio files
 *.[Oo]bj
@@ -227,5 +231,5 @@ Desktop.ini
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
-# Mac desktop service store files
+# Mac files
 .DS_Store

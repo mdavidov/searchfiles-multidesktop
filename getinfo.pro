@@ -1,4 +1,5 @@
 TEMPLATE  = app
+CONFIG += c++20
 CONFIG += precompile_header
 QT += widgets
 PRECOMPILED_HEADER  = src/precompiled.h
@@ -48,7 +49,7 @@ RESOURCES += \
     src/dockwidgets.qrc
 
 OTHER_FILES += \
-    ginfo.todo.txt \
+    getinfo.todo.txt \
     src/aboutdialog.html \
     installers/inno/getinfo.bat \
     installers/inno/getinfo.iss

@@ -44,8 +44,10 @@ private:
     }
 };
 
+//auto bigger = [](auto a, auto b) { return a > b; };
+
 template<class _Ty>
-struct bigger : public std::binary_function<_Ty, _Ty, bool>
+struct bigger
 {
     bool operator()(const _Ty& left, const _Ty& right) const
     {

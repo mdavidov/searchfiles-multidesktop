@@ -17,6 +17,7 @@
 #include <QtGui>
 #include <QtWidgets>
 #include <QStandardPaths>
+#include <QtCore/QRegularExpression>
 
 namespace Overskys
 {
@@ -563,8 +564,8 @@ void FindInFilesDlg::findFilesPrep()
     // GET FILTERS
     if (_fileNameFilter.isEmpty())
         _fileNameFilter = "*";
-    const QString tmpFilter = _fileNameFilter.replace( QRegExp("[ ]*;[ ]*"), ";");
-    _fileNameSubfilters = tmpFilter.split(";", QString::SkipEmptyParts);
+    const QString tmpFilter = _fileNameFilter.replace( QRegularExpression("[ ]*;[ ]*"), ";");
+    _fileNameSubfilters = tmpFilter.split(";", Qt::SkipEmptyParts);
 
     _itemTypeFilter = QDir::Filters( QDir::Drives | QDir::System | QDir::NoDotAndDotDot);
     if (filesCheck->isChecked()   || symlinksCheck->isChecked())
@@ -581,8 +582,8 @@ void FindInFilesDlg::findFilesPrep()
     while (_origDirPath.length() > eCod_MIN_PATH_LEN && _origDirPath.endsWith( QDir::separator()))
         _origDirPath.chop(1);
 
-    _searchWords        = wordsLineEdit->text().split(" ", QString::SkipEmptyParts);;
-    _exclusionWords     = exclFilesByTextCombo->text().split(" ", QString::SkipEmptyParts);
+    _searchWords        = wordsLineEdit->text().split(" ", Qt::SkipEmptyParts);;
+    _exclusionWords     = exclFilesByTextCombo->text().split(" ", Qt::SkipEmptyParts);
     _exclFilePatterns   = GetSimpleNamePatterns( exclByFileNameCombo->text());
     _exclFolderPatterns = GetSimpleNamePatterns( exclByFolderNameCombo->text());
 
@@ -724,7 +725,7 @@ void FindInFilesDlg::findFilesRecursive( const QString & dirPath, qint32 subDirD
 QStringList FindInFilesDlg::GetSimpleNamePatterns( const QString & rawNamePatters) const
 {
     QStringList outPatters;
-    const QStringList tempPatterns = rawNamePatters.split(";", QString::SkipEmptyParts);
+    const QStringList tempPatterns = rawNamePatters.split(";", Qt::SkipEmptyParts);
     foreach (QString tempPat, tempPatterns)
     {
         QString trimmedPat = tempPat.trimmed();
