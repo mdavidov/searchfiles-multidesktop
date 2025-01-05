@@ -1,5 +1,6 @@
 
 # Qt files
+*.gch/
 .qmake.stash
 Makefile
 Makefile.Debug

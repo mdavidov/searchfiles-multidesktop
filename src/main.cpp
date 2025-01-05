@@ -11,9 +11,7 @@
 #include "precompiled.h"
 #include "config.h"
 #include "getinfo.h"
-
 #include <QApplication>
-#include <QmainWindow>
 
 int main(int argc, char* argv[])
 {
