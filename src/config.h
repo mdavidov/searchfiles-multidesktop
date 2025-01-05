@@ -183,7 +183,7 @@ QT_END_NAMESPACE
 #define OvSk_FsOp_HELPABOUT_STS_TIP     tr("Display version and general info about this app.")
 
 #define OvSk_FsOp_DRIVE_REMOVED_TXT     tr("The item does not seem to exist (any more). Please make sure that " \
-                                           "the removable or network drive and media is properly connected and inserted.")
+                                           "the removable/network drive is properly inserted/connected.")
 #define OvSk_FsOp_GEN_ERR_TXT           tr("An error occurred while processing the item.")
 #define OvSk_FsOp_COPY_ERR_TXT          tr("An error occurred while copying the item.")
 #define OvSk_FsOp_DEL_ERR_TXT           tr("An error occurred while deleting the item.")
@@ -193,14 +193,15 @@ QT_END_NAMESPACE
 #define eCod_SEARCH_BY_TYPE_TIP         tr("Specify which type(s) of items to search for: folders, files, and/or shortcuts.")
 #define OvSk_FsOp_NAME_FILTERS_TIP      tr("File/folder/shortcut name patterns to search for, semicolon separated. Search all items if empty.")
 #define OvSk_FsOp_CONTAINING_TEXT_TIP   tr("Text to search for in each file's contents. Not applicable to folders. ")
-#define OvSk_FsOp_TOP_DIR_TIP           tr("The folder to deeply/recursively search. ")
+#define OvSk_FsOp_TOP_DIR_TIP           tr("Search Folder {SF}: The folder to deeply/recursively search. ")
 #define eCod_EXCL_FILES_BY_NAME_TIP     tr("Exclude files whose name contains this text (case insensitive, simple text, no wild-cards).")
 #define eCod_EXCL_FOLDERS_BY_NAME_TIP   tr("Exclude folders whose name equals this text (case insensitive).")
 #define eCod_EXCL_FILES_BY_CONTENT_TIP  tr("Exclude files that contain this text.")
 #define eCod_EXCL_HIDDEN_ITEMS          tr("Exclude hidden folders, files and shortcuts. Note: ALL sub-folders, files and shortcuts (hidden or not) under a hidden folder are also excluded.")
 #define eCod_SHOW_EXCL_OPTS_TIP         tr("Hide exclusion options.")
 #define eCod_HIDE_EXCL_OPTS_TIP         tr("Show exclusion options.")
-#define eCod_BROWSE_FOLDERS_TIP         tr("Browse Folders")
+#define eCod_BROWSE_FOLDERS_TIP         tr("Browse folders")
+#define OvSk_FsOp_DIR_NOT_EXISTS_TXT    tr("The selected folder does not exist (any more). Please check the whole path, and make sure that the removable/network drive is properly inserted/connected:\n")
 
 #define OvSk_FsOp_SELECT_ITEM_TYPE_TXT  tr("Select at least one file system item type please: Files, Folders and/or Shortcuts.")
 

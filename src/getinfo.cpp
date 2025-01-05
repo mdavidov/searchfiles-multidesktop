@@ -22,7 +22,7 @@
 namespace Overskys
 {
 
-const QString findText( "&Get Info");
+const QString findText( "&Search");
 const QString stopText( "S&top");
 
 const int RELPATH_COL_IDX = 0;
@@ -38,7 +38,7 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     : QMainWindow(parent)
     , _ignoreDirPathChange(false)
     , _origDirPath( QDir::toNativeSeparators( QStandardPaths::locate( QStandardPaths::HomeLocation, "", QStandardPaths::LocateDirectory)))
-    , _maxSubDirDepth(0)
+    , _maxSubDirDepth(1)
     , _unlimSubDirDepth(true)
     , _stopped(true)
 {
@@ -78,15 +78,15 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
 
 void FindInFilesDlg::createSubDirLayout()
 {
-    maxSubDirDepthLbl = new QLabel(tr("Max Subfolder Depth: "));
+    maxSubDirDepthLbl = new QLabel(tr("Max subfolder depth: "));
     setAllTips(maxSubDirDepthLbl, tr("Specify unlimited or maximum sub-folder depth."));
     unlimSubDirDepthBtn = new QRadioButton(tr("Unlimited "));
     unlimSubDirDepthBtn->setChecked(true);
-    limSubDirDepthBtn = new QRadioButton(tr("Limited To: "));
+    limSubDirDepthBtn = new QRadioButton(tr("Limited to: "));
     maxSubDirDepthEdt = new QLineEdit();
     maxSubDirDepthEdt->setEnabled(false);
     maxSubDirDepthEdt->setFixedWidth(60);
-    QIntValidator * intValidator = new QIntValidator();
+    QIntValidator* intValidator = new QIntValidator();
     intValidator->setBottom(0);
     maxSubDirDepthEdt->setValidator(intValidator);
     QButtonGroup* subDirDepthGrp = new QButtonGroup(this);
@@ -153,10 +153,10 @@ void FindInFilesDlg::createNavigLayout()
                  this,      SLOT(dirPathEditTextChanged(const QString &))); Q_ASSERT(c);
 
     wordsLineEdit = new QLineEdit(); //createComboBoxText();
-    wordsLineEdit->setPlaceholderText("Search Words");
+    wordsLineEdit->setPlaceholderText("Search words");
     setAllTips(wordsLineEdit, OvSk_FsOp_CONTAINING_TEXT_TIP);
     modifyFont(wordsLineEdit, +0.0, true, false, false);
-    matchCaseCheck = new QCheckBox(tr("&Match Case"));
+    matchCaseCheck = new QCheckBox(tr("&Match case"));
     setAllTips(matchCaseCheck, "Match or ignore the case of letters in search words. Does not affect file/folder names. ");
 
     wordsLout = new QHBoxLayout();
@@ -164,7 +164,7 @@ void FindInFilesDlg::createNavigLayout()
     wordsLout->addWidget(matchCaseCheck);
 
     namesLineEdit = new QLineEdit(); //createComboBoxText();
-    namesLineEdit->setPlaceholderText("File/Folder Names");
+    namesLineEdit->setPlaceholderText("File/Folder names");
     setAllTips(namesLineEdit, OvSk_FsOp_NAME_FILTERS_TIP);
     modifyFont(namesLineEdit, +0.0, true, false, false);
 }
@@ -177,23 +177,23 @@ void FindInFilesDlg::createExclLayout()
     bool c = connect(toggleExclBtn, SIGNAL(clicked()), this, SLOT(toggleExclClicked())); Q_ASSERT(c); (void)c;
 
     exclFilesByTextCombo = new QLineEdit(); //createComboBoxText();
-    exclFilesByTextCombo->setPlaceholderText("Exclude Files with Words");
+    exclFilesByTextCombo->setPlaceholderText("Exclude files with words");
     setAllTips(exclFilesByTextCombo, eCod_EXCL_FILES_BY_CONTENT_TIP);
     modifyFont(exclFilesByTextCombo, +0.0, false, false, false);
 
     exclByFileNameCombo = new QLineEdit(); //createComboBoxText();
-    exclByFileNameCombo->setPlaceholderText("Exclude by Partial File Names");
+    exclByFileNameCombo->setPlaceholderText("Exclude by partial file names");
     setAllTips(exclByFileNameCombo, eCod_EXCL_FILES_BY_NAME_TIP);
     modifyFont(exclByFileNameCombo, +0.0, false, false, false);
 
     exclByFolderNameCombo = new QLineEdit(); //createComboBoxText();
-    exclByFolderNameCombo->setPlaceholderText("Exclude by Partial Folder Names");
+    exclByFolderNameCombo->setPlaceholderText("Exclude by partial folder names");
     setAllTips(exclByFolderNameCombo, eCod_EXCL_FOLDERS_BY_NAME_TIP);
     modifyFont(exclByFolderNameCombo, +0.0, false, false, false);
 
     exclHiddenCheck = new QCheckBox();
     exclHiddenCheck->setChecked(false);
-    exclHiddenCheck->setText("Exclude Hidden");
+    exclHiddenCheck->setText("Exclude hidden");
     setAllTips(exclHiddenCheck, eCod_EXCL_HIDDEN_ITEMS);
     modifyFont(exclHiddenCheck, +0.0, false, false, false);
 }
@@ -305,7 +305,7 @@ void FindInFilesDlg::goUpBtnClicked()
 
 void FindInFilesDlg::browseBtnClicked()
 {
-    const QString selDir = QFileDialog::getExistingDirectory(this, tr("Select Folder"), dirComboBox->currentText());
+    const QString selDir = QFileDialog::getExistingDirectory(this, tr("Select folder"), dirComboBox->currentText());
     if (!selDir.isEmpty())
         SetDirPath(selDir);
 }
@@ -465,7 +465,7 @@ void FindInFilesDlg::cancelBtnClicked()
     //reject();
 }
 
-void FindInFilesDlg::SetDirPath( const QString & dirPath)
+void FindInFilesDlg::SetDirPath( const QString& dirPath)
 {
     try
     {
@@ -578,9 +578,20 @@ void FindInFilesDlg::findFilesPrep()
         _itemTypeFilter |= QDir::Hidden;
 
     _matchCase = matchCaseCheck->isChecked();
+
     _origDirPath = QDir::toNativeSeparators( dirComboBox->currentText());
-    while (_origDirPath.length() > eCod_MIN_PATH_LEN && _origDirPath.endsWith( QDir::separator()))
+    QDir origDir = QDir(_origDirPath);
+    if (!origDir.exists()) {
+        const QString msg = OvSk_FsOp_DIR_NOT_EXISTS_TXT + _origDirPath;
+        QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, msg);
+        return;
+    }
+    while (_origDirPath.length() > eCod_MIN_PATH_LEN && _origDirPath.endsWith( QDir::separator())) {
         _origDirPath.chop(1);
+    }
+    if (_origDirPath.length() == 2 && _origDirPath.endsWith(":")) {
+		_origDirPath += QDir::separator();
+    }
 
     _searchWords        = wordsLineEdit->text().split(" ", Qt::SkipEmptyParts);;
     _exclusionWords     = exclFilesByTextCombo->text().split(" ", Qt::SkipEmptyParts);
@@ -914,7 +925,7 @@ QPushButton * FindInFilesDlg::createButton(const QString & text, const char *mem
     #define eCod_TOP_ROOT_PATH "/"
 #endif
 
-void FindInFilesDlg::dirPathEditTextChanged(const QString & newText)
+void FindInFilesDlg::dirPathEditTextChanged(const QString& newText)
 {
     try
     {
@@ -1189,7 +1200,7 @@ void FindInFilesDlg::createFilesTable()
     c = connect(filesTable, SIGNAL(customContextMenuRequested(const QPoint &)),
                 this,         SLOT(showContextMenu(const QPoint &)));  Q_ASSERT(c);
   }
-  catch(...) { Q_ASSERT(false); }
+  catch (...) { Q_ASSERT(false); }
 }
 
 void FindInFilesDlg::openFileOfItem( int row, int /* column */)

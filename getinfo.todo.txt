@@ -1,5 +1,7 @@
 
-STATICALLY LINK ALL LIBS: Qt, boost, etc.
+ABOUT DIALOG
+
+ADD TEXT BOX "{SF}:" to the left of directory combo box
 
 READ-ONLY files: warn the user and/or remove read-only attrib
 
@@ -14,6 +16,8 @@ SEARCH WITHIN RESULTS
 Add Regular Expressions option to Search Words
 
 see also ONLINE / PHONE NOTES 
+
+DO NOT:  STATICALLY LINK ALL LIBS: Qt, boost, etc.
 
 --------------------------------------------------------------------------------
 

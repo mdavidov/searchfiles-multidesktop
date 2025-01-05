@@ -323,10 +323,9 @@ echo #include "precompiled.h"&gt;&gt;src\precompiled.h.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">RCC src/dockwidgets.qrc</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">debug\qrc_dockwidgets.cpp;%(Outputs)</Outputs>
     </CustomBuild>
+    <None Include="README.md" />
+    <None Include="src\aboutdialog.html" />
     <None Include="src\images\findfiles.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="README.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
