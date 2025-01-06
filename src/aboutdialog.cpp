@@ -1,7 +1,6 @@
 // aboutdialog.cpp
 
 #include "aboutdialog.h"
-#include <QDialog>
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QPushButton>
