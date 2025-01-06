@@ -10,6 +10,8 @@
 ****************************************************************************/
 #pragma once
 
+#undef QT_NO_CONTEXTMENU
+
 #include <algorithm>
 #include <ctime>
 #include <fstream>

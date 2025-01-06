@@ -8,7 +8,12 @@
 ** WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 **
 ****************************************************************************/
+
+#undef QT_NO_CONTEXTMENU
+
 #include "precompiled.h"
+#include "aboutdialog.h"
+#include "helpdialog.h"
 #include "getinfo.h"
 #include "config.h"
 #include "util.h"
@@ -33,6 +38,10 @@ const int RELPATH_COL_IDX = 0;
     #define eCod_MIN_PATH_LEN 1
 #endif
 
+FindInFilesDlg::~FindInFilesDlg()
+{
+    delete contextMenu;  // This will also delete the actions
+}
 
 FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     : QMainWindow(parent)
@@ -57,7 +66,7 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     createFilesTable();
     createMainLayout();
 
-    showMoreOptions(false);
+    showMoreOptions(true);
     itemSelectionChanged();
     SetDirPath(_origDirPath);
 
@@ -69,8 +78,17 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     c = connect(foldersCheck,  SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int))); Q_ASSERT(c); (void)c;
     c = connect(symlinksCheck, SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int))); Q_ASSERT(c); (void)c;
 
-    createRightClickMenu();
+    createContextMenu();
 
+    {
+        // In your MainWindow constructor or setup method:
+        QMenu* helpMenu = menuBar()->addMenu("&Help");
+        QAction* aboutAction = helpMenu->addAction("&About");
+        QAction* helpAction = helpMenu->addAction("&Help");
+        // Connect the actions to slots
+        connect(aboutAction, &QAction::triggered, this, &FindInFilesDlg::showAboutDialog);
+        connect(helpAction, &QAction::triggered, this, &FindInFilesDlg::showHelpDialog);
+    }
     findButton->setDefault(true);
     findButton->setFocus();
     setStopped(true);
@@ -256,7 +274,7 @@ void FindInFilesDlg::createMainLayout()
     centralWgt = new QWidget();
     setCentralWidget(centralWgt);
     centralWgt->setLayout(mainLayout);
-    resize(920, 410);
+    resize(920, 480);
 }
 
 void FindInFilesDlg::modifyFont(QWidget * widget, qreal ptSzDelta, bool bold, bool italic, bool underline)
@@ -1198,9 +1216,11 @@ void FindInFilesDlg::createFilesTable()
     c = connect( filesTable, SIGNAL(itemSelectionChanged()),
                  this, SLOT(itemSelectionChanged())); Q_ASSERT(c); (void)c;
 
-    filesTable->setContextMenuPolicy( Qt::CustomContextMenu);
-    c = connect(filesTable, SIGNAL(customContextMenuRequested(const QPoint &)),
-                this,         SLOT(showContextMenu(const QPoint &)));  Q_ASSERT(c);
+    filesTable->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(filesTable, &QTableWidget::customContextMenuRequested,
+            this, &FindInFilesDlg::showContextMenu);
+    //c = connect(filesTable, SIGNAL(customContextMenuRequested(const QPoint &)),
+    //            this,         SLOT(showContextMenu(const QPoint &)));  Q_ASSERT(c);
   }
   catch (...) { Q_ASSERT(false); }
 }
@@ -1218,45 +1238,82 @@ void FindInFilesDlg::itemSelectionChanged()
     shredButton->setEnabled( _stopped && filesTable->selectedItems().count() > 0);
 }
 
-void FindInFilesDlg::createRightClickMenu()
+//void FindInFilesDlg::createContextMenu()
+//{
+//    try
+//    {
+//        openRunAct = new QAction( QIcon(""), eCod_OPEN_CONT_FOLDER_ACT_TXT, this);
+//        openRunAct->setStatusTip (eCod_OPEN_CONT_FOLDER_STS_TIP);
+//        connect(openRunAct, &QAction::triggered, this, &FindInFilesDlg::openRunSlot);
+//        openRunAct->setShortcutContext( Qt::WidgetWithChildrenShortcut);
+//        //openRunAct->setShortcut(         QKeySequence( Qt::Key_F3));
+//        //shortcuts.append( new QShortcut( QKeySequence( Qt::Key_F3), this, SLOT(openRunSlot()), SLOT(openRunSlot()), Qt::WidgetWithChildrenShortcut));
+//
+//        copyPathAct = new QAction( QIcon(""), eCod_COPY_PATH_ACT_TXT, this);
+//        copyPathAct->setStatusTip (eCod_COPY_PATH_STS_TIP);
+//        connect(copyPathAct, &QAction::triggered, this, &FindInFilesDlg::copyPathSlot);
+//        copyPathAct->setShortcutContext( Qt::WidgetWithChildrenShortcut);
+//        copyPathAct->setEnabled(false);
+//
+//        propertiesAct = new QAction( QIcon(""), eCod_PROPERTIES_ACT_TXT, this);
+//        propertiesAct->setStatusTip (eCod_PROPERTIES_STS_TIP);
+//        connect(propertiesAct, &QAction::triggered, this, &FindInFilesDlg::propertiesSlot);
+//        propertiesAct->setShortcutContext( Qt::WidgetWithChildrenShortcut);
+//        propertiesAct->setEnabled(false);
+//
+//        contextMenu = new QMenu(this);
+//        contextMenu->addAction(openRunAct);
+//        contextMenu->addSeparator();
+//        contextMenu->addAction(copyPathAct);
+//        contextMenu->addAction(propertiesAct);
+//        //contextMenu->setDefaultAction(openRunAct);
+//
+//    }
+//    catch (...) { Q_ASSERT(false); }
+//}
+void FindInFilesDlg::createContextMenu()
 {
     try
     {
-        openRunAct = new QAction( QIcon(""), eCod_OPEN_CONT_FOLDER_ACT_TXT, this);
-        openRunAct->setStatusTip (eCod_OPEN_CONT_FOLDER_STS_TIP);
-        connect( openRunAct, SIGNAL(triggered()), this, SLOT(openRunSlot()));
-        openRunAct->setShortcutContext( Qt::WidgetWithChildrenShortcut);
-        //openRunAct->setShortcut(         QKeySequence( Qt::Key_F3));
-        //shortcuts.append( new QShortcut( QKeySequence( Qt::Key_F3), this, SLOT(openRunSlot()), SLOT(openRunSlot()), Qt::WidgetWithChildrenShortcut));
+        contextMenu = new QMenu(this);  // Set parent to ensure proper cleanup
 
-        copyPathAct = new QAction( QIcon(""), eCod_COPY_PATH_ACT_TXT, this);
-        copyPathAct->setStatusTip (eCod_COPY_PATH_STS_TIP);
-        connect( copyPathAct, SIGNAL(triggered()), this, SLOT(copyPathSlot()));
-        copyPathAct->setShortcutContext( Qt::WidgetWithChildrenShortcut);
+        openRunAct = contextMenu->addAction(tr("Open Containing Folder"));
+        copyPathAct = contextMenu->addAction(tr("Copy Path"));
+        contextMenu->addSeparator();
+        propertiesAct = contextMenu->addAction(tr("Properties"));
+
+        // Connect using new syntax
+        connect(openRunAct, &QAction::triggered, this, &FindInFilesDlg::openRunSlot);
+        connect(copyPathAct, &QAction::triggered, this, &FindInFilesDlg::copyPathSlot);
+        connect(propertiesAct, &QAction::triggered, this, &FindInFilesDlg::propertiesSlot);
+
+        // Set initial state
         copyPathAct->setEnabled(false);
-
-        propertiesAct = new QAction( QIcon(""), eCod_PROPERTIES_ACT_TXT, this);
-        propertiesAct->setStatusTip (eCod_PROPERTIES_STS_TIP);
-        connect( propertiesAct, SIGNAL(triggered()), this, SLOT(propertiesSlot()));
-        propertiesAct->setShortcutContext( Qt::WidgetWithChildrenShortcut);
         propertiesAct->setEnabled(false);
-
-        rightClickMenu = new QMenu( tr("Context Menu"));
-        rightClickMenu->addAction( openRunAct);
-        rightClickMenu->addSeparator();
-        rightClickMenu->addAction( copyPathAct);
-        rightClickMenu->addAction( propertiesAct);
-        //rightClickMenu->setDefaultAction( openRunAct);
     }
     catch (...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::showContextMenu(const QPoint & point)
+void FindInFilesDlg::showContextMenu(const QPoint& point)
 {
     try
     {
-        if (rightClickMenu)
-            rightClickMenu->popup( filesTable->mapToGlobal( point) /*, m_parent->RightClickMenu()->defaultAction()*/ );
+        if (!contextMenu)
+            return;
+
+        // Get the item at the click position
+        QTableWidgetItem* item = filesTable->itemAt(point);
+        if (!item)
+            return;
+
+        // Enable/disable actions based on selection
+        bool hasSelection = !filesTable->selectedItems().isEmpty();
+        copyPathAct->setEnabled(hasSelection);
+        propertiesAct->setEnabled(hasSelection);
+        openRunAct->setEnabled(hasSelection);
+
+        // Show the menu at the correct global position
+        contextMenu->popup(filesTable->viewport()->mapToGlobal(point));
     }
     catch (...) { Q_ASSERT(false); }
 }
@@ -1343,6 +1400,15 @@ void FindInFilesDlg::unlimSubDirDepthToggled(bool /*checked*/)
         }
     }
     catch (...) { Q_ASSERT(false); }
+}
+
+void FindInFilesDlg::showAboutDialog() {
+    AboutDialog dialog(this);
+    dialog.exec();
+}
+void FindInFilesDlg::showHelpDialog() {
+    HelpDialog dialog(this);
+    dialog.exec();
 }
 
 } // namespace Overskys

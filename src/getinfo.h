@@ -10,6 +10,8 @@
 ****************************************************************************/
 #pragma once
 
+#undef QT_NO_CONTEXTMENU
+
 #include "common.h"
 #include <QMainWindow>
 #include <QDir>
@@ -60,8 +62,9 @@ class FindInFilesDlg : public QMainWindow
 
 public:
     FindInFilesDlg(  const QString & dirPath, QWidget *parent = 0);
-    void SetDirPath( const QString & dirPath);
+    ~FindInFilesDlg();
 
+    void SetDirPath( const QString & dirPath);
     void GetFilePaths( QStringList & filePaths) const { filePaths = _outFiles; }
     void GetFileInfos( QFileInfoList & fileInfos) const;
     Overskys::Op::Type GetOp() const { return _opType; }
@@ -89,6 +92,8 @@ private slots:
     void propertiesSlot();
     void showContextMenu(const QPoint & point);
     void unlimSubDirDepthToggled(bool checked);
+    void showAboutDialog();
+    void showHelpDialog();
 
 private:
     QStringList findTextInFiles(const QStringList &files, const QString &text);
@@ -126,7 +131,7 @@ private:
     void createNavigLayout();
     void createExclLayout();
     void createMainLayout();
-    void createRightClickMenu();
+    void createContextMenu();
 
     void getSelectedItems( std::map<int, QString, bigger<int>>& itemList);
     void removeItems(const std::map<int, QString, bigger<int>>& itemList);
@@ -172,7 +177,7 @@ private:
     QAction * openRunAct;
     QAction * copyPathAct;
     QAction * propertiesAct;
-    QMenu * rightClickMenu;
+    QMenu * contextMenu;
 
     QWidget * centralWgt;
 

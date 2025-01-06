@@ -20,6 +20,8 @@ set(PROJECT_SOURCES
     src/precompiled.h
     src/precompiled.cpp
     src/main.cpp
+    src/aboutdialog.h
+    src/helpdialog.h
     src/common.h
     src/config.h
     src/config.cpp
