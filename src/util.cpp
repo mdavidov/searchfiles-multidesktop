@@ -22,12 +22,14 @@ namespace Overskys
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    bool sizeToHumanReadable( quint64 size, QString & humanReadable)
+    bool sizeToHumanReadable(quint64 size, QString& humanReadable)
     {
         try
         {
-            if (size == 0)
+            if (size == 0) {
                 humanReadable = QString("0 Bytes");
+                return true;
+            }
 
             static const quint64 KILO = 1024;
             static const quint64 MEGA = 1024 * KILO;

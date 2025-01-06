@@ -38,7 +38,7 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     : QMainWindow(parent)
     , _ignoreDirPathChange(false)
     , _origDirPath( QDir::toNativeSeparators( QStandardPaths::locate( QStandardPaths::HomeLocation, "", QStandardPaths::LocateDirectory)))
-    , _maxSubDirDepth(1)
+    , _maxSubDirDepth(0)
     , _unlimSubDirDepth(true)
     , _stopped(true)
 {
@@ -1112,13 +1112,15 @@ void FindInFilesDlg::appendFileToTable(const QString filePath, const QFileInfo &
     dateModItem->setFlags( dateModItem->flags() ^ Qt::ItemIsEditable);
     dateModItem->setData( Qt::DisplayRole, fileInfo.lastModified());
 
-    const qint64 sizeKB = (fileInfo.size() + (qint64)512) / (qint64)1024;
-    QString sizeText; //( fileInfo.isFile() ? tr("%1 KB").arg(int((fileInfo.size() + 512) / 1024)) : tr(""));
+    const double sizeKB = fileInfo.size() > 0 && fileInfo.size() < 104 ?
+                            0.1 : fileInfo.size() / double(1024);
+    const QString sizeKBqs = QString::number(sizeKB, 'f', 1);
+    QString sizeText;
     sizeToHumanReadable( fileInfo.size(), sizeText);
     QTableWidgetItem * sizeItem = new QTableWidgetItem();
     sizeItem->setFlags( sizeItem->flags() ^ Qt::ItemIsEditable);
     sizeItem->setTextAlignment( Qt::AlignRight | Qt::AlignVCenter);
-    sizeItem->setData( Qt::DisplayRole, fileInfo.isFile() ? QVariant(sizeKB)   : QVariant(""));
+    sizeItem->setData( Qt::DisplayRole, fileInfo.isFile() ? QVariant(sizeKBqs) : QVariant(""));
     sizeItem->setData( Qt::ToolTipRole, fileInfo.isFile() ? QVariant(sizeText) : QVariant(""));
 
     // Owner is always empty (on Win 7) !!!
@@ -1327,6 +1329,10 @@ void FindInFilesDlg::unlimSubDirDepthToggled(bool /*checked*/)
         {
             bool maxValid = false;
             _maxSubDirDepth =  maxSubDirDepthEdt->text().toInt(&maxValid);
+            if (!maxValid) {
+                _maxSubDirDepth = 0;
+                maxSubDirDepthEdt->setText("0");
+            }
             maxSubDirDepthEdt->setEnabled(false);
             maxSubDirDepthEdt->setText("");
         }

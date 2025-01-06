@@ -40,27 +40,23 @@ qt_add_executable(${PROJECT_NAME}
 )
 
 # Set target properties
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    WIN32_EXECUTABLE TRUE
-    MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_GUI_IDENTIFIER com.example.${PROJECT_NAME}
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-)
+if(WIN32)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        WIN32_EXECUTABLE TRUE
+    )
+elseif(APPLE)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_GUI_IDENTIFIER com.example.${PROJECT_NAME}
+        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    )
+endif()
 
 # Configure precompiled headers
 target_precompile_headers(${PROJECT_NAME} PRIVATE
     src/precompiled.h
 )
-
-# Optional: Set PCH-specific compile options
-#if(MSVC)
-#    target_compile_options(${PROJECT_NAME} PRIVATE /Yu"precompiled.h")
-#    set_source_files_properties(src/precompiled.cpp
-#        PROPERTIES
-#        COMPILE_FLAGS "/Yc \"precompiled.h\""
-#    )
-#endif()
 
 # Link Qt libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -70,76 +66,76 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 # Include directories
-target_include_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-)
-
+# target_include_directories(${PROJECT_NAME} PRIVATE
+#     ${CMAKE_CURRENT_SOURCE_DIR}/src
+# )
+#
 # Installation configuration
-include(GNUInstallDirs)
-
+# include(GNUInstallDirs)
+#
 # Install binary
-install(TARGETS ${PROJECT_NAME}
-    BUNDLE DESTINATION .
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-
+# install(TARGETS ${PROJECT_NAME}
+#     BUNDLE DESTINATION .
+#     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+# )
+#
 # Platform-specific deployment
-if(WIN32)
-    # Windows deployment
-    get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
-    get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
-    
-    # Deploy Qt dependencies
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND "${_qt_bin_dir}/windeployqt.exe"
-                --no-compiler-runtime
-                --no-translations
-                --no-system-d3d-compiler
-                \"$<TARGET_FILE:${PROJECT_NAME}>\"
-        COMMENT "Deploying Qt dependencies..."
-    )
-elseif(APPLE)
-    # macOS deployment
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND "${_qt_bin_dir}/macdeployqt"
-                \"$<TARGET_FILE_DIR:${PROJECT_NAME}>/../..\"
-                -always-overwrite
-        COMMENT "Deploying Qt dependencies..."
-    )
-elseif(UNIX AND NOT APPLE)
-    # Linux installation
-
-    # Install desktop file
-    configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/resources/${PROJECT_NAME}.desktop.in
-        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.desktop
-        @ONLY
-    )
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.desktop
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
-    )
-
-    # Install application icon
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/${PROJECT_NAME}.png
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps
-    )
-
-    # Install additional application data
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/resources/data
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
-    )
-
-    # Install documentation
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.md
-        DESTINATION ${CMAKE_INSTALL_DOCDIR}
-    )
-
-    # Deploy Qt dependencies for Linux
-    if(NOT DEFINED ENV{DESTDIR})
-        set(DESTDIR "")
-    endif()
-
-    # Install Qt plugins and libraries
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/LinuxDeployQt.cmake OPTIONAL)
-endif()
+# if(WIN32)
+#     # Windows deployment
+#     get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
+#     get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
+#
+#     # Deploy Qt dependencies
+#     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+#         COMMAND "${_qt_bin_dir}/windeployqt.exe"
+#                 --no-compiler-runtime
+#                 --no-translations
+#                 --no-system-d3d-compiler
+#                 \"$<TARGET_FILE:${PROJECT_NAME}>\"
+#         COMMENT "Deploying Qt dependencies..."
+#     )
+# elseif(APPLE)
+#     # macOS deployment
+#     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+#         COMMAND "${_qt_bin_dir}/macdeployqt"
+#                 \"$<TARGET_FILE_DIR:${PROJECT_NAME}>/../..\"
+#                 -always-overwrite
+#         COMMENT "Deploying Qt dependencies..."
+#     )
+# elseif(UNIX AND NOT APPLE)
+#     # Linux installation
+#
+#     # Install desktop file
+#     configure_file(
+#         ${CMAKE_CURRENT_SOURCE_DIR}/resources/${PROJECT_NAME}.desktop.in
+#         ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.desktop
+#         @ONLY
+#     )
+#     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.desktop
+#         DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+#     )
+#
+#     # Install application icon
+#     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/${PROJECT_NAME}.png
+#         DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps
+#     )
+#
+#     # Install additional application data
+#     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/resources/data
+#         DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
+#     )
+#
+#     # Install documentation
+#     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.md
+#         DESTINATION ${CMAKE_INSTALL_DOCDIR}
+#     )
+#
+#     # Deploy Qt dependencies for Linux
+#     if(NOT DEFINED ENV{DESTDIR})
+#         set(DESTDIR "")
+#     endif()
+#
+#     # Install Qt plugins and libraries
+#     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/LinuxDeployQt.cmake OPTIONAL)
+# endif()
