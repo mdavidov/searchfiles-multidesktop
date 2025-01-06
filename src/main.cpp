@@ -18,11 +18,13 @@ int main(int argc, char* argv[])
     try
     {
         QApplication app(argc, argv);
+
         QCoreApplication::setOrganizationName(   OvSk_FsOp_COPMANY_NAME_TXT );
         QCoreApplication::setOrganizationDomain( OvSk_FsOp_COPMANY_DOMAIN_TXT );
         QCoreApplication::setApplicationName(    OvSk_FsOp_APP_NAME_TXT );
+		QCoreApplication::setApplicationVersion( OvSk_FsOp_APP_VERSION_STR);
+        //Q_INIT_RESOURCE(getinfo);
 
-        Q_INIT_RESOURCE(dockwidgets);
         Overskys::FindInFilesDlg dlg(QDir::currentPath());
         dlg.show();
 

@@ -8,27 +8,29 @@
 ** WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 **
 ****************************************************************************/
-#ifndef _OVSK_FSOP_PRECOMPILED_H
-#define _OVSK_FSOP_PRECOMPILED_H
+#pragma once
 
-#include <vector>
-#include <ctime>
 #include <algorithm>
+#include <ctime>
+#include <fstream>
+#include <iostream>
 #include <numeric>
-#include <string>
 #include <sstream>
 #include <stack>
+#include <string>
+#include <vector>
 
-#include <QtGui>
-#include <QtWidgets>
-#include <QElapsedTimer>
-#include <QString>
+#include <QApplication>
+#include <QDateTime>
+#include <QDebug>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
-#include <QDebug>
-#include <QDateTime>
 #include <QMutex>
 #include <QMutexLocker>
-
-#endif
+#include <QString>
+#include <QtCore/QRegularExpression>
+#include <QTextStream>
+#include <QtGui>
+#include <QtWidgets>

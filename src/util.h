@@ -8,8 +8,7 @@
 ** WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 **
 ****************************************************************************/
-#ifndef _OVSK_FSOP_UTIL_H
-#define _OVSK_FSOP_UTIL_H
+#pragma once
 
 #include "precompiled.h"
 #include "config.h"
@@ -30,5 +29,3 @@ namespace Overskys
     ///
     void indicateErrorDbg( const QString & text);
 }
-
-#endif

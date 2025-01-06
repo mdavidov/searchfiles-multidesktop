@@ -1,4 +1,8 @@
 
+WHEN ENTER KEY IS PRESSED: START THE SEARCH !!!
+
+INSTALLER / DEPLOYER
+
 ABOUT DIALOG
 
 ADD TEXT BOX "{SF}:" to the left of directory combo box
@@ -9,11 +13,9 @@ FUNC. DECOMPOSITION: deleteBtnClicked(), etc.
 
 Add back & forward buttons (to the navigation layout, which is above Search Folder control)
 
-ENTER key: Start searching when Enter key is pressed
+SEARCH WITHIN RESULTS !!!
 
-SEARCH WITHIN RESULTS
-
-Add Regular Expressions option to Search Words
+Add REGULAR EXPRESSIONS option to Search Words
 
 see also ONLINE / PHONE NOTES 
 

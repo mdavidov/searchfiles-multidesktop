@@ -39,11 +39,9 @@
 **
 ****************************************************************************/
 
-#ifndef _OVSK_FSOP_SEARCHLINEEDIT_H
-#define _OVSK_FSOP_SEARCHLINEEDIT_H
+#pragma once
 
 #include "exlineedit.h"
-
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QAbstractButton>
 
@@ -98,6 +96,3 @@ private:
     SearchButton *m_searchButton;
     QString m_inactiveText;
 };
-
-#endif // SEARCHLINEEDIT_H
-

@@ -39,10 +39,8 @@
 **
 ****************************************************************************/
 
-#ifndef _OVSK_FSOP_URLLINEEDIT_H
-#define _OVSK_FSOP_URLLINEEDIT_H
+#pragma once
 
-#include <QtCore/QUrl>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QStyleOptionFrame>
 
@@ -83,6 +81,3 @@ protected:
     QLineEdit *m_lineEdit;
     ClearButton *m_clearButton;
 };
-
-#endif // URLLINEEDIT_H
-

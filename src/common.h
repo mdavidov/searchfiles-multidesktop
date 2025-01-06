@@ -8,13 +8,11 @@
 ** WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 **
 ****************************************************************************/
-#ifndef _OVSK_FSOP_COMMON_H
-#define _OVSK_FSOP_COMMON_H
+#pragma once
 
 #include "config.h"
 #include <QtCore/QtGlobal>
 #include <QtCore/QString>
-
 
 namespace Overskys
 {
@@ -137,6 +135,3 @@ namespace Overskys
 
     // see Q_DECLARE_METATYPE(...) at the bottom of filesystemops.h file and qRegisterMetaType(...) in FileSystemOps ctor
 }
-
-
-#endif // _OVERSKYS_COMMON_H

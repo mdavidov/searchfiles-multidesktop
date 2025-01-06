@@ -8,11 +8,9 @@
 ** WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 **
 ****************************************************************************/
-#ifndef _OVSK_FSOP_FILERCONFIG_H
-#define _OVSK_FSOP_FILERCONFIG_H
+#pragma once
 
 #include "version.h"
-
 #include <QObject>
 #include <QString>
 QT_BEGIN_NAMESPACE
@@ -200,7 +198,7 @@ QT_END_NAMESPACE
 #define eCod_EXCL_HIDDEN_ITEMS          tr("Exclude hidden folders, files and shortcuts. Note: ALL sub-folders, files and shortcuts (hidden or not) under a hidden folder are also excluded.")
 #define eCod_SHOW_EXCL_OPTS_TIP         tr("Hide exclusion options.")
 #define eCod_HIDE_EXCL_OPTS_TIP         tr("Show exclusion options.")
-#define eCod_BROWSE_FOLDERS_TIP         tr("Browse folders")
+#define eCod_BROWSE_FOLDERS_TIP         tr("Use the system dialog to select a folder.")
 #define OvSk_FsOp_DIR_NOT_EXISTS_TXT    tr("The selected folder does not exist (any more). Please check the whole path, and make sure that the removable/network drive is properly inserted/connected:\n")
 
 #define OvSk_FsOp_SELECT_ITEM_TYPE_TXT  tr("Select at least one file system item type please: Files, Folders and/or Shortcuts.")
@@ -248,6 +246,3 @@ namespace Overskys
         static QSettings & St();
     };
 }
-
-
-#endif // _OVERSKYS_FILERCONFIG_H

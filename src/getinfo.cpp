@@ -91,7 +91,7 @@ void FindInFilesDlg::createSubDirLayout()
     maxSubDirDepthEdt->setValidator(intValidator);
     QButtonGroup* subDirDepthGrp = new QButtonGroup(this);
     subDirDepthGrp->setExclusive(true);
-    subDirDepthGrp->addButton(unlimSubDirDepthBtn, 0);
+    subDirDepthGrp->addButton(unlimSubDirDepthBtn, 1);
     subDirDepthGrp->addButton(limSubDirDepthBtn,   1);
 
     subDirDepthLout = new QHBoxLayout();
@@ -131,7 +131,7 @@ void FindInFilesDlg::createNavigLayout()
     bool c = connect(goUpButton, SIGNAL(clicked()), this, SLOT(goUpBtnClicked())); Q_ASSERT(c);
 
     browseButton = new QToolButton();
-    browseButton->setText(tr("..."));
+    browseButton->setText(tr("Select folder"));
     setAllTips(browseButton, eCod_BROWSE_FOLDERS_TIP);
     c = connect(browseButton, SIGNAL(clicked()), this, SLOT(browseBtnClicked())); Q_ASSERT(c);
 
