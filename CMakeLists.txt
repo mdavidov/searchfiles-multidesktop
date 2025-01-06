@@ -21,7 +21,9 @@ set(PROJECT_SOURCES
     src/precompiled.cpp
     src/main.cpp
     src/aboutdialog.h
+    src/aboutdialog.cpp
     src/helpdialog.h
+    src/helpdialog.cpp
     src/common.h
     src/config.h
     src/config.cpp
@@ -34,6 +36,8 @@ set(PROJECT_SOURCES
     src/util.h
     src/util.cpp
     src/version.h
+    resources/getinfo.qrc
+    resources/icons/getinfo.png
 )
 
 # Create executable
