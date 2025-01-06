@@ -6,6 +6,8 @@ PRECOMPILED_HEADER  = src/precompiled.h
 
 HEADERS  =  \
     src/precompiled.h \
+    src/aboutdialog.h \
+    src/helpdialog.h \
     src/common.h \
     src/config.h \
     src/version.h \
@@ -15,15 +17,15 @@ HEADERS  =  \
     src/searchlineedit.h
 
 SOURCES  =  \
+    src/precompiled.cpp \
+    src/aboutdialog.cpp \
+    src/helpdialog.cpp \
     src/util.cpp \
     src/main.cpp \
-    src/precompiled.cpp \
     src/config.cpp \
     src/getinfo.cpp \
     src/exlineedit.cpp \
     src/searchlineedit.cpp
-
-# RESOURCES = src/dockwidgets.qrc
 
 macx {
     INCLUDEPATH += /opt/qt/6.8.1/include
@@ -46,13 +48,13 @@ INSTALLS += target
 symbian: include($$QT_SOURCE_TREE/examples/symbianpkgrules.pri)
 
 RESOURCES += \
-    src/dockwidgets.qrc
+    resources/getinfo.qrc
 
 OTHER_FILES += \
-    getinfo.todo.txt \
+    TODO.md \
     src/aboutdialog.html \
     installers/inno/getinfo.bat \
     installers/inno/getinfo.iss
 
 DISTFILES += \
-    README.txt
+    README.md

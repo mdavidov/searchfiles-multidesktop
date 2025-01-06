@@ -1,21 +1,18 @@
 cmake_minimum_required(VERSION 3.28)
 project(getinfo VERSION 3.0.0 LANGUAGES CXX)
 
-# Configure Qt settings
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Find Qt packages
 find_package(Qt6 REQUIRED COMPONENTS 
     Core
     Gui
     Widgets
 )
 
-# Collect source files
 set(PROJECT_SOURCES
     src/precompiled.h
     src/precompiled.cpp
@@ -40,7 +37,6 @@ set(PROJECT_SOURCES
     resources/icons/getinfo.png
 )
 
-# Create executable
 qt_add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCES}
 )
@@ -50,6 +46,10 @@ if(WIN32)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         WIN32_EXECUTABLE TRUE
     )
+    # Configure precompiled headers
+    target_precompile_headers(${PROJECT_NAME} PRIVATE
+        src/precompiled.h
+    )
 elseif(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
@@ -57,25 +57,23 @@ elseif(APPLE)
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     )
+    include_directories(
+        /opt/qt/6.8.1/include
+        /opt/qt/6.8.1/include/QWidgets
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    link_directories(${PROJECT_NAME} PRIVATE
+        /opt/qt/6.8.1/lib
+    )
 endif()
 
-# Configure precompiled headers
-target_precompile_headers(${PROJECT_NAME} PRIVATE
-    src/precompiled.h
-)
-
-# Link Qt libraries
+# Link Qt6 libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
 )
 
-# Include directories
-# target_include_directories(${PROJECT_NAME} PRIVATE
-#     ${CMAKE_CURRENT_SOURCE_DIR}/src
-# )
-#
 # Installation configuration
 # include(GNUInstallDirs)
 #

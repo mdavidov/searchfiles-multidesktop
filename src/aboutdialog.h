@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QDialog>
+#include <QWidgets/QDialog>
 class QWidget;
 
 class AboutDialog : public QDialog {
