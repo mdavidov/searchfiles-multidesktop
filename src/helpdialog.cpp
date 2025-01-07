@@ -1,6 +1,4 @@
-
 #include "helpdialog.h"
-#include <QDialog>
 #include <QVBoxLayout>
 #include <QTextBrowser>
 #include <QPushButton>

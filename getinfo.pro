@@ -33,7 +33,10 @@ macx {
 }
 
 unix:!macx {
+    INCLUDEPATH += /usr/include/x86_64-linux-gnu/qt6
+    INCLUDEPATH += /usr/include/x86_64-linux-gnu/qt6/QtWidgets
     INCLUDEPATH += /usr/local/include
+    LIBS += -L/usr/lib/x86_64-linux-gnu
     LIBS += -L/usr/local/lib
 }
 

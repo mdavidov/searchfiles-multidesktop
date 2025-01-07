@@ -43,6 +43,7 @@ qt_add_executable(${PROJECT_NAME}
 
 # Set target properties
 if(WIN32)
+    set(GUI_TYPE WIN32)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         WIN32_EXECUTABLE TRUE
     )
@@ -51,6 +52,7 @@ if(WIN32)
         src/precompiled.h
     )
 elseif(APPLE)
+    set(GUI_TYPE MACOSX_BUNDLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_GUI_IDENTIFIER com.example.${PROJECT_NAME}
@@ -62,8 +64,18 @@ elseif(APPLE)
         /opt/qt/6.8.1/include/QWidgets
         ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
-    link_directories(${PROJECT_NAME} PRIVATE
+    link_directories(
         /opt/qt/6.8.1/lib
+    )
+else()
+    set(GUI_TYPE "")
+    include_directories(
+        /usr/include/x86_64-linux-gnu/qt6
+        /usr/include/x86_64-linux-gnu/qt6/QtWidgets
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    link_directories(
+        /usr/lib/x86_64-linux-gnu
     )
 endif()
 

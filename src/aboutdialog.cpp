@@ -1,9 +1,8 @@
-// aboutdialog.cpp
-
 #include "aboutdialog.h"
 #include <QVBoxLayout>
-#include <QLabel>
+#include <QTextBrowser>
 #include <QPushButton>
+
 
 AboutDialog::AboutDialog(QWidget* parent /*= nullptr*/) : QDialog(parent) {
     setWindowTitle("About");
