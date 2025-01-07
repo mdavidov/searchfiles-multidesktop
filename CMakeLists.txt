@@ -77,6 +77,9 @@ else()
     link_directories(
         /usr/lib/x86_64-linux-gnu
     )
+    target_precompile_headers(${PROJECT_NAME} PRIVATE
+        src/precompiled.h
+    )
 endif()
 
 # Link Qt6 libraries
