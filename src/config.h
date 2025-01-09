@@ -154,22 +154,22 @@ QT_END_NAMESPACE
 #define OvSk_FsOp_GO_MOVE_ACT_TXT       tr("&Move selected")
 #define OvSk_FsOp_GO_MOVE_STS_TIP       tr("Move selected file system items to the opposite pane.")
 
-#define OvSk_FsOp_GO_INFO_ACT_TXT       tr("Size &Info on selected")
+#define OvSk_FsOp_GO_INFO_ACT_TXT       tr("Size &info on selected")
 #define OvSk_FsOp_GO_INFO_STS_TIP       tr("Show total size information and number of selected files/folders/shortcuts.")
 
 #define OvSk_FsOp_OPENRUN_ACT_TXT       tr("Open/Run selected")
 #define OvSk_FsOp_OPENRUN_STS_TIP       tr("Open or run (i.e. execute) the selected file, or browse into the folder.")
 
-#define eCod_OPEN_CONT_FOLDER_ACT_TXT   tr("Open Containing Folder")
+#define eCod_OPEN_CONT_FOLDER_ACT_TXT   tr("Open containing folder")
 #define eCod_OPEN_CONT_FOLDER_STS_TIP   tr("Open the folder containing the selected file, or the actual selected folder.")
 
-#define eCod_COPY_PATH_ACT_TXT          tr("Copy Path")
+#define eCod_COPY_PATH_ACT_TXT          tr("Copy path")
 #define eCod_COPY_PATH_STS_TIP          tr("Copy the selected absolute path to the clipboard.")
 
 #define eCod_PROPERTIES_ACT_TXT         tr("Properties")
 #define eCod_PROPERTIES_STS_TIP         tr("Show file/folder properties.")
 
-#define OvSk_FsOp_HELPLOCAL_ACT_TXT     tr("User Manual")
+#define OvSk_FsOp_HELPLOCAL_ACT_TXT     tr("User manual")
 #define OvSk_FsOp_HELPLOCAL_STS_TIP     tr("Open the locally installed or online user manual.")
 #define OvSk_FsOp_HELPLOCAL_DOC         QString("UserManual.pdf")
 #define OvSk_FsOp_HELPONLINE_DOC        QString("http://") + QString(OvSk_FsOp_COPMANY_DOMAIN_TXT) + QString("/")
@@ -198,7 +198,8 @@ QT_END_NAMESPACE
 #define eCod_EXCL_HIDDEN_ITEMS          tr("Exclude hidden folders, files and shortcuts. Note: ALL sub-folders, files and shortcuts (hidden or not) under a hidden folder are also excluded.")
 #define eCod_SHOW_EXCL_OPTS_TIP         tr("Hide exclusion options.")
 #define eCod_HIDE_EXCL_OPTS_TIP         tr("Show exclusion options.")
-#define eCod_BROWSE_FOLDERS_TIP         tr("Use the system dialog to select a folder.")
+#define eCod_BROWSE_FOLDERS_TIP         tr("Use the system dialog to select a folder and set it as the search folder.")
+#define eCod_BROWSE_GO_UP_TIP           tr("Go up in the folder hierarchy and set parent as the search folder.")
 #define OvSk_FsOp_DIR_NOT_EXISTS_TXT    tr("The selected folder does not exist (any more). Please check the whole path, and make sure that the removable/network drive is properly inserted/connected:\n")
 
 #define OvSk_FsOp_SELECT_ITEM_TYPE_TXT  tr("Select at least one file system item type please: Files, Folders and/or Shortcuts.")

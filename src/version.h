@@ -10,8 +10,8 @@
 // ****************************************************************************
 #pragma once
 
-#define OvSk_FsOp_APP_VERSION_STR       "3.0.0"
-#define OvSk_FsOp_APP_BUILD_NBR_STR     "20250106"
+#define OvSk_FsOp_APP_VERSION_STR       "3.0.1"
+#define OvSk_FsOp_APP_BUILD_NBR_STR     "20250109"
 
 #define OvSk_FsOp_APP_NAME_TXT          "getinfo"
 #define OvSk_FsOp_APP_NM_TXT            "getinfo"

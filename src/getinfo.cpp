@@ -80,15 +80,16 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
 
     createContextMenu();
 
-    {
-        // In your MainWindow constructor or setup method:
-        QMenu* helpMenu = menuBar()->addMenu("&Help");
-        QAction* aboutAction = helpMenu->addAction("&About");
-        QAction* helpAction = helpMenu->addAction("&Help");
-        // Connect the actions to slots
-        connect(aboutAction, &QAction::triggered, this, &FindInFilesDlg::showAboutDialog);
-        connect(helpAction, &QAction::triggered, this, &FindInFilesDlg::showHelpDialog);
-    }
+    // Create the menu bar
+    //{
+    //    QMenu* helpMenu = menuBar()->addMenu("&Help");
+    //    QAction* aboutAction = helpMenu->addAction("&About");
+    //    QAction* helpAction = helpMenu->addAction("&Help");
+    //    // Connect the actions to slots
+    //    connect(aboutAction, &QAction::triggered, this, &FindInFilesDlg::showAboutDialog);
+    //    connect(helpAction, &QAction::triggered, this, &FindInFilesDlg::showHelpDialog);
+    //}
+
     findButton->setDefault(true);
     findButton->setFocus();
     setStopped(true);
@@ -143,19 +144,19 @@ void FindInFilesDlg::createItemTypeCheckLayout()
 
 void FindInFilesDlg::createNavigLayout()
 {
+    browseButton = new QToolButton();
+    browseButton->setText(tr("Select folder..."));
+    setAllTips(browseButton, eCod_BROWSE_FOLDERS_TIP);
+    bool c = connect(browseButton, SIGNAL(clicked()), this, SLOT(browseBtnClicked())); Q_ASSERT(c);
+
     goUpButton = new QToolButton();
     goUpButton->setText(tr("Up"));
-    setAllTips(goUpButton, "Go up in the folder hierarchy and set it as the search folder. ");
-    bool c = connect(goUpButton, SIGNAL(clicked()), this, SLOT(goUpBtnClicked())); Q_ASSERT(c);
-
-    browseButton = new QToolButton();
-    browseButton->setText(tr("Select folder"));
-    setAllTips(browseButton, eCod_BROWSE_FOLDERS_TIP);
-    c = connect(browseButton, SIGNAL(clicked()), this, SLOT(browseBtnClicked())); Q_ASSERT(c);
+    setAllTips(goUpButton, eCod_BROWSE_GO_UP_TIP);
+    c = connect(goUpButton, SIGNAL(clicked()), this, SLOT(goUpBtnClicked())); Q_ASSERT(c);
 
     navigLout = new QHBoxLayout();
-    navigLout->addWidget( goUpButton);
     navigLout->addWidget( browseButton);
+    navigLout->addWidget( goUpButton);
     navigLout->addStretch();
 
     findButton   = createButton(findText,         SLOT(findBtnClicked()));
@@ -1181,7 +1182,7 @@ void FindInFilesDlg::createFilesTable()
     filesTable->verticalHeader()->setSectionResizeMode( QHeaderView::Interactive);
 
     QStringList labels;
-    labels << tr("Relative Path") << tr("Name") << tr("Size [KB]") << tr("Date Modified") << tr("Extension") << tr("Type"); // << tr("Owner");
+    labels << tr("Relative path") << tr("Name") << tr("Size [KB]") << tr("Date modified") << tr("Extension") << tr("Type"); // << tr("Owner");
     filesTable->setHorizontalHeaderLabels( labels);
     filesTable->horizontalHeader()->setSectionResizeMode( QHeaderView::Interactive);
 
@@ -1277,10 +1278,10 @@ void FindInFilesDlg::createContextMenu()
     {
         contextMenu = new QMenu(this);  // Set parent to ensure proper cleanup
 
-        openRunAct = contextMenu->addAction(tr("Open Containing Folder"));
-        copyPathAct = contextMenu->addAction(tr("Copy Path"));
+        openRunAct = contextMenu->addAction(eCod_OPEN_CONT_FOLDER_ACT_TXT);
+        copyPathAct = contextMenu->addAction(eCod_COPY_PATH_ACT_TXT);
         contextMenu->addSeparator();
-        propertiesAct = contextMenu->addAction(tr("Properties"));
+        propertiesAct = contextMenu->addAction(eCod_PROPERTIES_ACT_TXT);
 
         // Connect using new syntax
         connect(openRunAct, &QAction::triggered, this, &FindInFilesDlg::openRunSlot);

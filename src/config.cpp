@@ -9,11 +9,9 @@
 **
 ****************************************************************************/
 #include "precompiled.h"
-#if 1
 #include "config.h"
 #include <QObject>
 #include <QSettings>
-#endif
 
 namespace Overskys
 {
