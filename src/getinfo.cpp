@@ -150,7 +150,7 @@ void FindInFilesDlg::createNavigLayout()
     bool c = connect(browseButton, SIGNAL(clicked()), this, SLOT(browseBtnClicked())); Q_ASSERT(c);
 
     goUpButton = new QToolButton();
-    goUpButton->setText(tr("Up"));
+    goUpButton->setText(tr("^"));
     setAllTips(goUpButton, eCod_BROWSE_GO_UP_TIP);
     c = connect(goUpButton, SIGNAL(clicked()), this, SLOT(goUpBtnClicked())); Q_ASSERT(c);
 
@@ -222,6 +222,15 @@ void FindInFilesDlg::createMainLayout()
     filesFoundLabel = new QLabel;
     modifyFont(filesFoundLabel, +0.0, true, false, false);
 
+    auto sfLabel = new QLabel("Search folder {SF}:");
+    sfLabel->setToolTip("Folder to deeply search, a.k.a. {SF}");
+    modifyFont(sfLabel, +0.0, true, false, false);
+
+    auto dirComboLayout = new QHBoxLayout;
+    dirComboLayout->addWidget(sfLabel);
+    dirComboLayout->addWidget(dirComboBox);
+    dirComboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
     QHBoxLayout *buttonsLayout = new QHBoxLayout();
     buttonsLayout->addStretch();
     //buttonsLayout->addWidget(shredButton);
@@ -237,7 +246,7 @@ void FindInFilesDlg::createMainLayout()
     mainLayout->addLayout(navigLout,        gridRowIdx, 0);
     ++gridRowIdx;
 
-    mainLayout->addWidget(dirComboBox,      gridRowIdx, 0, 1, 3);
+    mainLayout->addLayout(dirComboLayout,   gridRowIdx, 0, 1, 3);
     ++gridRowIdx;
 
     mainLayout->addLayout(wordsLout,        gridRowIdx, 0, 1, 3);
@@ -1057,16 +1066,16 @@ QComboBox * FindInFilesDlg::createComboBoxFSys(const QString & text, bool setCom
     return comboBox;
 }
 
-QComboBox * FindInFilesDlg::createComboBoxText()
+QComboBox* FindInFilesDlg::createComboBoxText()
 {
-    QCompleter * completer = new QCompleter();
+    QCompleter* completer = new QCompleter();
     completer->setCaseSensitivity( Qt::CaseSensitive);
     completer->setModelSorting( QCompleter::CaseSensitivelySortedModel);
     completer->setCompletionMode( QCompleter::InlineCompletion);
     completer->setMaxVisibleItems( 16);
     completer->setWrapAround( false);
 
-    QComboBox *comboBox = new QComboBox;
+    QComboBox* comboBox = new QComboBox;
     comboBox->setEditable( true);
     comboBox->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Preferred);
 
@@ -1142,24 +1151,24 @@ void FindInFilesDlg::appendFileToTable(const QString filePath, const QFileInfo &
     sizeItem->setData( Qt::DisplayRole, fileInfo.isFile() ? QVariant(sizeKBqs) : QVariant(""));
     sizeItem->setData( Qt::ToolTipRole, fileInfo.isFile() ? QVariant(sizeText) : QVariant(""));
 
-    // Owner is always empty (on Win 7) !!!
-    //TableWidgetItem * ownerItem = new TableWidgetItem( fileInfo.owner());
-    //ownerItem->setFlags( ownerItem->flags() ^ Qt::ItemIsEditable);
+    TableWidgetItem* ownerItem = new TableWidgetItem(fileInfo.owner());
+    ownerItem->setFlags(ownerItem->flags() ^ Qt::ItemIsEditable);
 
     const int row = filesTable->rowCount();
     filesTable->insertRow(row);
+    int col = -1;
 
-    filesTable->setItem( row, 0, filePathItem);
-    filesTable->setItem( row, 1, fileNameItem);
-    filesTable->setItem( row, 2, sizeItem);
-    filesTable->setItem( row, 3, dateModItem);
-    filesTable->setItem( row, 4, fileExtItem);
-    filesTable->setItem( row, 5, fsiTypeItem);
+    filesTable->setItem(row, ++col, filePathItem);
+    filesTable->setItem(row, ++col, fileNameItem);
+    filesTable->setItem(row, ++col, sizeItem);
+    filesTable->setItem(row, ++col, dateModItem);
+    filesTable->setItem(row, ++col, fileExtItem);
+    filesTable->setItem(row, ++col, fsiTypeItem);
+    filesTable->setItem(row, ++col, ownerItem);
 
     filesTable->setRowHeight(row, 45);
-
-    filesTable->scrollToItem( fileNameItem);
-    filesFoundLabel->setText( tr("Found %1 items so far...").arg(row + 1));
+    filesTable->scrollToItem(fileNameItem);
+    filesFoundLabel->setText(tr("Found %1 items so far...").arg(row + 1));
   }
   catch(...) { Q_ASSERT(false); }
 }
@@ -1168,7 +1177,7 @@ void FindInFilesDlg::createFilesTable()
 {
   try
   {
-    filesTable = new QTableWidget(0, 6, this);
+    filesTable = new QTableWidget(0, 7, this);
     filesTable->setParent(this);
 
     filesTable->setWordWrap(true);
@@ -1181,9 +1190,19 @@ void FindInFilesDlg::createFilesTable()
     filesTable->verticalHeader()->hide();
     filesTable->verticalHeader()->setSectionResizeMode( QHeaderView::Interactive);
 
-    QStringList labels;
-    labels << tr("Relative path") << tr("Name") << tr("Size [KB]") << tr("Date modified") << tr("Extension") << tr("Type"); // << tr("Owner");
-    filesTable->setHorizontalHeaderLabels( labels);
+    static QStringList labels;
+    labels.reserve(8);
+    labels.append(QString("Relative path"));
+    labels.append(QString("Name"));
+    labels.append(QString("Size [KB]"));
+    labels.append(QString("Date modified"));
+    labels.append(QString("Extension"));
+    labels.append(QString("Type"));
+    labels.append(QString("Owner"));
+    //labels << QString("Relative path") << QString("Name")
+    //       << QString("Size [KB]") << QString("Date modified")
+    //       << QString("Extension") << QString("Type") << QString("Owner");
+    filesTable->setHorizontalHeaderLabels(labels);
     filesTable->horizontalHeader()->setSectionResizeMode( QHeaderView::Interactive);
 
 #if defined(Q_OS_MAC)
@@ -1209,7 +1228,7 @@ void FindInFilesDlg::createFilesTable()
     filesTable->horizontalHeader()->setSectionResizeMode( 5, QHeaderView::Stretch);
 #endif
 
-    modifyFont(filesTable, +1.0, true, false, false);
+    //modifyFont(filesTable, +1.0, true, false, false);
 
     bool
     c = connect( filesTable, SIGNAL(cellActivated(int,int)),
@@ -1218,12 +1237,12 @@ void FindInFilesDlg::createFilesTable()
                  this, SLOT(itemSelectionChanged())); Q_ASSERT(c); (void)c;
 
     filesTable->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(filesTable, &QTableWidget::customContextMenuRequested,
-            this, &FindInFilesDlg::showContextMenu);
+    const auto conn = connect(filesTable, &QTableWidget::customContextMenuRequested,
+                              this, &FindInFilesDlg::showContextMenu);
     //c = connect(filesTable, SIGNAL(customContextMenuRequested(const QPoint &)),
     //            this,         SLOT(showContextMenu(const QPoint &)));  Q_ASSERT(c);
   }
-  catch (...) { Q_ASSERT(false); }
+  catch (...) { /*Q_ASSERT(false)*/; }
 }
 
 void FindInFilesDlg::openFileOfItem( int row, int /* column */)
