@@ -60,6 +60,7 @@ if(APPLE)
         /opt/qt/6.8.1/lib
     )
 elseif(UNIX AND NOT APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused -Wdouble-promotion -Wundef -Wcast-align" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
     set(GUI_TYPE "")
     include_directories(
         /usr/include/x86_64-linux-gnu/qt6
@@ -70,6 +71,7 @@ elseif(UNIX AND NOT APPLE)
         /usr/lib/x86_64-linux-gnu
     )
 elseif(WIN32)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fexceptions /W4 /WX /permissive- /analyze /wd4514 /wd4710 /wd4820 /wd4464 /wd5045" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
     set(GUI_TYPE WIN32)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         WIN32_EXECUTABLE TRUE
