@@ -608,6 +608,15 @@ void FindInFilesDlg::findFilesPrep()
     _matchCase = matchCaseCheck->isChecked();
 
     _origDirPath = QDir::toNativeSeparators( dirComboBox->currentText());
+    if (_origDirPath.isEmpty()) {
+        QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, "Select a folder to search please.");
+        return;
+    }
+    if (_origDirPath.startsWith("~")) {
+        _origDirPath = (_origDirPath.length() > 1) ?
+            QDir::homePath() + _origDirPath.slice(1) :
+            QDir::homePath();
+    }
     QDir origDir = QDir(_origDirPath);
     if (!origDir.exists()) {
         const QString msg = OvSk_FsOp_DIR_NOT_EXISTS_TXT + _origDirPath;
