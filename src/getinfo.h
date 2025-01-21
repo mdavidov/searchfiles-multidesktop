@@ -40,12 +40,10 @@ public:
     TableWidgetItem() : QTableWidgetItem() {}
     explicit TableWidgetItem(const QString & itemText) : QTableWidgetItem(itemText) {}
 private:
-    virtual /*override*/ bool operator<(const QTableWidgetItem & other) const {
-        return text().toLower() < other.text().toLower(); // performance!
+    bool operator<(const QTableWidgetItem & other) const override {
+        return text().toLower() < other.text().toLower(); // performance problem?
     }
 };
-
-//auto bigger = [](auto a, auto b) { return a > b; };
 
 template<class _Ty>
 struct bigger

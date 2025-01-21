@@ -1090,11 +1090,11 @@ inline QString FsItemType(const QFileInfo & fileInfo)
 {
     QString fsType;
     if (fileInfo.isSymLink()) {
-        //if (fileInfo.isDir())
-        //    fsType = OvSk_FsOp_SYMLINK_TXT " to Folder";
-        //else if (fileInfo.isFile())
-        //    fsType = OvSk_FsOp_SYMLINK_TXT " to File";
-        //else
+        if (fileInfo.isDir())
+            fsType = OvSk_FsOp_SYMLINK_TXT " to folder";
+        else if (fileInfo.isFile())
+            fsType = OvSk_FsOp_SYMLINK_TXT " to file";
+        else
             fsType = OvSk_FsOp_SYMLINK_TXT;
     }
     else if (fileInfo.isDir())
@@ -1104,8 +1104,8 @@ inline QString FsItemType(const QFileInfo & fileInfo)
     else
         fsType = "";
 
-    if (fileInfo.isHidden())
-        fsType += " - Hidden";
+    if (fileInfo.isHidden() || fileInfo.fileName().startsWith("."))
+        fsType += " - hidden";
 
     return fsType;
 }
@@ -1114,8 +1114,18 @@ void FindInFilesDlg::appendFileToTable(const QString filePath, const QFileInfo &
 {
   try
   {
-    TableWidgetItem * fileNameItem = new TableWidgetItem( fileInfo.fileName());
-    fileNameItem->setFlags( fileNameItem->flags() ^ Qt::ItemIsEditable);
+    if (exclHiddenCheck->isChecked() &&
+        (fileInfo.isHidden() || fileInfo.fileName().startsWith(".")))
+        return;
+
+    auto fileNameItem = new TableWidgetItem;
+    auto fileName = fileInfo.fileName();
+    if (fileInfo.isSymLink())
+        fileName += " -> " + fileInfo.symLinkTarget();
+    else if (fileInfo.isDir())
+        fileName += QDir::separator();
+    fileNameItem->setData(Qt::DisplayRole, QDir::toNativeSeparators(fileName));
+    fileNameItem->setFlags(fileNameItem->flags() ^ Qt::ItemIsEditable);
 
     const QString fpath = QDir::toNativeSeparators( fileInfo.path());
     const int dlen = QDir::toNativeSeparators( _origDirPath).length();
@@ -1127,47 +1137,54 @@ void FindInFilesDlg::appendFileToTable(const QString filePath, const QFileInfo &
     filePathItem->setFlags( filePathItem->flags() ^ Qt::ItemIsEditable);
     filePathItem->setData( Qt::UserRole, QDir::toNativeSeparators( filePath));
 
-    const QString fileExt = !fileInfo.suffix().isEmpty() ? "." + fileInfo.suffix() : "";
-    TableWidgetItem * fileExtItem = new TableWidgetItem( (fileInfo.isDir() && !fileInfo.isSymLink()) ? "" : fileExt);
+    auto fileExt = !fileInfo.suffix().isEmpty() ? "." + fileInfo.suffix() : "";
+    if (fileExt == fileName || fileInfo.isDir())
+        fileExt = "";
+    auto fileExtItem = new TableWidgetItem(fileExt);
     fileExtItem->setFlags( fileExtItem->flags() ^ Qt::ItemIsEditable);
-
-    TableWidgetItem * fsiTypeItem = new TableWidgetItem( FsItemType( fileInfo));
-    fsiTypeItem->setFlags( fsiTypeItem->flags() ^ Qt::ItemIsEditable);
+    fileExtItem->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 
     //const QString dateModStr = fileInfo.lastModified().toString( Qt::SystemLocaleShortDate); //( Qt::ISODate); ( "yyyy.MM.dd HH:mm:ss");
     QTableWidgetItem * dateModItem = new QTableWidgetItem();
-    dateModItem->setTextAlignment( Qt::AlignRight | Qt::AlignVCenter);
+    dateModItem->setTextAlignment( Qt::AlignHCenter | Qt::AlignVCenter);
     dateModItem->setFlags( dateModItem->flags() ^ Qt::ItemIsEditable);
     dateModItem->setData( Qt::DisplayRole, fileInfo.lastModified());
 
     const double sizeKB = fileInfo.size() > 0 && fileInfo.size() < 104 ?
                             0.1 : fileInfo.size() / double(1024);
     const QString sizeKBqs = QString::number(sizeKB, 'f', 1);
+    const double sizeKBround = sizeKBqs.toDouble();
     QString sizeText;
     sizeToHumanReadable( fileInfo.size(), sizeText);
     QTableWidgetItem * sizeItem = new QTableWidgetItem();
     sizeItem->setFlags( sizeItem->flags() ^ Qt::ItemIsEditable);
-    sizeItem->setTextAlignment( Qt::AlignRight | Qt::AlignVCenter);
-    sizeItem->setData( Qt::DisplayRole, fileInfo.isFile() ? QVariant(sizeKBqs) : QVariant(""));
+    sizeItem->setTextAlignment( Qt::AlignHCenter | Qt::AlignVCenter);
+    sizeItem->setData( Qt::DisplayRole, fileInfo.isFile() ? QVariant(sizeKBround) : QVariant(""));
     sizeItem->setData( Qt::ToolTipRole, fileInfo.isFile() ? QVariant(sizeText) : QVariant(""));
 
-    TableWidgetItem* ownerItem = new TableWidgetItem(fileInfo.owner());
+    auto fsTypeItem = new TableWidgetItem(FsItemType(fileInfo));
+    fsTypeItem->setFlags(fsTypeItem->flags() ^ Qt::ItemIsEditable);
+    fsTypeItem->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+
+    auto ownerItem = new TableWidgetItem(fileInfo.owner());
     ownerItem->setFlags(ownerItem->flags() ^ Qt::ItemIsEditable);
+    ownerItem->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+    ownerItem->setData(Qt::ToolTipRole, QVariant("Username of the item's owner."));
 
     const int row = filesTable->rowCount();
     filesTable->insertRow(row);
-    int col = -1;
+    int col = 0;
 
-    filesTable->setItem(row, ++col, filePathItem);
-    filesTable->setItem(row, ++col, fileNameItem);
-    filesTable->setItem(row, ++col, sizeItem);
-    filesTable->setItem(row, ++col, dateModItem);
-    filesTable->setItem(row, ++col, fileExtItem);
-    filesTable->setItem(row, ++col, fsiTypeItem);
-    filesTable->setItem(row, ++col, ownerItem);
+    filesTable->setItem(row, col++, filePathItem);
+    filesTable->setItem(row, col++, fileNameItem);
+    filesTable->setItem(row, col++, sizeItem);
+    filesTable->setItem(row, col++, dateModItem);
+    filesTable->setItem(row, col++, fileExtItem);
+    filesTable->setItem(row, col++, fsTypeItem);
+    filesTable->setItem(row, col++, ownerItem);
 
     filesTable->setRowHeight(row, 45);
-    filesTable->scrollToItem(fileNameItem);
+    //filesTable->scrollToItem(fileNameItem);
     filesFoundLabel->setText(tr("Found %1 items so far...").arg(row + 1));
   }
   catch(...) { Q_ASSERT(false); }
@@ -1177,12 +1194,13 @@ void FindInFilesDlg::createFilesTable()
 {
   try
   {
-    filesTable = new QTableWidget(0, 7, this);
+    const int N_COL = 7;
+    filesTable = new QTableWidget(0, N_COL, this);
     filesTable->setParent(this);
 
     filesTable->setWordWrap(true);
-    filesTable->setSelectionBehavior( QAbstractItemView::SelectRows);
-    filesTable->setAlternatingRowColors( true);
+    filesTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    filesTable->setAlternatingRowColors(true);
     filesTable->sortByColumn( -1, Qt::AscendingOrder);
     filesTable->setSortingEnabled( false);
     filesTable->setShowGrid( true);
@@ -1191,41 +1209,45 @@ void FindInFilesDlg::createFilesTable()
     filesTable->verticalHeader()->setSectionResizeMode( QHeaderView::Interactive);
 
     static QStringList labels;
-    labels.reserve(8);
+    labels.reserve(N_COL);
     labels.append(QString("Relative path"));
     labels.append(QString("Name"));
     labels.append(QString("Size [KB]"));
     labels.append(QString("Date modified"));
     labels.append(QString("Extension"));
-    labels.append(QString("Type"));
+    labels.append(QString("Kind"));
     labels.append(QString("Owner"));
-    //labels << QString("Relative path") << QString("Name")
-    //       << QString("Size [KB]") << QString("Date modified")
-    //       << QString("Extension") << QString("Type") << QString("Owner");
     filesTable->setHorizontalHeaderLabels(labels);
     filesTable->horizontalHeader()->setSectionResizeMode( QHeaderView::Interactive);
 
+    int col = 0;
 #if defined(Q_OS_MAC)
-    filesTable->setColumnWidth( 0, 420);
-    filesTable->setColumnWidth( 1, 180);
-    filesTable->setColumnWidth( 2,  80);
-    filesTable->setColumnWidth( 3, 150);
-    filesTable->setColumnWidth( 4,  90);
-    filesTable->horizontalHeader()->setSectionResizeMode( 5, QHeaderView::Stretch);
+    filesTable->setColumnWidth(col++, 400);
+    filesTable->setColumnWidth(col++, 180);
+    filesTable->setColumnWidth(col++,  80);
+    filesTable->setColumnWidth(col++, 150);
+    filesTable->setColumnWidth(col++,  90);
+    filesTable->setColumnWidth(col++,  80);
+    filesTable->setColumnWidth(col,    90);
+    filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
 #elif defined (Q_OS_WIN)
-    filesTable->setColumnWidth( 0, 360);
-    filesTable->setColumnWidth( 1, 140);
-    filesTable->setColumnWidth( 2,  70);
-    filesTable->setColumnWidth( 3, 140);
-    filesTable->setColumnWidth( 4,  80);
-    filesTable->horizontalHeader()->setSectionResizeMode( 5, QHeaderView::Stretch);
+    filesTable->setColumnWidth(col++, 320);
+    filesTable->setColumnWidth(col++, 140);
+    filesTable->setColumnWidth(col++,  70);
+    filesTable->setColumnWidth(col++, 140);
+    filesTable->setColumnWidth(col++,  80);
+    filesTable->setColumnWidth(col++,  80);
+    filesTable->setColumnWidth(col,    90);
+    filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
 #else
-    filesTable->setColumnWidth( 0, 360);
-    filesTable->setColumnWidth( 1, 140);
-    filesTable->setColumnWidth( 2,  70);
-    filesTable->setColumnWidth( 3, 150);
-    filesTable->setColumnWidth( 4,  80);
-    filesTable->horizontalHeader()->setSectionResizeMode( 5, QHeaderView::Stretch);
+    filesTable->setColumnWidth(col++, 320);
+    filesTable->setColumnWidth(col++, 140);
+    filesTable->setColumnWidth(col++,  70);
+    filesTable->setColumnWidth(col++, 150);
+    filesTable->setColumnWidth(col++,  80);
+    filesTable->setColumnWidth(col++,  80);
+    filesTable->setColumnWidth(col,    90);
+    filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
 #endif
 
     //modifyFont(filesTable, +1.0, true, false, false);
