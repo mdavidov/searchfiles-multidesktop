@@ -358,7 +358,7 @@ void FindInFilesDlg::toggleExclClicked()
 
 static void updateComboBox(QComboBox *comboBox)
 {
-    if (comboBox->findText(comboBox->currentText()) == -1)
+    if (!comboBox->currentText().isEmpty() && comboBox->findText(comboBox->currentText()) == -1)
         comboBox->addItem(comboBox->currentText());
 }
 
@@ -386,10 +386,9 @@ void FindInFilesDlg::deleteBtnClicked()
         _elTimer.restart();
         qApp->processEvents();
 
-        std::map< int, QString, bigger<int> > itemList;
-
+        Int64StringMap itemList;
         getSelectedItems(itemList); // GET SELECTED ITEMS
-        const int nonSelectCount = filesTable->rowCount() - filesTable->selectedItems().count();
+        const auto nonSelectCount = qsizetype(filesTable->rowCount()) - filesTable->selectedItems().count();
 
         removeItems(itemList); // REMOVE ITEMS
 
@@ -410,7 +409,7 @@ void FindInFilesDlg::deleteBtnClicked()
     setStopped(true);
 }
 
-void FindInFilesDlg::getSelectedItems(std::map<int, QString, bigger<int>> & itemList)
+void FindInFilesDlg::getSelectedItems(std::map<qsizetype, QString, bigger<qsizetype>> & itemList)
 {
     const QList<QTableWidgetItem *>  selectedItems = filesTable->selectedItems();
     foreach (const QTableWidgetItem * item, selectedItems)
@@ -429,10 +428,10 @@ void FindInFilesDlg::getSelectedItems(std::map<int, QString, bigger<int>> & item
         }
     }
 }
-void FindInFilesDlg::removeItems(const std::map<int, QString, bigger<int>>& itemList)
+void FindInFilesDlg::removeItems(const Int64StringMap& itemList)
 {
     int delCnt = 0;
-    for (std::map<int, QString, bigger<int> >::const_iterator it = itemList.cbegin(); it != itemList.cend(); ++it)
+    for (Int64StringMap::const_iterator it = itemList.cbegin(); it != itemList.cend(); ++it)
     {
         try {
             if (_stopped) break;
@@ -443,7 +442,7 @@ void FindInFilesDlg::removeItems(const std::map<int, QString, bigger<int>>& item
                 QFile file( it->second);
                 const bool rmok = file.remove();
                 if (rmok) {
-                    filesTable->removeRow( it->first);
+                    filesTable->removeRow(static_cast<int>(it->first));
                     ++delCnt;
                     if ((delCnt % 5) == 0)
                         emit filesTable->itemSelectionChanged();
@@ -456,7 +455,7 @@ void FindInFilesDlg::removeItems(const std::map<int, QString, bigger<int>>& item
                 if (!rmok)
                      rmok = dir.removeRecursively();
                 if ( rmok) {
-                    filesTable->removeRow( it->first);
+                    filesTable->removeRow(static_cast<int>(it->first));
                     ++delCnt;
                     if ((delCnt % 5) == 0)
                         emit filesTable->itemSelectionChanged();
@@ -497,6 +496,10 @@ void FindInFilesDlg::SetDirPath( const QString& dirPath)
 {
     try
     {
+        if (dirPath.isEmpty()) {
+            dirComboBox->setCurrentText("");
+            return;
+        }
         _origDirPath = QDir::toNativeSeparators( dirPath);
         if (dirComboBox->findText(_origDirPath) == -1)
             dirComboBox->addItem(_origDirPath);
@@ -584,10 +587,10 @@ void FindInFilesDlg::setFilesFoundLabel(const QString & prefix/*= QString()*/)
     }
 }
 
-void FindInFilesDlg::findFilesPrep()
+bool FindInFilesDlg::findFilesPrep()
 {
     _fileNameFilter = namesLineEdit->text();
-    updateComboBox( dirComboBox);
+    // updateComboBox( dirComboBox);
 
     // GET FILTERS
     if (_fileNameFilter.isEmpty())
@@ -607,21 +610,30 @@ void FindInFilesDlg::findFilesPrep()
 
     _matchCase = matchCaseCheck->isChecked();
 
-    _origDirPath = QDir::toNativeSeparators( dirComboBox->currentText());
-    if (_origDirPath.isEmpty()) {
-        QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, "Select a folder to search please.");
-        return;
+    qDebug() << "dirComboBox->currentText" << dirComboBox->currentText() << "length" << dirComboBox->currentText().length();
+    if (dirComboBox->currentText().length() == 0) {
+        qDebug() << "Select a folder to search please.";
+        #if !defined(Q_OS_MAC)
+            QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, QString("Select a folder to search please."));
+        #endif
+        return false;
     }
+    _origDirPath = QDir::toNativeSeparators( dirComboBox->currentText());
+    qDebug() << "_origDirPath" << _origDirPath;
     if (_origDirPath.startsWith("~")) {
         _origDirPath = (_origDirPath.length() > 1) ?
             QDir::homePath() + _origDirPath.slice(1) :
             QDir::homePath();
+        qDebug() << "_origDirPath" << _origDirPath;
     }
     QDir origDir = QDir(_origDirPath);
     if (!origDir.exists()) {
         const QString msg = OvSk_FsOp_DIR_NOT_EXISTS_TXT + _origDirPath;
-        QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, msg);
-        return;
+        qDebug() << msg;
+        #if !defined(Q_OS_MAC)
+            QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, msg);
+        #endif
+        return false;
     }
     while (_origDirPath.length() > eCod_MIN_PATH_LEN && _origDirPath.endsWith( QDir::separator())) {
         _origDirPath.chop(1);
@@ -638,6 +650,7 @@ void FindInFilesDlg::findFilesPrep()
     bool maxValid = false;
     _maxSubDirDepth =  maxSubDirDepthEdt->text().toInt(&maxValid);
     _unlimSubDirDepth = (!maxValid || unlimSubDirDepthBtn->isChecked());
+    return true;
 }
 
 void FindInFilesDlg::findBtnClicked()
@@ -654,19 +667,22 @@ void FindInFilesDlg::findBtnClicked()
     if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
         filesTable->sortByColumn( -1, Qt::AscendingOrder);
         filesTable->setSortingEnabled( true);
-        QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
+        #if !defined(Q_OS_MAC)
+            QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
+        #endif
         return;
     }
     filesTable->setSortingEnabled( false);
     Clear();
     setStopped(false);
 
-    findFilesPrep();
+    if (findFilesPrep())
+    {
+        // PROCESS FILES
+        findFilesRecursive( _origDirPath, 0);
+    }
 
-    // PROCESS FILES
-    findFilesRecursive( _origDirPath, 0);
-
-    setFilesFoundLabel( _stopped ? "Interrupted. " : "");
+    setFilesFoundLabel( _stopped ? "INTERRUPTED. " : "");
     setStopped(true);
 
     filesTable->sortByColumn( -1, Qt::AscendingOrder);
@@ -971,6 +987,8 @@ void FindInFilesDlg::dirPathEditTextChanged(const QString& newText)
             _ignoreDirPathChange = false;
             return;
         }
+        if (newText.isEmpty())
+            return;
 
         const qint64 timeDiff = _editTextTimeDiff.elapsed();
         qDebug() << "timeDiff:" << timeDiff;
@@ -1006,9 +1024,9 @@ void FindInFilesDlg::dirPathEditTextChanged(const QString& newText)
                 dirComboBox->completer()->setCompletionPrefix(newText);
             }
         }
-        qDebug() << "newText:            " << newText;
-        qDebug() << "filesys root path:  " << fileSystemModel->rootPath();
-        qDebug() << "completion prefix:  " << dirComboBox->completer()->completionPrefix();
+        // qDebug() << "newText:            " << newText;
+        // qDebug() << "filesys root path:  " << fileSystemModel->rootPath();
+        // qDebug() << "completion prefix:  " << dirComboBox->completer()->completionPrefix();
 
         Cfg::St().setValue( Cfg::origDirPathKey,  QDir::toNativeSeparators(newText));
 
@@ -1137,7 +1155,7 @@ void FindInFilesDlg::appendFileToTable(const QString filePath, const QFileInfo &
     fileNameItem->setFlags(fileNameItem->flags() ^ Qt::ItemIsEditable);
 
     const QString fpath = QDir::toNativeSeparators( fileInfo.path());
-    const int dlen = QDir::toNativeSeparators( _origDirPath).length();
+    const auto dlen = QDir::toNativeSeparators( _origDirPath).length();
     QString relPath = (fpath.length() <= dlen) ? "" : fpath.right( fpath.length() - dlen);
     if (relPath.startsWith( QDir::separator()))
         relPath = relPath.right( relPath.length() - 1);

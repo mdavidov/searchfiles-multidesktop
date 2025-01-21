@@ -42,16 +42,8 @@ qt_add_executable(${PROJECT_NAME}
 )
 
 # Set target properties
-if(WIN32)
-    set(GUI_TYPE WIN32)
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        WIN32_EXECUTABLE TRUE
-    )
-    # Configure precompiled headers
-    target_precompile_headers(${PROJECT_NAME} PRIVATE
-        src/precompiled.h
-    )
-elseif(APPLE)
+if(APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
     set(GUI_TYPE MACOSX_BUNDLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
@@ -67,7 +59,7 @@ elseif(APPLE)
     link_directories(
         /opt/qt/6.8.1/lib
     )
-else()
+elseif(UNIX AND NOT APPLE)
     set(GUI_TYPE "")
     include_directories(
         /usr/include/x86_64-linux-gnu/qt6
@@ -77,7 +69,17 @@ else()
     link_directories(
         /usr/lib/x86_64-linux-gnu
     )
+elseif(WIN32)
+    set(GUI_TYPE WIN32)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        WIN32_EXECUTABLE TRUE
+    )
+    # Configure precompiled headers
+    target_precompile_headers(${PROJECT_NAME} PRIVATE
+        src/precompiled.h
+    )
 endif()
+message(STATUS "CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}")
 
 # Link Qt6 libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE

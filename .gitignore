@@ -93,6 +93,7 @@ packages/
 [Dd]ebug/
 [Rr]elease/
 x64/
+bld/
 build/
 [Bb]in/
 [Oo]bj/

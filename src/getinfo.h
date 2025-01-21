@@ -34,6 +34,17 @@ QT_END_NAMESPACE
 namespace Overskys
 {
 
+template<class _Ty>
+struct bigger
+{
+    bool operator()(const _Ty& left, const _Ty& right) const
+    {
+        return (left > right);
+    }
+};
+
+using Int64StringMap = std::map<qint64, QString, bigger<qint64>>;
+
 class TableWidgetItem : public QTableWidgetItem
 {
 public:
@@ -42,15 +53,6 @@ public:
 private:
     bool operator<(const QTableWidgetItem & other) const override {
         return text().toLower() < other.text().toLower(); // performance problem?
-    }
-};
-
-template<class _Ty>
-struct bigger
-{
-    bool operator()(const _Ty& left, const _Ty& right) const
-    {
-        return (left > right);
     }
 };
 
@@ -102,7 +104,7 @@ private:
     void createFilesTable();
     void appendFileToTable(const QString filePath, const QFileInfo & fileInfo);
 
-    void findFilesPrep();
+    bool findFilesPrep();
     void findFilesRecursive( const QString & dirPath, qint32 subDirDepth);
     bool findItem(const QString & dirPath, const QFileInfo& fileInfo);
     inline bool isTimeToReport();
@@ -131,8 +133,8 @@ private:
     void createMainLayout();
     void createContextMenu();
 
-    void getSelectedItems( std::map<int, QString, bigger<int>>& itemList);
-    void removeItems(const std::map<int, QString, bigger<int>>& itemList);
+    void getSelectedItems( Int64StringMap& itemList);
+    void removeItems(const Int64StringMap& itemList);
 
 private:
     QLineEdit*  namesLineEdit;

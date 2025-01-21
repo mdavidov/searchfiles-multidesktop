@@ -28,6 +28,9 @@ SOURCES  =  \
     src/searchlineedit.cpp
 
 macx {
+    QMAKE_MACOSX_DEPLOYMENT_TARGET = 42.0
+    QMAKE_APPLE_DEVICE_ARCHS = arm64
+    CONFIG -= app_bundle
     INCLUDEPATH += /opt/qt/6.8.1/include
     LIBS += -L/opt/qt/6.8.1/lib
 }
