@@ -71,7 +71,7 @@ elseif(UNIX AND NOT APPLE)
         /usr/lib/x86_64-linux-gnu
     )
 elseif(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fexceptions /W4 /WX /permissive- /analyze /wd4514 /wd4710 /wd4820 /wd4464 /wd5045" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20 /EHsc /W4 /WX /analyze /permissive- /wd4514 /wd4710 /wd4820 /wd4464 /wd5045")
     set(GUI_TYPE WIN32)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         WIN32_EXECUTABLE TRUE

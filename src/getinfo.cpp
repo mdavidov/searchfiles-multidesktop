@@ -809,7 +809,6 @@ bool FindInFilesDlg::StringContainsAnyWord(const QString & theString, const QStr
             return true;
     }
     return false;
-    return false;
 }
 
 bool FindInFilesDlg::fileContainsAllWords( const QString & filePath, const QStringList & wordList)
