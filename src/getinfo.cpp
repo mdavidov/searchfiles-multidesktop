@@ -17,6 +17,7 @@
 #include "getinfo.h"
 #include "config.h"
 #include "util.h"
+#include "keypress.hpp"
 #include <map>
 #include <QDesktopServices>
 #include <QtGui>
@@ -51,13 +52,10 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     , _unlimSubDirDepth(true)
     , _stopped(true)
 {
-    setWindowTitle( QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR + "." + OvSk_FsOp_APP_BUILD_NBR_STR); // + " by " + OvSk_FsOp_COPMANY_NAME_TXT);
-
-    const QString savedPath = Cfg::St().value( Cfg::origDirPathKey).toString();
+    setWindowTitle(QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR + "." + OvSk_FsOp_APP_BUILD_NBR_STR);
+    const auto savedPath = Cfg::St().value(Cfg::origDirPathKey).toString();
     if (!savedPath.isEmpty())
         _origDirPath = savedPath;
-    if (_origDirPath.length() > eCod_MIN_PATH_LEN && _origDirPath.endsWith( QDir::separator()))
-        _origDirPath.chop(1);
 
     createSubDirLayout();
     createItemTypeCheckLayout();
@@ -93,6 +91,18 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     findButton->setDefault(true);
     findButton->setFocus();
     setStopped(true);
+
+    KeyPressEventFilter* filter = new KeyPressEventFilter(this);
+    this->installEventFilter(filter);
+    connect(filter, &KeyPressEventFilter::enterKeyPressed,
+            this,   &FindInFilesDlg::onEnterKeyPressed);
+}
+
+void FindInFilesDlg::onEnterKeyPressed()
+{
+    // Handle the Enter key press event
+    qDebug() << "Enter key pressed!";
+    findBtnClicked();
 }
 
 void FindInFilesDlg::createSubDirLayout()
@@ -145,7 +155,7 @@ void FindInFilesDlg::createItemTypeCheckLayout()
 void FindInFilesDlg::createNavigLayout()
 {
     browseButton = new QToolButton();
-    browseButton->setText(tr("Select folder..."));
+    browseButton->setText(tr("Browse..."));
     setAllTips(browseButton, eCod_BROWSE_FOLDERS_TIP);
     bool c = connect(browseButton, SIGNAL(clicked()), this, SLOT(browseBtnClicked())); Q_ASSERT(c);
 

@@ -61,7 +61,7 @@ class FindInFilesDlg : public QMainWindow
     Q_OBJECT
 
 public:
-    FindInFilesDlg(  const QString & dirPath, QWidget *parent = 0);
+    explicit FindInFilesDlg(const QString& dirPath, QWidget* parent = nullptr);
     ~FindInFilesDlg();
 
     void SetDirPath( const QString & dirPath);
@@ -74,6 +74,7 @@ protected:
     virtual void keyReleaseEvent( QKeyEvent* ev);
 
 private slots:
+    void onEnterKeyPressed();
     void scopeCheckClicked(int newCheckState);
     //void dlgFinished(int result);
     void goUpBtnClicked();

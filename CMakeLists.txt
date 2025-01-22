@@ -28,6 +28,8 @@ set(PROJECT_SOURCES
     src/getinfo.cpp
     src/exlineedit.h
     src/exlineedit.cpp
+    src/keypress.hpp
+    src/keypress.cpp
     src/searchlineedit.h
     src/searchlineedit.cpp
     src/util.h
