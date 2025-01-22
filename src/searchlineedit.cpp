@@ -146,11 +146,11 @@ void SearchButton::paintEvent(QPaintEvent *event)
     if (m_menu) {
         QPainterPath dropPath;
         dropPath.arcMoveTo(circle, 320);
-        QPointF c = dropPath.currentPosition();
-        c = QPointF(c.x() + 3.5, c.y() + 0.5);
-        dropPath.moveTo(c);
-        dropPath.lineTo(c.x() + 4, c.y());
-        dropPath.lineTo(c.x() + 2, c.y() + 2);
+        QPointF cc = dropPath.currentPosition();
+        cc = QPointF(cc.x() + 3.5, cc.y() + 0.5);
+        dropPath.moveTo(cc);
+        dropPath.lineTo(cc.x() + 4, cc.y());
+        dropPath.lineTo(cc.x() + 2, cc.y() + 2);
         dropPath.closeSubpath();
         painter.setPen(Qt::darkGray);
         painter.setBrush(Qt::darkGray);

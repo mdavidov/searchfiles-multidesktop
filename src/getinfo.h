@@ -43,7 +43,7 @@ struct bigger
     }
 };
 
-using Int64StringMap = std::map<qint64, QString, bigger<qint64>>;
+using Uint64StringMap = std::map<quint64, QString, bigger<quint64>>;
 
 class TableWidgetItem : public QTableWidgetItem
 {
@@ -133,8 +133,8 @@ private:
     void createMainLayout();
     void createContextMenu();
 
-    void getSelectedItems( Int64StringMap& itemList);
-    void removeItems(const Int64StringMap& itemList);
+    void getSelectedItems( Uint64StringMap& itemList);
+    void removeItems(const Uint64StringMap& itemList);
 
 private:
     QLineEdit*  namesLineEdit;

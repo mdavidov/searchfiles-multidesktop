@@ -52,12 +52,12 @@ if(APPLE)
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     )
     include_directories(
-        /opt/qt/6.8.1/include
-        /opt/qt/6.8.1/include/QWidgets
+        # /opt/homebrew/Cellar/qt/6.7.3/include
+        /opt/homebrew/Cellar/qt/6.7.3/lib/QtCore.framework/Versions/A/Headers
         ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
     link_directories(
-        /opt/qt/6.8.1/lib
+        /opt/homebrew/Cellar/qt/6.7.3/lib
     )
 elseif(UNIX AND NOT APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused -Wdouble-promotion -Wundef -Wcast-align" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)

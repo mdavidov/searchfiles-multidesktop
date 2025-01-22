@@ -291,12 +291,12 @@ void FindInFilesDlg::modifyFont(QWidget * widget, qreal ptSzDelta, bool bold, bo
 {
     QFont font(widget->font());
 
-    qDebug() << "Font orig: " << font.toString();
+    // qDebug() << "Font orig: " << font.toString();
     font.setPointSizeF(font.pointSizeF() + ptSzDelta);
     font.setBold(bold);
     font.setItalic(italic);
     font.setUnderline(underline);
-    qDebug() << "Font new:  " << font.toString();
+    // qDebug() << "Font new:  " << font.toString();
 
     widget->setFont(font);
 }
@@ -386,7 +386,7 @@ void FindInFilesDlg::deleteBtnClicked()
         _elTimer.restart();
         qApp->processEvents();
 
-        Int64StringMap itemList;
+        Uint64StringMap itemList;
         getSelectedItems(itemList); // GET SELECTED ITEMS
         const auto nonSelectCount = qsizetype(filesTable->rowCount()) - filesTable->selectedItems().count();
 
@@ -409,7 +409,7 @@ void FindInFilesDlg::deleteBtnClicked()
     setStopped(true);
 }
 
-void FindInFilesDlg::getSelectedItems(std::map<qsizetype, QString, bigger<qsizetype>> & itemList)
+void FindInFilesDlg::getSelectedItems(Uint64StringMap& itemList)
 {
     const QList<QTableWidgetItem *>  selectedItems = filesTable->selectedItems();
     foreach (const QTableWidgetItem * item, selectedItems)
@@ -419,7 +419,7 @@ void FindInFilesDlg::getSelectedItems(std::map<qsizetype, QString, bigger<qsizet
             if (_stopped)
                 break;
             const QString path = item->data(Qt::UserRole).toString(); //item->text();
-            const int row = filesTable->row(item);
+            const auto row = static_cast<quint64>(filesTable->row(item));
             Q_ASSERT(itemList.find(row) == itemList.end());
             if (itemList.find(row) == itemList.end())
                 itemList.insert(std::pair<int, QString>(row, path));
@@ -428,10 +428,11 @@ void FindInFilesDlg::getSelectedItems(std::map<qsizetype, QString, bigger<qsizet
         }
     }
 }
-void FindInFilesDlg::removeItems(const Int64StringMap& itemList)
+
+void FindInFilesDlg::removeItems(const Uint64StringMap& itemList)
 {
     int delCnt = 0;
-    for (Int64StringMap::const_iterator it = itemList.cbegin(); it != itemList.cend(); ++it)
+    for (Uint64StringMap::const_iterator it = itemList.cbegin(); it != itemList.cend(); ++it)
     {
         try {
             if (_stopped) break;
@@ -590,7 +591,7 @@ void FindInFilesDlg::setFilesFoundLabel(const QString & prefix/*= QString()*/)
 bool FindInFilesDlg::findFilesPrep()
 {
     _fileNameFilter = namesLineEdit->text();
-    // updateComboBox( dirComboBox);
+    updateComboBox( dirComboBox);
 
     // GET FILTERS
     if (_fileNameFilter.isEmpty())
@@ -613,16 +614,16 @@ bool FindInFilesDlg::findFilesPrep()
     qDebug() << "dirComboBox->currentText" << dirComboBox->currentText() << "length" << dirComboBox->currentText().length();
     if (dirComboBox->currentText().length() == 0) {
         qDebug() << "Select a folder to search please.";
-        #if !defined(Q_OS_MAC)
+        // #if !defined(Q_OS_MAC)
             QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, QString("Select a folder to search please."));
-        #endif
+	    // #endif
         return false;
     }
     _origDirPath = QDir::toNativeSeparators( dirComboBox->currentText());
     qDebug() << "_origDirPath" << _origDirPath;
     if (_origDirPath.startsWith("~")) {
         _origDirPath = (_origDirPath.length() > 1) ?
-            QDir::homePath() + _origDirPath.slice(1) :
+            QDir::homePath() + _origDirPath.sliced(1) :
             QDir::homePath();
         qDebug() << "_origDirPath" << _origDirPath;
     }
@@ -630,9 +631,9 @@ bool FindInFilesDlg::findFilesPrep()
     if (!origDir.exists()) {
         const QString msg = OvSk_FsOp_DIR_NOT_EXISTS_TXT + _origDirPath;
         qDebug() << msg;
-        #if !defined(Q_OS_MAC)
+        // #if !defined(Q_OS_MAC)
             QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, msg);
-        #endif
+	    // #endif
         return false;
     }
     while (_origDirPath.length() > eCod_MIN_PATH_LEN && _origDirPath.endsWith( QDir::separator())) {
@@ -667,9 +668,9 @@ void FindInFilesDlg::findBtnClicked()
     if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
         filesTable->sortByColumn( -1, Qt::AscendingOrder);
         filesTable->setSortingEnabled( true);
-        #if !defined(Q_OS_MAC)
-            QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
-        #endif
+        // #if !defined(Q_OS_MAC)
+            QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
+	    // #endif
         return;
     }
     filesTable->setSortingEnabled( false);
@@ -723,7 +724,7 @@ bool FindInFilesDlg::findItem(const QString & dirPath, const QFileInfo& fileInfo
             {
                 _outFiles.append( filePath);
                 appendFileToTable( filePath, fileInfo);
-                _foundItemsSize += fileInfo.size();
+                _foundItemsSize += static_cast<quint64>(fileInfo.size());
             }
         }
         return true;
@@ -737,7 +738,7 @@ quint64 FindInFilesDlg::combinedSize(const QFileInfoList& items)
     foreach (QFileInfo item, items)
     {
         if (_stopped) return csz;
-        csz += item.size();
+        csz += static_cast<quint64>(item.size());
     }
     return csz;
 }
@@ -1182,7 +1183,7 @@ void FindInFilesDlg::appendFileToTable(const QString filePath, const QFileInfo &
     const QString sizeKBqs = QString::number(sizeKB, 'f', 1);
     const double sizeKBround = sizeKBqs.toDouble();
     QString sizeText;
-    sizeToHumanReadable( fileInfo.size(), sizeText);
+    sizeToHumanReadable( static_cast<quint64>(fileInfo.size()), sizeText);
     QTableWidgetItem * sizeItem = new QTableWidgetItem();
     sizeItem->setFlags( sizeItem->flags() ^ Qt::ItemIsEditable);
     sizeItem->setTextAlignment( Qt::AlignHCenter | Qt::AlignVCenter);
