@@ -8,6 +8,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 IF(APPLE)
+    SET(Qt6_DIR "/opt/Qt/6.8.1/macos/lib/cmake/Qt6")
 ELSEIF(UNIX)
 ELSEIF(WIN32)
     SET(Qt6_DIR "C:/Qt/6.8.1/msvc2022_64/lib/cmake/Qt6")
@@ -60,12 +61,12 @@ if(APPLE)
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     )
     include_directories(
-        # /opt/homebrew/Cellar/qt/6.7.3/include
-        /opt/homebrew/Cellar/qt/6.7.3/lib/QtCore.framework/Versions/A/Headers
+        /opt/Qt/6.8.1/macos/lib/QtWidgets.framework/Versions/A/Headers
+        /opt/Qt/6.8.1/macos/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
     link_directories(
-        /opt/homebrew/Cellar/qt/6.7.3/lib
+        /opt/Qt/6.8.1/macos/lib
     )
 elseif(UNIX AND NOT APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused -Wdouble-promotion -Wundef -Wcast-align" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
