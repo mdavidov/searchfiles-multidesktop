@@ -7,7 +7,13 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS 
+IF(APPLE)
+ELSEIF(UNIX)
+ELSEIF(WIN32)
+    SET(Qt6_DIR "C:/Qt/6.8.1/msvc2022_64/lib/cmake/Qt6")
+ENDIF()
+
+FIND_PACKAGE(Qt6 REQUIRED COMPONENTS
     Core
     Gui
     Widgets
@@ -81,6 +87,13 @@ elseif(WIN32)
     # Configure precompiled headers
     target_precompile_headers(${PROJECT_NAME} PRIVATE
         src/precompiled.h
+    )
+    include_directories(
+        C:/Qt/6.8.1/msvc2022_64/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    link_directories(
+        C:/Qt/6.8.1/msvc2022_64/lib
     )
 endif()
 message(STATUS "CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}")

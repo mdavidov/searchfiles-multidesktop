@@ -1173,6 +1173,7 @@ void MainWindow::appendFileToTable(const QString filePath, const QFileInfo & fil
     TableWidgetItem * filePathItem = new TableWidgetItem( QDir::toNativeSeparators( relPath));
     filePathItem->setFlags( filePathItem->flags() ^ Qt::ItemIsEditable);
     filePathItem->setData( Qt::UserRole, QDir::toNativeSeparators( filePath));
+    filePathItem->setData(Qt::ToolTipRole, QVariant(dirComboBox->currentText() + QDir::separator()));
 
     auto fileExt = !fileInfo.suffix().isEmpty() ? "." + fileInfo.suffix() : "";
     if (fileExt == fileName || fileInfo.isDir())
