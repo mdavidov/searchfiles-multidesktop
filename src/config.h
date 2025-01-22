@@ -200,7 +200,7 @@ QT_END_NAMESPACE
 #define eCod_HIDE_EXCL_OPTS_TIP         tr("Show exclusion options.")
 #define eCod_BROWSE_FOLDERS_TIP         tr("Use the system dialog to select a folder and set it as the search folder.")
 #define eCod_BROWSE_GO_UP_TIP           tr("Go up in the folder hierarchy and set parent as the search folder.")
-#define OvSk_FsOp_DIR_NOT_EXISTS_TXT    tr("The selected folder does not exist (any more). Please check the whole path, and make sure that the removable/network drive is properly inserted/connected:\n")
+#define OvSk_FsOp_DIR_NOT_EXISTS_TXT    tr("The selected folder could not be found. Please check the whole path, and if you are using a removable or network drive make sure it's properly inserted or connected. Not found:\n\n")
 
 #define OvSk_FsOp_SELECT_ITEM_TYPE_TXT  tr("Select at least one filesystem item type please: Files, Folders and/or Shortcuts.")
 

@@ -991,7 +991,7 @@ void FindInFilesDlg::dirPathEditTextChanged(const QString& newText)
             return;
 
         const qint64 timeDiff = _editTextTimeDiff.elapsed();
-        qDebug() << "timeDiff:" << timeDiff;
+        // qDebug() << "timeDiff:" << timeDiff;
 
         if (newText.endsWith(QDir::separator()))
         {
@@ -1178,7 +1178,7 @@ void FindInFilesDlg::appendFileToTable(const QString filePath, const QFileInfo &
     dateModItem->setData( Qt::DisplayRole, fileInfo.lastModified());
 
     const double sizeKB = fileInfo.size() > 0 && fileInfo.size() < 104 ?
-                            0.1 : fileInfo.size() / double(1024);
+                            0.1 : double(fileInfo.size()) / double(1024);
     const QString sizeKBqs = QString::number(sizeKB, 'f', 1);
     const double sizeKBround = sizeKBqs.toDouble();
     QString sizeText;
