@@ -56,13 +56,13 @@ private:
     }
 };
 
-class FindInFilesDlg : public QMainWindow
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit FindInFilesDlg(const QString& dirPath, QWidget* parent = nullptr);
-    ~FindInFilesDlg();
+    explicit MainWindow(const QString& dirPath, QWidget* parent = nullptr);
+    ~MainWindow();
 
     void SetDirPath( const QString & dirPath);
     void GetFilePaths( QStringList & filePaths) const { filePaths = _outFiles; }
@@ -76,7 +76,6 @@ protected:
 private slots:
     void onEnterKeyPressed();
     void scopeCheckClicked(int newCheckState);
-    //void dlgFinished(int result);
     void goUpBtnClicked();
     void browseBtnClicked();
     void toggleExclClicked();

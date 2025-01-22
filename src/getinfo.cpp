@@ -39,12 +39,12 @@ const int RELPATH_COL_IDX = 0;
     #define eCod_MIN_PATH_LEN 1
 #endif
 
-FindInFilesDlg::~FindInFilesDlg()
+MainWindow::~MainWindow()
 {
     delete contextMenu;  // This will also delete the actions
 }
 
-FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
+MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
     : QMainWindow(parent)
     , _ignoreDirPathChange(false)
     , _origDirPath( QDir::toNativeSeparators( QStandardPaths::locate( QStandardPaths::HomeLocation, "", QStandardPaths::LocateDirectory)))
@@ -84,8 +84,8 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     //    QAction* aboutAction = helpMenu->addAction("&About");
     //    QAction* helpAction = helpMenu->addAction("&Help");
     //    // Connect the actions to slots
-    //    connect(aboutAction, &QAction::triggered, this, &FindInFilesDlg::showAboutDialog);
-    //    connect(helpAction, &QAction::triggered, this, &FindInFilesDlg::showHelpDialog);
+    //    connect(aboutAction, &QAction::triggered, this, &MainWindow::showAboutDialog);
+    //    connect(helpAction, &QAction::triggered, this, &MainWindow::showHelpDialog);
     //}
 
     findButton->setDefault(true);
@@ -95,17 +95,17 @@ FindInFilesDlg::FindInFilesDlg( const QString & /*dirPath*/, QWidget * parent)
     KeyPressEventFilter* filter = new KeyPressEventFilter(this);
     this->installEventFilter(filter);
     connect(filter, &KeyPressEventFilter::enterKeyPressed,
-            this,   &FindInFilesDlg::onEnterKeyPressed);
+            this,   &MainWindow::onEnterKeyPressed);
 }
 
-void FindInFilesDlg::onEnterKeyPressed()
+void MainWindow::onEnterKeyPressed()
 {
     // Handle the Enter key press event
     qDebug() << "Enter key pressed!";
     findBtnClicked();
 }
 
-void FindInFilesDlg::createSubDirLayout()
+void MainWindow::createSubDirLayout()
 {
     maxSubDirDepthLbl = new QLabel(tr("Max subfolder depth: "));
     setAllTips(maxSubDirDepthLbl, tr("Specify unlimited or maximum sub-folder depth."));
@@ -129,10 +129,10 @@ void FindInFilesDlg::createSubDirLayout()
     subDirDepthLout->addWidget( limSubDirDepthBtn);
     subDirDepthLout->addWidget( maxSubDirDepthEdt);
     subDirDepthLout->addStretch();
-    bool c = connect(unlimSubDirDepthBtn, &QRadioButton::toggled, this, &FindInFilesDlg::unlimSubDirDepthToggled); Q_ASSERT(c); (void)c;
+    bool c = connect(unlimSubDirDepthBtn, &QRadioButton::toggled, this, &MainWindow::unlimSubDirDepthToggled); Q_ASSERT(c); (void)c;
 }
 
-void FindInFilesDlg::createItemTypeCheckLayout()
+void MainWindow::createItemTypeCheckLayout()
 {
     itmTypeLbl = new QLabel(tr("Types:"));
     setAllTips(itmTypeLbl, eCod_SEARCH_BY_TYPE_TIP);
@@ -152,7 +152,7 @@ void FindInFilesDlg::createItemTypeCheckLayout()
     itmTypeCheckLout->addStretch();
 }
 
-void FindInFilesDlg::createNavigLayout()
+void MainWindow::createNavigLayout()
 {
     browseButton = new QToolButton();
     browseButton->setText(tr("Browse..."));
@@ -198,7 +198,7 @@ void FindInFilesDlg::createNavigLayout()
     modifyFont(namesLineEdit, +0.0, true, false, false);
 }
 
-void FindInFilesDlg::createExclLayout()
+void MainWindow::createExclLayout()
 {
     toggleExclBtn = new QToolButton();
     toggleExclBtn->setText(tr("-"));
@@ -227,7 +227,7 @@ void FindInFilesDlg::createExclLayout()
     modifyFont(exclHiddenCheck, +0.0, false, false, false);
 }
 
-void FindInFilesDlg::createMainLayout()
+void MainWindow::createMainLayout()
 {
     filesFoundLabel = new QLabel;
     modifyFont(filesFoundLabel, +0.0, true, false, false);
@@ -297,7 +297,7 @@ void FindInFilesDlg::createMainLayout()
     resize(920, 480);
 }
 
-void FindInFilesDlg::modifyFont(QWidget * widget, qreal ptSzDelta, bool bold, bool italic, bool underline)
+void MainWindow::modifyFont(QWidget * widget, qreal ptSzDelta, bool bold, bool italic, bool underline)
 {
     QFont font(widget->font());
 
@@ -311,14 +311,14 @@ void FindInFilesDlg::modifyFont(QWidget * widget, qreal ptSzDelta, bool bold, bo
     widget->setFont(font);
 }
 
-void FindInFilesDlg::setAllTips(QWidget * widget, const QString & text)
+void MainWindow::setAllTips(QWidget * widget, const QString & text)
 {
     widget->setToolTip(  text);
-    widget->setStatusTip(text); // does not work in dlg based app
+    widget->setStatusTip(text); // does not work in dialog based apps
     widget->setWhatsThis(text);
 }
 
-void FindInFilesDlg::scopeCheckClicked(int /*newCheckState*/)
+void MainWindow::scopeCheckClicked(int /*newCheckState*/)
 {
     const bool filesChecked = (filesCheck->checkState() == Qt::Checked);
     wordsLineEdit->setEnabled(filesChecked);
@@ -327,7 +327,7 @@ void FindInFilesDlg::scopeCheckClicked(int /*newCheckState*/)
     exclFilesByTextCombo->setEnabled(filesChecked);
 }
 
-void FindInFilesDlg::goUpBtnClicked()
+void MainWindow::goUpBtnClicked()
 {
     const QString dirPath = dirComboBox->currentText();
     if (dirPath.isEmpty())
@@ -341,14 +341,14 @@ void FindInFilesDlg::goUpBtnClicked()
         SetDirPath( "");
 }
 
-void FindInFilesDlg::browseBtnClicked()
+void MainWindow::browseBtnClicked()
 {
     const QString selDir = QFileDialog::getExistingDirectory(this, tr("Select folder"), dirComboBox->currentText());
     if (!selDir.isEmpty())
         SetDirPath(selDir);
 }
 
-void FindInFilesDlg::showMoreOptions(bool show)
+void MainWindow::showMoreOptions(bool show)
 {
     toggleExclBtn->setText(show ? "-" : "+");
     toggleExclBtn->setToolTip(show ? eCod_SHOW_EXCL_OPTS_TIP : eCod_HIDE_EXCL_OPTS_TIP);
@@ -358,7 +358,7 @@ void FindInFilesDlg::showMoreOptions(bool show)
     exclHiddenCheck->setVisible(show);
 }
 
-void FindInFilesDlg::toggleExclClicked()
+void MainWindow::toggleExclClicked()
 {
     const bool show = toggleExclBtn->text().startsWith("+");
     const int deltaH = 100; // TODO calc the height of excl. widgets
@@ -372,7 +372,7 @@ static void updateComboBox(QComboBox *comboBox)
         comboBox->addItem(comboBox->currentText());
 }
 
-void FindInFilesDlg::GetFileInfos(QFileInfoList & fileInfos) const
+void MainWindow::GetFileInfos(QFileInfoList & fileInfos) const
 {
     const QList<QTableWidgetItem *>  selectedItems = filesTable->selectedItems();
     foreach (const QTableWidgetItem * item, selectedItems) {
@@ -383,7 +383,7 @@ void FindInFilesDlg::GetFileInfos(QFileInfoList & fileInfos) const
 
 /////////////////////////////////////////////////
 
-void FindInFilesDlg::deleteBtnClicked()
+void MainWindow::deleteBtnClicked()
 {
     try {
         _opType = Overskys::Op::deletePerm;
@@ -419,7 +419,7 @@ void FindInFilesDlg::deleteBtnClicked()
     setStopped(true);
 }
 
-void FindInFilesDlg::getSelectedItems(Uint64StringMap& itemList)
+void MainWindow::getSelectedItems(Uint64StringMap& itemList)
 {
     const QList<QTableWidgetItem *>  selectedItems = filesTable->selectedItems();
     foreach (const QTableWidgetItem * item, selectedItems)
@@ -439,7 +439,7 @@ void FindInFilesDlg::getSelectedItems(Uint64StringMap& itemList)
     }
 }
 
-void FindInFilesDlg::removeItems(const Uint64StringMap& itemList)
+void MainWindow::removeItems(const Uint64StringMap& itemList)
 {
     int delCnt = 0;
     for (Uint64StringMap::const_iterator it = itemList.cbegin(); it != itemList.cend(); ++it)
@@ -479,7 +479,7 @@ void FindInFilesDlg::removeItems(const Uint64StringMap& itemList)
     }
 }
 
-void FindInFilesDlg::shredBtnClicked()
+void MainWindow::shredBtnClicked()
 {
     try
     {
@@ -497,13 +497,13 @@ void FindInFilesDlg::shredBtnClicked()
     catch (...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::cancelBtnClicked()
+void MainWindow::cancelBtnClicked()
 {
     setStopped(true);
     //reject();
 }
 
-void FindInFilesDlg::SetDirPath( const QString& dirPath)
+void MainWindow::SetDirPath( const QString& dirPath)
 {
     try
     {
@@ -519,7 +519,7 @@ void FindInFilesDlg::SetDirPath( const QString& dirPath)
     catch (...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::Clear()
+void MainWindow::Clear()
 {
     try
     {
@@ -539,7 +539,7 @@ void FindInFilesDlg::Clear()
     catch (...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::setStopped(bool stopped)
+void MainWindow::setStopped(bool stopped)
 {
   try
   {
@@ -578,7 +578,7 @@ void FindInFilesDlg::setStopped(bool stopped)
   catch (...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::setFilesFoundLabel(const QString & prefix/*= QString()*/)
+void MainWindow::setFilesFoundLabel(const QString & prefix/*= QString()*/)
 {
     QString totItemsSizeStr;
     sizeToHumanReadable(_totItemsSize, totItemsSizeStr);
@@ -598,7 +598,7 @@ void FindInFilesDlg::setFilesFoundLabel(const QString & prefix/*= QString()*/)
     }
 }
 
-bool FindInFilesDlg::findFilesPrep()
+bool MainWindow::findFilesPrep()
 {
     _fileNameFilter = namesLineEdit->text();
     updateComboBox( dirComboBox);
@@ -664,7 +664,7 @@ bool FindInFilesDlg::findFilesPrep()
     return true;
 }
 
-void FindInFilesDlg::findBtnClicked()
+void MainWindow::findBtnClicked()
 {
   try
   {
@@ -702,7 +702,7 @@ void FindInFilesDlg::findBtnClicked()
   catch (...) { Q_ASSERT(false); } // TODO tell the user
 }
 
-bool FindInFilesDlg::findItem(const QString & dirPath, const QFileInfo& fileInfo)
+bool MainWindow::findItem(const QString & dirPath, const QFileInfo& fileInfo)
 {
     try {
         if (isTimeToReport())
@@ -742,7 +742,7 @@ bool FindInFilesDlg::findItem(const QString & dirPath, const QFileInfo& fileInfo
     catch (...) { Q_ASSERT(false); return false; } // TODO tell the user
 }
 
-quint64 FindInFilesDlg::combinedSize(const QFileInfoList& items)
+quint64 MainWindow::combinedSize(const QFileInfoList& items)
 {
     quint64 csz = 0;
     foreach (QFileInfo item, items)
@@ -753,7 +753,7 @@ quint64 FindInFilesDlg::combinedSize(const QFileInfoList& items)
     return csz;
 }
 
-void FindInFilesDlg::findFilesRecursive( const QString & dirPath, qint32 subDirDepth)
+void MainWindow::findFilesRecursive( const QString & dirPath, qint32 subDirDepth)
 {
     // report progress
     ++_dirCount;
@@ -797,7 +797,7 @@ void FindInFilesDlg::findFilesRecursive( const QString & dirPath, qint32 subDirD
     }
 }
 
-QStringList FindInFilesDlg::GetSimpleNamePatterns( const QString & rawNamePatters) const
+QStringList MainWindow::GetSimpleNamePatterns( const QString & rawNamePatters) const
 {
     QStringList outPatters;
     const QStringList tempPatterns = rawNamePatters.split(";", Qt::SkipEmptyParts);
@@ -811,7 +811,7 @@ QStringList FindInFilesDlg::GetSimpleNamePatterns( const QString & rawNamePatter
     return outPatters;
 }
 
-bool FindInFilesDlg::StringContainsAnyWord(const QString & theString, const QStringList & wordList) const
+bool MainWindow::StringContainsAnyWord(const QString & theString, const QStringList & wordList) const
 {
     foreach (QString word, wordList)
     {
@@ -821,7 +821,7 @@ bool FindInFilesDlg::StringContainsAnyWord(const QString & theString, const QStr
     return false;
 }
 
-bool FindInFilesDlg::fileContainsAllWords( const QString & filePath, const QStringList & wordList)
+bool MainWindow::fileContainsAllWords( const QString & filePath, const QStringList & wordList)
 {
     QFile file( filePath);
     if (!file.open(QIODevice::ReadOnly))
@@ -835,7 +835,7 @@ bool FindInFilesDlg::fileContainsAllWords( const QString & filePath, const QStri
     return true;
 }
 
-bool FindInFilesDlg::fileContainsWord( QFile & file, const QString & word)
+bool MainWindow::fileContainsWord( QFile & file, const QString & word)
 {
     file.seek(0);
     QString line;
@@ -856,7 +856,7 @@ bool FindInFilesDlg::fileContainsWord( QFile & file, const QString & word)
     return false;
 }
 
-bool FindInFilesDlg::fileContainsAnyWord( const QString & filePath, const QStringList & wordList)
+bool MainWindow::fileContainsAnyWord( const QString & filePath, const QStringList & wordList)
 {
     try
     {
@@ -870,7 +870,7 @@ bool FindInFilesDlg::fileContainsAnyWord( const QString & filePath, const QStrin
     return true;
 }
 
-bool FindInFilesDlg::fileContainsAnyWord( QFile & file,  const QStringList & wordList)
+bool MainWindow::fileContainsAnyWord( QFile & file,  const QStringList & wordList)
 {
     file.seek(0);
     QString line;
@@ -895,7 +895,7 @@ bool FindInFilesDlg::fileContainsAnyWord( QFile & file,  const QStringList & wor
     return false;
 }
 
-QStringList FindInFilesDlg::findTextInFiles( const QStringList & files, const QString & textToFind)
+QStringList MainWindow::findTextInFiles( const QStringList & files, const QString & textToFind)
 {
     if (files.isEmpty()) {
         setFilesFoundLabel();
@@ -942,7 +942,7 @@ QStringList FindInFilesDlg::findTextInFiles( const QStringList & files, const QS
     return foundFiles;
 }
 
-void FindInFilesDlg::showFiles(const QStringList & files)
+void MainWindow::showFiles(const QStringList & files)
 {
     if (files.isEmpty()) {
         setFilesFoundLabel();
@@ -965,7 +965,7 @@ void FindInFilesDlg::showFiles(const QStringList & files)
     setFilesFoundLabel();
 }
 
-inline bool FindInFilesDlg::isTimeToReport()
+inline bool MainWindow::isTimeToReport()
 {
     if ((_elTimer.elapsed() - _prevEl) >= 100) {
         _prevEl = _elTimer.elapsed();
@@ -975,7 +975,7 @@ inline bool FindInFilesDlg::isTimeToReport()
         return false;
 }
 
-QPushButton * FindInFilesDlg::createButton(const QString & text, const char *member)
+QPushButton * MainWindow::createButton(const QString & text, const char *member)
 {
     QPushButton *button = new QPushButton(text);
     const bool c = connect(button, SIGNAL(clicked()), this, member); Q_ASSERT(c); (void)c;
@@ -988,7 +988,7 @@ QPushButton * FindInFilesDlg::createButton(const QString & text, const char *mem
     #define eCod_TOP_ROOT_PATH "/"
 #endif
 
-void FindInFilesDlg::dirPathEditTextChanged(const QString& newText)
+void MainWindow::dirPathEditTextChanged(const QString& newText)
 {
     try
     {
@@ -1045,7 +1045,7 @@ void FindInFilesDlg::dirPathEditTextChanged(const QString& newText)
     catch(...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::completerTimeout()
+void MainWindow::completerTimeout()
 {
     try
     {
@@ -1055,7 +1055,7 @@ void FindInFilesDlg::completerTimeout()
     catch(...) { Q_ASSERT(false); }
 }
 
-QFileSystemModel * FindInFilesDlg::newFileSystemModel(QCompleter * completer, const QString & currentDir)
+QFileSystemModel * MainWindow::newFileSystemModel(QCompleter * completer, const QString & currentDir)
 {
     fileSystemModel = new QFileSystemModel(completer);
     fileSystemModel->setReadOnly( true);
@@ -1066,7 +1066,7 @@ QFileSystemModel * FindInFilesDlg::newFileSystemModel(QCompleter * completer, co
     return fileSystemModel;
 }
 
-QComboBox * FindInFilesDlg::createComboBoxFSys(const QString & text, bool setCompleter)
+QComboBox * MainWindow::createComboBoxFSys(const QString & text, bool setCompleter)
 {
     QCompleter * completer = NULL;
     if (setCompleter)
@@ -1103,7 +1103,7 @@ QComboBox * FindInFilesDlg::createComboBoxFSys(const QString & text, bool setCom
     return comboBox;
 }
 
-QComboBox* FindInFilesDlg::createComboBoxText()
+QComboBox* MainWindow::createComboBoxText()
 {
     QCompleter* completer = new QCompleter();
     completer->setCaseSensitivity( Qt::CaseSensitive);
@@ -1147,7 +1147,7 @@ inline QString FsItemType(const QFileInfo & fileInfo)
     return fsType;
 }
 
-void FindInFilesDlg::appendFileToTable(const QString filePath, const QFileInfo & fileInfo)
+void MainWindow::appendFileToTable(const QString filePath, const QFileInfo & fileInfo)
 {
   try
   {
@@ -1227,7 +1227,7 @@ void FindInFilesDlg::appendFileToTable(const QString filePath, const QFileInfo &
   catch(...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::createFilesTable()
+void MainWindow::createFilesTable()
 {
   try
   {
@@ -1297,46 +1297,46 @@ void FindInFilesDlg::createFilesTable()
 
     filesTable->setContextMenuPolicy(Qt::CustomContextMenu);
     const auto conn = connect(filesTable, &QTableWidget::customContextMenuRequested,
-                              this, &FindInFilesDlg::showContextMenu);
+                              this, &MainWindow::showContextMenu);
     //c = connect(filesTable, SIGNAL(customContextMenuRequested(const QPoint &)),
     //            this,         SLOT(showContextMenu(const QPoint &)));  Q_ASSERT(c);
   }
   catch (...) { /*Q_ASSERT(false)*/; }
 }
 
-void FindInFilesDlg::openFileOfItem( int row, int /* column */)
+void MainWindow::openFileOfItem( int row, int /* column */)
 {
     QTableWidgetItem * item = filesTable->item(row, RELPATH_COL_IDX);
 
     QDesktopServices::openUrl( QUrl::fromLocalFile( item->data(Qt::UserRole).toString() )); //( item->text()));
 }
 
-void FindInFilesDlg::itemSelectionChanged()
+void MainWindow::itemSelectionChanged()
 {
     deleteButton->setEnabled(_stopped && filesTable->selectedItems().count() > 0);
     shredButton->setEnabled( _stopped && filesTable->selectedItems().count() > 0);
 }
 
-//void FindInFilesDlg::createContextMenu()
+//void MainWindow::createContextMenu()
 //{
 //    try
 //    {
 //        openRunAct = new QAction( QIcon(""), eCod_OPEN_CONT_FOLDER_ACT_TXT, this);
 //        openRunAct->setStatusTip (eCod_OPEN_CONT_FOLDER_STS_TIP);
-//        connect(openRunAct, &QAction::triggered, this, &FindInFilesDlg::openRunSlot);
+//        connect(openRunAct, &QAction::triggered, this, &MainWindow::openRunSlot);
 //        openRunAct->setShortcutContext( Qt::WidgetWithChildrenShortcut);
 //        //openRunAct->setShortcut(         QKeySequence( Qt::Key_F3));
 //        //shortcuts.append( new QShortcut( QKeySequence( Qt::Key_F3), this, SLOT(openRunSlot()), SLOT(openRunSlot()), Qt::WidgetWithChildrenShortcut));
 //
 //        copyPathAct = new QAction( QIcon(""), eCod_COPY_PATH_ACT_TXT, this);
 //        copyPathAct->setStatusTip (eCod_COPY_PATH_STS_TIP);
-//        connect(copyPathAct, &QAction::triggered, this, &FindInFilesDlg::copyPathSlot);
+//        connect(copyPathAct, &QAction::triggered, this, &MainWindow::copyPathSlot);
 //        copyPathAct->setShortcutContext( Qt::WidgetWithChildrenShortcut);
 //        copyPathAct->setEnabled(false);
 //
 //        propertiesAct = new QAction( QIcon(""), eCod_PROPERTIES_ACT_TXT, this);
 //        propertiesAct->setStatusTip (eCod_PROPERTIES_STS_TIP);
-//        connect(propertiesAct, &QAction::triggered, this, &FindInFilesDlg::propertiesSlot);
+//        connect(propertiesAct, &QAction::triggered, this, &MainWindow::propertiesSlot);
 //        propertiesAct->setShortcutContext( Qt::WidgetWithChildrenShortcut);
 //        propertiesAct->setEnabled(false);
 //
@@ -1350,7 +1350,7 @@ void FindInFilesDlg::itemSelectionChanged()
 //    }
 //    catch (...) { Q_ASSERT(false); }
 //}
-void FindInFilesDlg::createContextMenu()
+void MainWindow::createContextMenu()
 {
     try
     {
@@ -1362,9 +1362,9 @@ void FindInFilesDlg::createContextMenu()
         propertiesAct = contextMenu->addAction(eCod_PROPERTIES_ACT_TXT);
 
         // Connect using new syntax
-        connect(openRunAct, &QAction::triggered, this, &FindInFilesDlg::openRunSlot);
-        connect(copyPathAct, &QAction::triggered, this, &FindInFilesDlg::copyPathSlot);
-        connect(propertiesAct, &QAction::triggered, this, &FindInFilesDlg::propertiesSlot);
+        connect(openRunAct, &QAction::triggered, this, &MainWindow::openRunSlot);
+        connect(copyPathAct, &QAction::triggered, this, &MainWindow::copyPathSlot);
+        connect(propertiesAct, &QAction::triggered, this, &MainWindow::propertiesSlot);
 
         // Set initial state
         copyPathAct->setEnabled(false);
@@ -1373,7 +1373,7 @@ void FindInFilesDlg::createContextMenu()
     catch (...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::showContextMenu(const QPoint& point)
+void MainWindow::showContextMenu(const QPoint& point)
 {
     try
     {
@@ -1397,7 +1397,7 @@ void FindInFilesDlg::showContextMenu(const QPoint& point)
     catch (...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::openRunSlot()
+void MainWindow::openRunSlot()
 {
     try
     {
@@ -1425,7 +1425,7 @@ void FindInFilesDlg::openRunSlot()
     catch (...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::copyPathSlot()
+void MainWindow::copyPathSlot()
 {
     try
     {
@@ -1433,7 +1433,7 @@ void FindInFilesDlg::copyPathSlot()
     catch (...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::propertiesSlot()
+void MainWindow::propertiesSlot()
 {
     try
     {
@@ -1441,7 +1441,7 @@ void FindInFilesDlg::propertiesSlot()
     catch (...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::keyReleaseEvent( QKeyEvent* ev)
+void MainWindow::keyReleaseEvent( QKeyEvent* ev)
 {
     try
     {
@@ -1456,7 +1456,7 @@ void FindInFilesDlg::keyReleaseEvent( QKeyEvent* ev)
     catch (...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::unlimSubDirDepthToggled(bool /*checked*/)
+void MainWindow::unlimSubDirDepthToggled(bool /*checked*/)
 {
     try
     {
@@ -1481,11 +1481,11 @@ void FindInFilesDlg::unlimSubDirDepthToggled(bool /*checked*/)
     catch (...) { Q_ASSERT(false); }
 }
 
-void FindInFilesDlg::showAboutDialog() {
+void MainWindow::showAboutDialog() {
     AboutDialog dialog(this);
     dialog.exec();
 }
-void FindInFilesDlg::showHelpDialog() {
+void MainWindow::showHelpDialog() {
     HelpDialog dialog(this);
     dialog.exec();
 }
