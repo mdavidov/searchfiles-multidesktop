@@ -28,7 +28,7 @@ AboutDialog::AboutDialog(QWidget* parent /*= nullptr*/) : QDialog(parent) {
         <br/>
         <h2><a href="http://devonline.au">devonline.au</a></h2>
         <br/>
-        <p align="center"><strong>Copyright &copy; 2015 Milivoj (Mike) Davidov. All rights reserved. </strong></p>
+        <p align="center"><strong>Copyright &copy; 2012-2025 Milivoj (Mike) Davidov. All rights reserved. </strong></p>
         <br/>
         <p align="left">
         This software application was developed with best intentions; the author believes it functions correctly.

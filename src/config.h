@@ -157,14 +157,14 @@ QT_END_NAMESPACE
 #define OvSk_FsOp_GO_INFO_ACT_TXT       tr("Size &info on selected")
 #define OvSk_FsOp_GO_INFO_STS_TIP       tr("Show total size information and number of selected files/folders/shortcuts.")
 
-#define OvSk_FsOp_OPENRUN_ACT_TXT       tr("Open/Run selected")
-#define OvSk_FsOp_OPENRUN_STS_TIP       tr("Open or run (i.e. execute) the selected file, or browse into the folder.")
+#define OvSk_FsOp_OPENRUN_ACT_TXT       tr("Open")
+#define OvSk_FsOp_OPENRUN_STS_TIP       tr("Open (or execute) the selected file or browse into the folder.")
 
 #define eCod_OPEN_CONT_FOLDER_ACT_TXT   tr("Open containing folder")
 #define eCod_OPEN_CONT_FOLDER_STS_TIP   tr("Open the folder containing the selected file, or the actual selected folder.")
 
 #define eCod_COPY_PATH_ACT_TXT          tr("Copy path")
-#define eCod_COPY_PATH_STS_TIP          tr("Copy the selected absolute path to the clipboard.")
+#define eCod_COPY_PATH_STS_TIP          tr("Copy the full, absolute path to the system clipboard.")
 
 #define eCod_PROPERTIES_ACT_TXT         tr("Properties")
 #define eCod_PROPERTIES_STS_TIP         tr("Show file/folder properties.")

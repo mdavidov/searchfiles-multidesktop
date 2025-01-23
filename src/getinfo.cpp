@@ -11,6 +11,16 @@
 
 #undef QT_NO_CONTEXTMENU
 
+#if defined(Q_OS_WIN)
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <shellapi.h>
+#undef ERROR
+#undef min
+#undef max
+#endif
+
 #include "precompiled.h"
 #include "aboutdialog.h"
 #include "helpdialog.h"
@@ -19,6 +29,9 @@
 #include "util.h"
 #include "keypress.hpp"
 #include <map>
+#include <QApplication>
+#include <QDir>
+#include <QProcess>
 #include <QDesktopServices>
 #include <QtGui>
 #include <QtWidgets>
@@ -52,7 +65,7 @@ MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
     , _unlimSubDirDepth(true)
     , _stopped(true)
 {
-    setWindowTitle(QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR + "  " + OvSk_FsOp_APP_BUILD_NBR_STR);
+    setWindowTitle(QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR + " " + OvSk_FsOp_APP_BUILD_NBR_STR);
     const auto savedPath = Cfg::St().value(Cfg::origDirPathKey).toString();
     if (!savedPath.isEmpty())
         _origDirPath = savedPath;
@@ -91,7 +104,7 @@ MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
     findButton->setFocus();
     setStopped(true);
 
-    KeyPressEventFilter* filter = new KeyPressEventFilter(this);
+    auto filter = new KeyPressEventFilter(this);
     this->installEventFilter(filter);
     connect(filter, &KeyPressEventFilter::enterKeyPressed,
             this,   &MainWindow::onEnterKeyPressed);
@@ -1163,7 +1176,10 @@ void MainWindow::appendFileToTable(const QString filePath, const QFileInfo & fil
         fileName += QDir::separator();
     fileNameItem->setData(Qt::DisplayRole, QDir::toNativeSeparators(fileName));
     fileNameItem->setFlags(fileNameItem->flags() ^ Qt::ItemIsEditable);
-    fileNameItem->setData(Qt::ToolTipRole, QVariant(fileInfo.absoluteFilePath()));
+    auto absFilePath = QDir::toNativeSeparators(fileInfo.absoluteFilePath());
+    if (fileInfo.isDir())
+        absFilePath += QDir::separator();
+    fileNameItem->setData(Qt::ToolTipRole, QVariant(absFilePath));
 
     const QString fpath = QDir::toNativeSeparators( fileInfo.path());
     const auto dlen = QDir::toNativeSeparators( _origDirPath).length();
@@ -1174,7 +1190,10 @@ void MainWindow::appendFileToTable(const QString filePath, const QFileInfo & fil
     TableWidgetItem * filePathItem = new TableWidgetItem( QDir::toNativeSeparators( relPath));
     filePathItem->setFlags( filePathItem->flags() ^ Qt::ItemIsEditable);
     filePathItem->setData( Qt::UserRole, QDir::toNativeSeparators( filePath));
-    filePathItem->setData(Qt::ToolTipRole, QVariant(dirComboBox->currentText() + QDir::separator()));
+    auto fpTooltip = dirComboBox->currentText();
+    if (!fpTooltip.endsWith(QDir::separator()) && fileInfo.isDir())
+         fpTooltip += QDir::separator();
+    filePathItem->setData(Qt::ToolTipRole, QVariant(fpTooltip));
 
     auto fileExt = !fileInfo.suffix().isEmpty() ? "." + fileInfo.suffix() : "";
     if (fileExt == fileName || fileInfo.isDir())
@@ -1358,9 +1377,8 @@ void MainWindow::createContextMenu()
     {
         contextMenu = new QMenu(this);  // Set parent to ensure proper cleanup
 
-        openRunAct = contextMenu->addAction(eCod_OPEN_CONT_FOLDER_ACT_TXT);
+        openRunAct = contextMenu->addAction(OvSk_FsOp_OPENRUN_ACT_TXT);
         copyPathAct = contextMenu->addAction(eCod_COPY_PATH_ACT_TXT);
-        contextMenu->addSeparator();
         propertiesAct = contextMenu->addAction(eCod_PROPERTIES_ACT_TXT);
 
         // Connect using new syntax
@@ -1379,13 +1397,16 @@ void MainWindow::showContextMenu(const QPoint& point)
 {
     try
     {
-        if (!contextMenu)
+        if (!contextMenu) {
+            qDebug() << "Context menu not created, nullptr.";
             return;
-
+        }
         // Get the item at the click position
         QTableWidgetItem* item = filesTable->itemAt(point);
-        if (!item)
+        if (!item) {
+            qDebug() << "No item at click position.";
             return;
+        }
 
         // Enable/disable actions based on selection
         bool hasSelection = !filesTable->selectedItems().isEmpty();
@@ -1403,26 +1424,16 @@ void MainWindow::openRunSlot()
 {
     try
     {
-        const QList<QTableWidgetItem *>  selectedItems = filesTable->selectedItems();
-        foreach (const QTableWidgetItem * item, selectedItems)
-        {
-            if (filesTable->column( item) == RELPATH_COL_IDX)
-            {
-                const QFileInfo fileInfo = QFileInfo( item->data(Qt::UserRole).toString() ); //( item->text());
-                if (fileInfo.isDir())
-                {
-                    const QUrl url = QUrl::fromLocalFile( item->data(Qt::UserRole).toString() ); //( item->text());
-                    QDesktopServices::openUrl( url);
-                }
-                else
-                {
-                    const QString dirPath = fileInfo.absolutePath();
-                    const QUrl url = QUrl::fromLocalFile( dirPath);
-                    QDesktopServices::openUrl( url);
-                }
-                return;
-            }
+        const auto selectedItems = filesTable->selectedItems();
+        if (selectedItems.isEmpty()) {
+            qDebug() << "openRunSlot: No item selected.";
+            return;
         }
+        const auto item = selectedItems.first();
+        const auto fileInfo = QFileInfo(item->data(Qt::UserRole).toString());
+        // absoluteFilePath() is good for both files and folders
+        const auto url = QUrl::fromLocalFile(fileInfo.absoluteFilePath());
+        QDesktopServices::openUrl(url);
     }
     catch (...) { Q_ASSERT(false); }
 }
@@ -1431,6 +1442,19 @@ void MainWindow::copyPathSlot()
 {
     try
     {
+        const auto selectedItems = filesTable->selectedItems();
+        if (selectedItems.isEmpty()) {
+            qDebug() << "copyPathSlot: No item selected.";
+            return;
+        }
+        auto clipboard = QApplication::clipboard();
+        if (!clipboard) {
+            qDebug() << "copyPathSlot: Clipboard not available.";
+            return;
+        }
+        const auto item = selectedItems.first();
+        const auto fileInfo = QFileInfo(item->data(Qt::UserRole).toString());
+        clipboard->setText(QDir::toNativeSeparators(fileInfo.absoluteFilePath()));
     }
     catch (...) { Q_ASSERT(false); }
 }
@@ -1439,6 +1463,28 @@ void MainWindow::propertiesSlot()
 {
     try
     {
+        auto selectedItems = filesTable->selectedItems();
+        if (selectedItems.isEmpty()) {
+            qDebug() << "propertiesSlot: No item selected.";
+            return;
+        }
+        const auto item = selectedItems.first();
+        const auto fileInfo = QFileInfo(item->data(Qt::UserRole).toString());
+        const auto filePath = QDir::toNativeSeparators(fileInfo.absoluteFilePath());
+#if defined(Q_OS_LINUX)
+        QProcess::startDetached("xdg-open", QStringList() << filePath);
+#elif defined(Q_OS_MACOS)
+#elif defined(Q_OS_WIN)
+        LPCWSTR file = (const wchar_t*)filePath.utf16();
+        SHELLEXECUTEINFO sei = { sizeof(sei) };
+        sei.lpVerb = L"properties";
+        sei.lpFile = file;
+        sei.nShow = SW_SHOW;
+        sei.fMask = SEE_MASK_INVOKEIDLIST;
+        if (!ShellExecuteEx(&sei)) {
+            qDebug() << "propertiesSlot: Failed to open properties dialog";
+        }
+#endif
     }
     catch (...) { Q_ASSERT(false); }
 }
