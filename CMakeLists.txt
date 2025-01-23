@@ -42,6 +42,7 @@ set(PROJECT_SOURCES
     src/util.h
     src/util.cpp
     src/version.h
+    src/macutils.mm
     resources/getinfo.qrc
     resources/icons/getinfo.png
 )
@@ -49,6 +50,13 @@ set(PROJECT_SOURCES
 qt_add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCES}
 )
+
+# Link Qt6 libraries
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
+
+if(APPLE)
+    set_source_files_properties(src/macutils.mm PROPERTIES COMPILE_FLAGS "-x objective-c++")
+endif()
 
 # Set target properties
 if(APPLE)
@@ -98,13 +106,6 @@ elseif(WIN32)
     )
 endif()
 message(STATUS "CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}")
-
-# Link Qt6 libraries
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    Qt6::Core
-    Qt6::Gui
-    Qt6::Widgets
-)
 
 # Installation configuration
 # include(GNUInstallDirs)

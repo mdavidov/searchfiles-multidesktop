@@ -38,6 +38,10 @@
 #include <QStandardPaths>
 #include <QtCore/QRegularExpression>
 
+#if defined(Q_OS_MAC)
+extern "C" void showFileProperties(const char* filePath);
+#endif
+
 namespace Devonline
 {
 
@@ -1474,6 +1478,7 @@ void MainWindow::propertiesSlot()
 #if defined(Q_OS_LINUX)
         QProcess::startDetached("xdg-open", QStringList() << filePath);
 #elif defined(Q_OS_MACOS)
+        showFileProperties(filePath.toUtf8().constData());
 #elif defined(Q_OS_WIN)
         LPCWSTR file = (const wchar_t*)filePath.utf16();
         SHELLEXECUTEINFO sei = { sizeof(sei) };
