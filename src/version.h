@@ -22,5 +22,5 @@
 #define OvSk_FsOp_COPMANY_DOMAIN_TXT    "devonline.au"
 #define OvSk_FsOp_COPMANY_URL_TXT       "https://www.devonline.au/"
 
-#define OvSk_FsOp_APP_ICON_STR          ":/resources/icons/getinfo.png"
-#define OvSk_FsOp_ABOUTAPP_HTML         ":/resources/aboutdialog.html"
+#define OvSk_FsOp_APP_ICON_STR          ":/images/getinfo.png"
+#define OvSk_FsOp_ABOUTAPP_HTML         ":/src/aboutdialog.html"

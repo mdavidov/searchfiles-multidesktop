@@ -8,6 +8,7 @@ HEADERS  =  \
     src/precompiled.h \
     src/aboutdialog.h \
     src/helpdialog.h \
+    src/keypress.hpp \
     src/common.h \
     src/config.h \
     src/version.h \
@@ -20,6 +21,7 @@ SOURCES  =  \
     src/precompiled.cpp \
     src/aboutdialog.cpp \
     src/helpdialog.cpp \
+    src/keypress.cpp \
     src/util.cpp \
     src/main.cpp \
     src/config.cpp \
@@ -30,9 +32,9 @@ SOURCES  =  \
 macx {
     QMAKE_MACOSX_DEPLOYMENT_TARGET = 42.0
     QMAKE_APPLE_DEVICE_ARCHS = arm64
-    CONFIG -= app_bundle
-    INCLUDEPATH += /opt/qt/6.8.1/include
-    LIBS += -L/opt/qt/6.8.1/lib
+    INCLUDEPATH += /opt/Qt/6.8.1/macos/lib/QtWidgets.framework/Versions/A/Headers
+    INCLUDEPATH += /opt/Qt/6.8.1/macos/include
+    LIBS += -L/opt/Qt/6.8.1/macos/lib
 }
 
 unix:!macx {
@@ -54,7 +56,7 @@ INSTALLS += target
 symbian: include($$QT_SOURCE_TREE/examples/symbianpkgrules.pri)
 
 RESOURCES += \
-    resources/getinfo.qrc
+    getinfo.qrc
 
 OTHER_FILES += \
     TODO.md \

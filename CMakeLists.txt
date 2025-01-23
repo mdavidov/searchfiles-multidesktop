@@ -43,8 +43,7 @@ set(PROJECT_SOURCES
     src/util.cpp
     src/version.h
     src/macutils.mm
-    resources/getinfo.qrc
-    resources/icons/getinfo.png
+    getinfo.qrc
 )
 
 qt_add_executable(${PROJECT_NAME}
@@ -54,19 +53,15 @@ qt_add_executable(${PROJECT_NAME}
 # Link Qt6 libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
 
-if(APPLE)
-    set_source_files_properties(src/macutils.mm PROPERTIES COMPILE_FLAGS "-x objective-c++")
-endif()
-
 # Set target properties
 if(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
     set(GUI_TYPE MACOSX_BUNDLE)
+    set_source_files_properties(src/macutils.mm PROPERTIES COMPILE_FLAGS "-x objective-c++")
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_GUI_IDENTIFIER com.example.${PROJECT_NAME}
-        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+        MACOSX_BUNDLE_GUI_IDENTIFIER au.devonline.${PROJECT_NAME}
+        MACOSX_BUNDLE_ICON_FILE getinfo.png
     )
     include_directories(
         /opt/Qt/6.8.1/macos/lib/QtWidgets.framework/Versions/A/Headers
