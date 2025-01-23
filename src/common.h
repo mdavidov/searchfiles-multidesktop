@@ -14,7 +14,7 @@
 #include <QtCore/QtGlobal>
 #include <QtCore/QString>
 
-namespace Overskys
+namespace Devonline
 {
     /// @brief Type of a file system operation
     ///

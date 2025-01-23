@@ -31,7 +31,7 @@ class QKeyEvent;
 class QLineEdit;
 QT_END_NAMESPACE
 
-namespace Overskys
+namespace Devonline
 {
 
 template<class _Ty>
@@ -67,7 +67,7 @@ public:
     void SetDirPath( const QString & dirPath);
     void GetFilePaths( QStringList & filePaths) const { filePaths = _outFiles; }
     void GetFileInfos( QFileInfoList & fileInfos) const;
-    Overskys::Op::Type GetOp() const { return _opType; }
+    Devonline::Op::Type GetOp() const { return _opType; }
     void Clear();
 
 protected:
@@ -207,7 +207,7 @@ private:
     quint64 _foundItemsSize;
     QElapsedTimer _elTimer;
     qint64 _prevEl;
-    Overskys::Op::Type _opType;
+    Devonline::Op::Type _opType;
     bool _stopped;
 };
 

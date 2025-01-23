@@ -26,7 +26,7 @@ AboutDialog::AboutDialog(QWidget* parent /*= nullptr*/) : QDialog(parent) {
         <div id="content"  align="center">
         <p><img src="images/findfiles.png"</img></p>
         <br/>
-        <h2><a href="http://overskys.com">Overskys.com</a></h2>
+        <h2><a href="http://devonline.au">devonline.au</a></h2>
         <br/>
         <p align="center"><strong>Copyright &copy; 2015 Milivoj (Mike) Davidov. All rights reserved. </strong></p>
         <br/>

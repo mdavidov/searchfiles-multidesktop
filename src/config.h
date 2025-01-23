@@ -207,7 +207,7 @@ QT_END_NAMESPACE
 //#define OvSk_FsOp_INFODISPLAY_ICON    ":/images/shredperm.png"
 #define OvSk_FsOp_INFODISPLAY_HTML      "qrc:/infodisplay.html"
 
-namespace Overskys
+namespace Devonline
 {
     class Cfg
     {

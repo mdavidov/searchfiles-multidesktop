@@ -18,7 +18,7 @@
 QT_BEGIN_NAMESPACE
 QT_END_NAMESPACE
 
-namespace Overskys
+namespace Devonline
 {
     /// @brief Formats the string (@p humanReadable) with human readable value of @p size in B, KB, MB, GB, or TB.
     bool sizeToHumanReadable( quint64 size, QString & humanReadable);

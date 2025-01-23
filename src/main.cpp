@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
 		QCoreApplication::setApplicationVersion( OvSk_FsOp_APP_VERSION_STR);
         Q_INIT_RESOURCE(getinfo);
 
-        Overskys::MainWindow mw(QDir::currentPath());
+        Devonline::MainWindow mw(QDir::currentPath());
         mw.show();
 
         return app.exec();

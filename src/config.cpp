@@ -13,7 +13,7 @@
 #include <QObject>
 #include <QSettings>
 
-namespace Overskys
+namespace Devonline
 {
     const int Cfg::productLevel = 1;
 
@@ -21,7 +21,7 @@ namespace Overskys
     const int Cfg::fileMgr                  = 2;
     const bool Cfg::deepDel                 = true;
 
-#ifdef OVERSKYS_SHREDDER
+#ifdef DEVONLINE_SHREDDER
     const int Cfg::productType              = FilerConfig::shredder;
 #else
     const int Cfg::productType              = Cfg::fileMgr;

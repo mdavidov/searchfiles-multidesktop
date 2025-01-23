@@ -25,7 +25,7 @@
 #include <QStandardPaths>
 #include <QtCore/QRegularExpression>
 
-namespace Overskys
+namespace Devonline
 {
 
 const QString findText( "&Search");
@@ -52,7 +52,7 @@ MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
     , _unlimSubDirDepth(true)
     , _stopped(true)
 {
-    setWindowTitle(QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR + "." + OvSk_FsOp_APP_BUILD_NBR_STR);
+    setWindowTitle(QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR + "  " + OvSk_FsOp_APP_BUILD_NBR_STR);
     const auto savedPath = Cfg::St().value(Cfg::origDirPathKey).toString();
     if (!savedPath.isEmpty())
         _origDirPath = savedPath;
@@ -78,15 +78,14 @@ MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
 
     createContextMenu();
 
-    // Create the menu bar
-    //{
-    //    QMenu* helpMenu = menuBar()->addMenu("&Help");
-    //    QAction* aboutAction = helpMenu->addAction("&About");
-    //    QAction* helpAction = helpMenu->addAction("&Help");
-    //    // Connect the actions to slots
-    //    connect(aboutAction, &QAction::triggered, this, &MainWindow::showAboutDialog);
-    //    connect(helpAction, &QAction::triggered, this, &MainWindow::showHelpDialog);
-    //}
+    // Menu bar
+    {
+       QMenu* helpMenu = menuBar()->addMenu("&Help");
+       QAction* aboutAction = helpMenu->addAction("&About");
+       QAction* helpAction = helpMenu->addAction("&Help");
+       connect(aboutAction, &QAction::triggered, this, &MainWindow::showAboutDialog);
+       connect(helpAction,  &QAction::triggered, this, &MainWindow::showHelpDialog);
+    }
 
     findButton->setDefault(true);
     findButton->setFocus();
@@ -386,7 +385,7 @@ void MainWindow::GetFileInfos(QFileInfoList & fileInfos) const
 void MainWindow::deleteBtnClicked()
 {
     try {
-        _opType = Overskys::Op::deletePerm;
+        _opType = Devonline::Op::deletePerm;
         if (filesTable->selectedItems().isEmpty()) {
             QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
             return;
@@ -483,7 +482,7 @@ void MainWindow::shredBtnClicked()
 {
     try
     {
-        _opType = Overskys::Op::shredPerm;
+        _opType = Devonline::Op::shredPerm;
         setStopped(true);
         if (filesTable->selectedItems().isEmpty()) {
             QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
@@ -1152,8 +1151,9 @@ void MainWindow::appendFileToTable(const QString filePath, const QFileInfo & fil
   try
   {
     if (exclHiddenCheck->isChecked() &&
-        (fileInfo.isHidden() || fileInfo.fileName().startsWith(".")))
+        (fileInfo.isHidden() || fileInfo.fileName().startsWith("."))) {
         return;
+    }
 
     auto fileNameItem = new TableWidgetItem;
     auto fileName = fileInfo.fileName();
@@ -1163,6 +1163,7 @@ void MainWindow::appendFileToTable(const QString filePath, const QFileInfo & fil
         fileName += QDir::separator();
     fileNameItem->setData(Qt::DisplayRole, QDir::toNativeSeparators(fileName));
     fileNameItem->setFlags(fileNameItem->flags() ^ Qt::ItemIsEditable);
+    fileNameItem->setData(Qt::ToolTipRole, QVariant(fileInfo.absoluteFilePath()));
 
     const QString fpath = QDir::toNativeSeparators( fileInfo.path());
     const auto dlen = QDir::toNativeSeparators( _origDirPath).length();
@@ -1491,4 +1492,4 @@ void MainWindow::showHelpDialog() {
     dialog.exec();
 }
 
-} // namespace Overskys
+} // namespace Devonline

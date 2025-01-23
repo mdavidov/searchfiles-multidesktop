@@ -10,17 +10,17 @@
 // ****************************************************************************
 #pragma once
 
-#define OvSk_FsOp_APP_VERSION_STR       "3.0.1"
+#define OvSk_FsOp_APP_VERSION_STR       "5.8"
 #define OvSk_FsOp_APP_BUILD_NBR_STR     "20250122"
 
 #define OvSk_FsOp_APP_NAME_TXT          "getinfo"
 #define OvSk_FsOp_APP_NM_TXT            "getinfo"
 #define OvSk_FsOp_APP_EXE_TXT           "getinfo.exe"
 
-#define OvSk_FsOp_COPMANY_NAME_TXT      "Overskys"
+#define OvSk_FsOp_COPMANY_NAME_TXT      "DevOnline"
 #define OvSk_FsOp_COPYRIGHT_TXT         "Copyright (c) Milivoj (Mike) DAVIDOV. All rights reserved."
-#define OvSk_FsOp_COPMANY_DOMAIN_TXT    "overskys.com"
-#define OvSk_FsOp_COPMANY_URL_TXT       "http://www.overskys.com/"
+#define OvSk_FsOp_COPMANY_DOMAIN_TXT    "devonline.au"
+#define OvSk_FsOp_COPMANY_URL_TXT       "https://www.devonline.au/"
 
 #define OvSk_FsOp_APP_ICON_STR          ":/resources/icons/getinfo.png"
 #define OvSk_FsOp_ABOUTAPP_HTML         ":/resources/aboutdialog.html"
