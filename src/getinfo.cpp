@@ -1194,7 +1194,7 @@ void MainWindow::appendFileToTable(const QString filePath, const QFileInfo & fil
     TableWidgetItem * filePathItem = new TableWidgetItem( QDir::toNativeSeparators( relPath));
     filePathItem->setFlags( filePathItem->flags() ^ Qt::ItemIsEditable);
     filePathItem->setData( Qt::UserRole, QDir::toNativeSeparators( filePath));
-    auto fpTooltip = dirComboBox->currentText();
+    auto fpTooltip = "{SF} = " + dirComboBox->currentText();
     if (!fpTooltip.endsWith(QDir::separator()) && fileInfo.isDir())
          fpTooltip += QDir::separator();
     filePathItem->setData(Qt::ToolTipRole, QVariant(fpTooltip));
