@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=@PROJECT_NAME@
+Exec=@CMAKE_INSTALL_PREFIX@/bin/@PROJECT_NAME@
+Icon=@PROJECT_NAME@.png
+Type=Application
+Categories=Utility;

@@ -24,6 +24,7 @@ int main(int argc, char* argv[])
         QCoreApplication::setApplicationName(    OvSk_FsOp_APP_NAME_TXT );
 		QCoreApplication::setApplicationVersion( OvSk_FsOp_APP_VERSION_STR);
         Q_INIT_RESOURCE(getinfo);
+        app.setWindowIcon(QIcon(":/images/getinfo.png"));
 
         Devonline::MainWindow mw(QDir::currentPath());
         mw.show();
