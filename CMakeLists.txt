@@ -61,7 +61,7 @@ if(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_GUI_IDENTIFIER au.devonline.${PROJECT_NAME}
-        MACOSX_BUNDLE_ICON_FILE getinfo.png
+        MACOSX_BUNDLE_ICON_FILE images/getinfo.png
     )
     include_directories(
         /opt/Qt/6.8.1/macos/lib/QtWidgets.framework/Versions/A/Headers
