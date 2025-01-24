@@ -60,7 +60,6 @@ RESOURCES += \
 
 OTHER_FILES += \
     TODO.md \
-    src/aboutdialog.html \
     installers/inno/getinfo.bat \
     installers/inno/getinfo.iss
 

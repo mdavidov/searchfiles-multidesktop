@@ -58,7 +58,8 @@ const int RELPATH_COL_IDX = 0;
 
 MainWindow::~MainWindow()
 {
-    delete contextMenu;  // This will also delete the actions
+    // This will also delete the actions that were added to the context menu
+    delete contextMenu;
 }
 
 MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
@@ -414,22 +415,13 @@ void MainWindow::deleteBtnClicked()
 
         Uint64StringMap itemList;
         getSelectedItems(itemList); // GET SELECTED ITEMS
-        const auto nonSelectCount = qsizetype(filesTable->rowCount()) - filesTable->selectedItems().count();
 
         removeItems(itemList); // REMOVE ITEMS
 
         emit filesTable->itemSelectionChanged();
         qApp->processEvents();
         setStopped(true);
-
-        if (filesTable->rowCount() != nonSelectCount) {
-            if (nonSelectCount <= 0)
-                filesTable->clear();
-            else
-                findBtnClicked();
-        }
-        else
-            setFilesFoundLabel();
+        setFilesFoundLabel();
     }
     catch (...) { Q_ASSERT(false); } // TODO tell the user
     setStopped(true);
@@ -467,9 +459,13 @@ void MainWindow::removeItems(const Uint64StringMap& itemList)
             if (!QFileInfo(path).isDir()) {
                 // RM FILE
                 QFile file( it->second);
+                const auto fsize = static_cast<quint64>(file.size());
                 const bool rmok = file.remove();
                 if (rmok) {
                     filesTable->removeRow(static_cast<int>(it->first));
+                    _totItemsSize -= fsize;
+                    _foundItemsSize -= fsize;
+                    _totItemCount -= 1;
                     ++delCnt;
                     if ((delCnt % 5) == 0)
                         emit filesTable->itemSelectionChanged();

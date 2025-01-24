@@ -42,13 +42,18 @@ set(PROJECT_SOURCES
     src/util.h
     src/util.cpp
     src/version.h
-    src/macutils.mm
     getinfo.qrc
 )
 
-qt_add_executable(${PROJECT_NAME}
-    ${PROJECT_SOURCES}
-)
+if (APPLE)
+    set(PROJECT_SOURCES ${PROJECT_SOURCES} src/macutils.mm)
+elseif (UNIX)
+elseif(WIN32)
+    set(PROJECT_SOURCES ${PROJECT_SOURCES} getinfo.rc)
+endif()
+MESSAGE(STATUS "PROJECT_SOURCES: ${PROJECT_SOURCES}")
+
+qt_add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
 # Link Qt6 libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
@@ -66,7 +71,8 @@ if(APPLE)
     include_directories(
         /opt/Qt/6.8.1/macos/lib/QtWidgets.framework/Versions/A/Headers
         /opt/Qt/6.8.1/macos/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/images
     )
     link_directories(
         /opt/Qt/6.8.1/macos/lib
@@ -77,7 +83,8 @@ elseif(UNIX AND NOT APPLE)
     include_directories(
         /usr/include/x86_64-linux-gnu/qt6
         /usr/include/x86_64-linux-gnu/qt6/QtWidgets
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/images
     )
     link_directories(
         /usr/lib/x86_64-linux-gnu
@@ -85,6 +92,7 @@ elseif(UNIX AND NOT APPLE)
 elseif(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20 /EHsc /W4 /WX /analyze /permissive- /wd4514 /wd4710 /wd4820 /wd4464 /wd5045")
     set(GUI_TYPE WIN32)
+    set(PROJECT_SOURCES ${PROJECT_SOURCES} getinfo.rc)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         WIN32_EXECUTABLE TRUE
     )
@@ -94,7 +102,8 @@ elseif(WIN32)
     )
     include_directories(
         C:/Qt/6.8.1/msvc2022_64/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/images
     )
     link_directories(
         C:/Qt/6.8.1/msvc2022_64/lib
