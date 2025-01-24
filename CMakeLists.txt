@@ -63,10 +63,12 @@ if(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
     set(GUI_TYPE MACOSX_BUNDLE)
     set_source_files_properties(src/macutils.mm PROPERTIES COMPILE_FLAGS "-x objective-c++")
+    set_source_files_properties(${CMAKE_SOURCE_DIR}/images/getinfo.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/images/getinfo.icns)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_GUI_IDENTIFIER au.devonline.${PROJECT_NAME}
-        MACOSX_BUNDLE_ICON_FILE images/getinfo.png
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/images/Info.plist
     )
     include_directories(
         /opt/Qt/6.8.1/macos/lib/QtWidgets.framework/Versions/A/Headers
