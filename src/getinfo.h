@@ -88,6 +88,7 @@ private slots:
     void dirPathEditTextChanged(const QString & text);
     void completerTimeout();
     void openRunSlot();
+    void openContainingFolderSlot();
     void copyPathSlot();
     void propertiesSlot();
     void showContextMenu(const QPoint & point);
@@ -173,11 +174,12 @@ private:
 
     QTableWidget *filesTable;
 
-    QList<QShortcut *> shortcuts;
-    QAction * openRunAct;
-    QAction * copyPathAct;
-    QAction * propertiesAct;
-    QMenu * contextMenu;
+    QList<QShortcut*> shortcuts;
+    QAction* openRunAct;
+    QAction* openContaingFolderAct;
+    QAction* copyPathAct;
+    QAction* propertiesAct;
+    QMenu* contextMenu;
 
     QWidget * centralWgt;
 

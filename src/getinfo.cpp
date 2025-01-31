@@ -705,7 +705,7 @@ void MainWindow::findBtnClicked()
         findFilesRecursive( _origDirPath, 0);
     }
 
-    setFilesFoundLabel( _stopped ? "INTERRUPTED. " : "");
+    setFilesFoundLabel( _stopped ? "INTERRUPTED. " : "COMPLETED. ");
     setStopped(true);
 
     filesTable->sortByColumn( -1, Qt::AscendingOrder);
@@ -1273,7 +1273,7 @@ void MainWindow::createFilesTable()
     labels.append(QString("Size [KB]"));
     labels.append(QString("Date modified"));
     labels.append(QString("Extension"));
-    labels.append(QString("Kind"));
+    labels.append(QString("Item kind"));
     labels.append(QString("Owner"));
     filesTable->setHorizontalHeaderLabels(labels);
     filesTable->horizontalHeader()->setSectionResizeMode( QHeaderView::Interactive);
@@ -1284,9 +1284,9 @@ void MainWindow::createFilesTable()
     filesTable->setColumnWidth(col++, 180);
     filesTable->setColumnWidth(col++,  80);
     filesTable->setColumnWidth(col++, 150);
-    filesTable->setColumnWidth(col++,  90);
     filesTable->setColumnWidth(col++,  80);
-    filesTable->setColumnWidth(col,    90);
+    filesTable->setColumnWidth(col++, 130);
+    filesTable->setColumnWidth(col,    40);
     filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
 #elif defined (Q_OS_WIN)
     filesTable->setColumnWidth(col++, 320);
@@ -1294,8 +1294,8 @@ void MainWindow::createFilesTable()
     filesTable->setColumnWidth(col++,  70);
     filesTable->setColumnWidth(col++, 140);
     filesTable->setColumnWidth(col++,  80);
-    filesTable->setColumnWidth(col++,  80);
-    filesTable->setColumnWidth(col,    90);
+    filesTable->setColumnWidth(col++, 130);
+    filesTable->setColumnWidth(col,    40);
     filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
 #else
     filesTable->setColumnWidth(col++, 320);
@@ -1303,8 +1303,8 @@ void MainWindow::createFilesTable()
     filesTable->setColumnWidth(col++,  70);
     filesTable->setColumnWidth(col++, 150);
     filesTable->setColumnWidth(col++,  80);
-    filesTable->setColumnWidth(col++,  80);
-    filesTable->setColumnWidth(col,    90);
+    filesTable->setColumnWidth(col++, 130);
+    filesTable->setColumnWidth(col,    40);
     filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
 #endif
 
@@ -1338,39 +1338,6 @@ void MainWindow::itemSelectionChanged()
     shredButton->setEnabled( _stopped && filesTable->selectedItems().count() > 0);
 }
 
-//void MainWindow::createContextMenu()
-//{
-//    try
-//    {
-//        openRunAct = new QAction( QIcon(""), eCod_OPEN_CONT_FOLDER_ACT_TXT, this);
-//        openRunAct->setStatusTip (eCod_OPEN_CONT_FOLDER_STS_TIP);
-//        connect(openRunAct, &QAction::triggered, this, &MainWindow::openRunSlot);
-//        openRunAct->setShortcutContext( Qt::WidgetWithChildrenShortcut);
-//        //openRunAct->setShortcut(         QKeySequence( Qt::Key_F3));
-//        //shortcuts.append( new QShortcut( QKeySequence( Qt::Key_F3), this, SLOT(openRunSlot()), SLOT(openRunSlot()), Qt::WidgetWithChildrenShortcut));
-//
-//        copyPathAct = new QAction( QIcon(""), eCod_COPY_PATH_ACT_TXT, this);
-//        copyPathAct->setStatusTip (eCod_COPY_PATH_STS_TIP);
-//        connect(copyPathAct, &QAction::triggered, this, &MainWindow::copyPathSlot);
-//        copyPathAct->setShortcutContext( Qt::WidgetWithChildrenShortcut);
-//        copyPathAct->setEnabled(false);
-//
-//        propertiesAct = new QAction( QIcon(""), eCod_PROPERTIES_ACT_TXT, this);
-//        propertiesAct->setStatusTip (eCod_PROPERTIES_STS_TIP);
-//        connect(propertiesAct, &QAction::triggered, this, &MainWindow::propertiesSlot);
-//        propertiesAct->setShortcutContext( Qt::WidgetWithChildrenShortcut);
-//        propertiesAct->setEnabled(false);
-//
-//        contextMenu = new QMenu(this);
-//        contextMenu->addAction(openRunAct);
-//        contextMenu->addSeparator();
-//        contextMenu->addAction(copyPathAct);
-//        contextMenu->addAction(propertiesAct);
-//        //contextMenu->setDefaultAction(openRunAct);
-//
-//    }
-//    catch (...) { Q_ASSERT(false); }
-//}
 void MainWindow::createContextMenu()
 {
     try
@@ -1378,11 +1345,13 @@ void MainWindow::createContextMenu()
         contextMenu = new QMenu(this);  // Set parent to ensure proper cleanup
 
         openRunAct = contextMenu->addAction(OvSk_FsOp_OPENRUN_ACT_TXT);
+        openContaingFolderAct = contextMenu->addAction(eCod_OPEN_CONT_FOLDER_ACT_TXT);
         copyPathAct = contextMenu->addAction(eCod_COPY_PATH_ACT_TXT);
         propertiesAct = contextMenu->addAction(eCod_PROPERTIES_ACT_TXT);
 
         // Connect using new syntax
         connect(openRunAct, &QAction::triggered, this, &MainWindow::openRunSlot);
+        connect(openContaingFolderAct, &QAction::triggered, this, &MainWindow::openContainingFolderSlot);
         connect(copyPathAct, &QAction::triggered, this, &MainWindow::copyPathSlot);
         connect(propertiesAct, &QAction::triggered, this, &MainWindow::propertiesSlot);
 
@@ -1433,6 +1402,25 @@ void MainWindow::openRunSlot()
         const auto fileInfo = QFileInfo(item->data(Qt::UserRole).toString());
         // absoluteFilePath() is good for both files and folders
         const auto url = QUrl::fromLocalFile(fileInfo.absoluteFilePath());
+        QDesktopServices::openUrl(url);
+    }
+    catch (...) { Q_ASSERT(false); }
+}
+
+void MainWindow::openContainingFolderSlot()
+{
+    try
+    {
+        const auto selectedItems = filesTable->selectedItems();
+        if (selectedItems.isEmpty()) {
+            qDebug() << "openContainingFolderSlot: No item selected.";
+            return;
+        }
+        const auto item = selectedItems.first();
+        const auto fileInfo = QFileInfo(item->data(Qt::UserRole).toString());
+        // absolutePath() is the containing folder (i.e. absolute path
+        // without the file/folder name)
+        const auto url = QUrl::fromLocalFile(fileInfo.absolutePath());
         QDesktopServices::openUrl(url);
     }
     catch (...) { Q_ASSERT(false); }
