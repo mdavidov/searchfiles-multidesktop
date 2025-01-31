@@ -82,6 +82,16 @@ if(APPLE)
 elseif(UNIX AND NOT APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused -Wdouble-promotion -Wundef -Wcast-align" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
     set(GUI_TYPE "")
+    # Install desktop file
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/getinfo.desktop.in
+                  ${CMAKE_CURRENT_BINARY_DIR}/getinfo.desktop)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/getinfo.desktop
+            DESTINATION share/applications)
+    # Install icon
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/images/getinfo.png
+            DESTINATION share/icons/hicolor/32x32/apps
+            RENAME ${PROJECT_NAME}.png)
+    SET(CMAKE_INSTALL_PREFIX /usr/local)
     include_directories(
         /usr/include/x86_64-linux-gnu/qt6
         /usr/include/x86_64-linux-gnu/qt6/QtWidgets
