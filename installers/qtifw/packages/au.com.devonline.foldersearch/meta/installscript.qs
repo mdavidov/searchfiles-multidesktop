@@ -26,15 +26,24 @@
 **
 ****************************************************************************/
 
+var maintenanceToolSize = 38 * 1024 * 1024;
+
 function Component()
 {
     installer.installationFinished.connect(this, Component.prototype.installationFinishedPageIsShown);
     installer.finishButtonClicked.connect(this, Component.prototype.installationFinished);
+    // IMPORTANT: installer.requiredDiskSpace is a READ-ONLY PROPERTY!
+    // installer.requiredDiskSpace = function() {
+    //     return maintenanceToolSize;
+    // }
 }
 
 Component.prototype.createOperations = function()
 {
     component.createOperations();
+
+    // Does NOT work: Add a custom operation to calculate the total disk space
+    // component.addOperation("CustomOperation", "calculateTotalDiskSpace");
 }
 
 Component.prototype.installationFinishedPageIsShown = function()
