@@ -1,11 +1,11 @@
 
-WHEN ENTER KEY IS PRESSED: START THE SEARCH !!!
+DONE: WHEN ENTER KEY IS PRESSED: START THE SEARCH !!!
 
-INSTALLER / DEPLOYER
+DONE: INSTALLER / DEPLOYER
 
 ABOUT DIALOG
 
-ADD TEXT BOX "{SF}:" to the left of directory combo box
+DONE: ADD TEXT BOX "{SF}:" to the left of directory combo box
 
 READ-ONLY files: warn the user and/or remove read-only attrib
 
