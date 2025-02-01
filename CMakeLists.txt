@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(getinfo VERSION 3.0.0 LANGUAGES CXX)
+project(foldersearch VERSION 3.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -31,8 +31,8 @@ set(PROJECT_SOURCES
     src/common.h
     src/config.h
     src/config.cpp
-    src/getinfo.h
-    src/getinfo.cpp
+    src/foldersearch.hpp
+    src/foldersearch.cpp
     src/exlineedit.h
     src/exlineedit.cpp
     src/keypress.hpp
@@ -42,14 +42,14 @@ set(PROJECT_SOURCES
     src/util.h
     src/util.cpp
     src/version.h
-    getinfo.qrc
+    foldersearch.qrc
 )
 
 if (APPLE)
     set(PROJECT_SOURCES ${PROJECT_SOURCES} src/macutils.mm)
 elseif (UNIX)
 elseif(WIN32)
-    set(PROJECT_SOURCES ${PROJECT_SOURCES} getinfo.rc)
+    set(PROJECT_SOURCES ${PROJECT_SOURCES} foldersearch.rc)
 endif()
 MESSAGE(STATUS "PROJECT_SOURCES: ${PROJECT_SOURCES}")
 
@@ -63,8 +63,8 @@ if(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
     set(GUI_TYPE MACOSX_BUNDLE)
     set_source_files_properties(src/macutils.mm PROPERTIES COMPILE_FLAGS "-x objective-c++")
-    set_source_files_properties(${CMAKE_SOURCE_DIR}/images/getinfo.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-    target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/images/getinfo.icns)
+    set_source_files_properties(${CMAKE_SOURCE_DIR}/images/foldersearch.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/images/foldersearch.icns)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_GUI_IDENTIFIER au.devonline.${PROJECT_NAME}
@@ -83,12 +83,12 @@ elseif(UNIX AND NOT APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused -Wdouble-promotion -Wundef -Wcast-align" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
     set(GUI_TYPE "")
     # Install desktop file
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/getinfo.desktop.in
-                  ${CMAKE_CURRENT_BINARY_DIR}/getinfo.desktop)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/getinfo.desktop
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/foldersearch.desktop.in
+                  ${CMAKE_CURRENT_BINARY_DIR}/foldersearch.desktop)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/foldersearch.desktop
             DESTINATION share/applications)
     # Install icon
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/images/getinfo.png
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/images/foldersearch.png
             DESTINATION share/icons/hicolor/32x32/apps
             RENAME ${PROJECT_NAME}.png)
     SET(CMAKE_INSTALL_PREFIX /usr/local)
@@ -104,7 +104,7 @@ elseif(UNIX AND NOT APPLE)
 elseif(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20 /EHsc /W4 /WX /analyze /permissive- /wd4514 /wd4710 /wd4820 /wd4464 /wd5045")
     set(GUI_TYPE WIN32)
-    set(PROJECT_SOURCES ${PROJECT_SOURCES} getinfo.rc)
+    set(PROJECT_SOURCES ${PROJECT_SOURCES} foldersearch.rc)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         WIN32_EXECUTABLE TRUE
     )

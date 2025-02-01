@@ -24,7 +24,7 @@
 #include "precompiled.h"
 #include "aboutdialog.h"
 #include "helpdialog.h"
-#include "getinfo.h"
+#include "foldersearch.hpp"
 #include "config.h"
 #include "util.h"
 #include "keypress.hpp"
@@ -70,7 +70,7 @@ MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
     , _unlimSubDirDepth(true)
     , _stopped(true)
 {
-    setWindowTitle(QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR + " " + OvSk_FsOp_APP_BUILD_NBR_STR);
+    setWindowTitle(QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR);  // + " " + OvSk_FsOp_APP_BUILD_NBR_STR);
     const auto savedPath = Cfg::St().value(Cfg::origDirPathKey).toString();
     if (!savedPath.isEmpty())
         _origDirPath = savedPath;
@@ -1286,8 +1286,8 @@ void MainWindow::createFilesTable()
     filesTable->setColumnWidth(col++, 150);
     filesTable->setColumnWidth(col++,  80);
     filesTable->setColumnWidth(col++, 130);
-    filesTable->setColumnWidth(col,    40);
-    filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
+    filesTable->setColumnWidth(col,    60);
+    // filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
 #elif defined (Q_OS_WIN)
     filesTable->setColumnWidth(col++, 320);
     filesTable->setColumnWidth(col++, 140);
@@ -1295,8 +1295,8 @@ void MainWindow::createFilesTable()
     filesTable->setColumnWidth(col++, 140);
     filesTable->setColumnWidth(col++,  80);
     filesTable->setColumnWidth(col++, 130);
-    filesTable->setColumnWidth(col,    40);
-    filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
+    filesTable->setColumnWidth(col,    60);
+    // filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
 #else
     filesTable->setColumnWidth(col++, 320);
     filesTable->setColumnWidth(col++, 140);
@@ -1304,8 +1304,8 @@ void MainWindow::createFilesTable()
     filesTable->setColumnWidth(col++, 150);
     filesTable->setColumnWidth(col++,  80);
     filesTable->setColumnWidth(col++, 130);
-    filesTable->setColumnWidth(col,    40);
-    filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
+    filesTable->setColumnWidth(col,    60);
+    // filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
 #endif
 
     //modifyFont(filesTable, +1.0, true, false, false);

@@ -8,7 +8,7 @@
 #define APP_NM          OvSk_FsOp_APP_NM_TXT
 #define APP_EXE         OvSk_FsOp_APP_EXE_TXT
 
-#define APP_INPUT_DIR   "C:\build\getinfo\desktop-qt5.5.1-vs2013-x64\release"
+#define APP_INPUT_DIR   "C:\build\foldersearch\desktop-qt5.5.1-vs2013-x64\release"
 #define INPUT_3RDP_DIR  "C:\qt\qt5.5.1-vs2013-x64\5.5\msvc2013_64"
 
 [Setup]

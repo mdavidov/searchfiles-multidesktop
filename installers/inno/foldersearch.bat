@@ -2,7 +2,7 @@
 @echo.
 set ISCC=C:\Program Files (x86)\Inno Setup 5\ISCC.exe
 
-"%ISCC%" getinfo.iss
+"%ISCC%" foldersearch.iss
 
 @echo.
 pause

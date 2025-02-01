@@ -18,13 +18,13 @@ AboutDialog::AboutDialog(QWidget* parent /*= nullptr*/) : QDialog(parent) {
         <html xmlns="http://www.w3.org/1999/xhtml">
         <head>
         <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
-        <title>About getinfo</title>
+        <title>About foldersearch</title>
         <!--<link href="style.css" rel="stylesheet" type="text/css"/>-->
         </head>
         <body>
         <div id="main_content" align="center">
         <div id="content"  align="center">
-        <!--<p><img src="images/getinfo.png"</img></p>-->
+        <!--<p><img src="images/foldersearch.png"</img></p>-->
         <br/>
         <h2><a href="http://devonline.au">devonline.au</a></h2>
         <br/>

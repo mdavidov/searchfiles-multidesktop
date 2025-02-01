@@ -10,7 +10,7 @@
 ****************************************************************************/
 #include "precompiled.h"
 #include "config.h"
-#include "getinfo.h"
+#include "foldersearch.hpp"
 #include <QApplication>
 
 int main(int argc, char* argv[])
@@ -23,8 +23,8 @@ int main(int argc, char* argv[])
         QCoreApplication::setOrganizationDomain( OvSk_FsOp_COPMANY_DOMAIN_TXT );
         QCoreApplication::setApplicationName(    OvSk_FsOp_APP_NAME_TXT );
 		QCoreApplication::setApplicationVersion( OvSk_FsOp_APP_VERSION_STR);
-        Q_INIT_RESOURCE(getinfo);
-        app.setWindowIcon(QIcon(":/images/getinfo.png"));
+        Q_INIT_RESOURCE(foldersearch);
+        app.setWindowIcon(QIcon(":/images/foldersearch.png"));
 
         Devonline::MainWindow mw(QDir::currentPath());
         mw.show();

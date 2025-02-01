@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/foldersearch.ico</file>
+        <file>images/foldersearch.png</file>
+    </qresource>
+</RCC>
