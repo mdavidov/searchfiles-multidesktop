@@ -21,6 +21,6 @@ Multi-platform desktop GUI app (C++ Qt6) with the following features:
 * Mac
 * Windows
 
-## License
+## Uninstallation
 
-TODO
+This app can be uninstalled by running the __maintenancetool__ app which is located in the same folder as the foldersearch app.

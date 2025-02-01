@@ -17,7 +17,7 @@
    <item>
     <widget class="QCheckBox" name="readMeCheckBox">
      <property name="text">
-      <string>Open ReadMe</string>
+      <string>Open README.md</string>
      </property>
      <property name="checked">
       <bool>true</bool>

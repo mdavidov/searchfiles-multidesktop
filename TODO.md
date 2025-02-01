@@ -2,6 +2,7 @@
 
 ## Features to be developed
 
+1. FIX installer's incorrect disk space estimate (size of maintenance tool is not taken into account)
 1. Match whole words or not
 1. Match by regular expressions
 1. Search by file extension

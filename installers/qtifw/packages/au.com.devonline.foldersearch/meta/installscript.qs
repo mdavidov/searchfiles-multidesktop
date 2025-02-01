@@ -63,7 +63,7 @@ Component.prototype.installationFinished = function()
         if (installer.isInstaller() && installer.status == QInstaller.Success) {
             var checkboxForm = component.userInterface( "ReadMeCheckBoxForm" );
             if (checkboxForm && checkboxForm.readMeCheckBox.checked) {
-                QDesktopServices.openUrl("file:///" + installer.value("TargetDir") + "/README.txt");
+                QDesktopServices.openUrl("file:///" + installer.value("TargetDir") + "/README.md");
             }
         }
     } catch(e) {
