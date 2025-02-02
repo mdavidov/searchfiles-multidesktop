@@ -31,6 +31,7 @@
 #include <map>
 #include <QApplication>
 #include <QDir>
+#include <QIODevice>
 #include <QProcess>
 #include <QDesktopServices>
 #include <QtGui>
@@ -907,13 +908,25 @@ bool MainWindow::fileContainsAnyWord( QFile & file,  const QStringList & wordLis
     return false;
 }
 
-QStringList MainWindow::findTextInFiles( const QStringList & files, const QString & textToFind)
+QString readFileContents(const QString& filePath, const QFileInfo& fileInfo)
+{
+    if (!fileInfo.isFile() || fileInfo.isDir() || fileInfo.isSymLink() || fileInfo.size() == 0) {
+        return QString();
+    }
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Cannot open file as text, error" << file.errorString() << filePath;
+        return QString();
+    }
+    return QString::fromUtf8(file.readAll());
+}
+
+QStringList MainWindow::findTextInFiles( const QStringList& files, const QString& textToFind)
 {
     if (files.isEmpty()) {
         setFilesFoundLabel();
         return QStringList();
     }
-
     QStringList foundFiles;
 
     for (int i = 0; i < files.size(); ++i)
@@ -923,30 +936,18 @@ QStringList MainWindow::findTextInFiles( const QStringList & files, const QStrin
         }
         if (isTimeToReport()) {
             qApp->processEvents();
-            filesFoundLabel->setText( tr("Getting info, file %1 of %2...").arg(i).arg(files.count()));
+            filesFoundLabel->setText( tr("Searching file %1 of %2...").arg(i).arg(files.size()));
         }
-
-        QFile file( files[i]);
-
-        if (file.open(QIODevice::ReadOnly)) {
-            QString line;
-            QTextStream in(&file);
-
-            while (!in.atEnd())
-            {
-                if (_stopped) {
-                    break;
-                }
-                if (isTimeToReport())
-                    qApp->processEvents();
-
-                line = in.readLine();
-                if (line.contains( textToFind, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
-                    foundFiles << files[i];
-                    appendFileToTable( files[i], QFileInfo( files[i]));
-                    break;
-                }
-            }
+        QFile file(files[i]);
+        const auto fileInfo = QFileInfo(file);
+        const auto contents = readFileContents(fileInfo.absoluteFilePath(), fileInfo);
+        if (contents.isEmpty()) {
+            qWarning() << "File empty or failed to read it" << fileInfo.absoluteFilePath();
+            continue;
+        }
+        if (contents.contains(textToFind, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
+            foundFiles << files[i];
+            appendFileToTable( files[i], fileInfo);
         }
     }
     qApp->processEvents();

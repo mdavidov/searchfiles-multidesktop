@@ -54,6 +54,7 @@ endif()
 MESSAGE(STATUS "PROJECT_SOURCES: ${PROJECT_SOURCES}")
 
 qt_add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+qt_add_executable(qt-file-readall src/qt-file-readall.cpp)
 
 # Link Qt6 libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
@@ -71,6 +72,7 @@ if(APPLE)
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/images/Info.plist
     )
     include_directories(
+        /opt/Qt/6.8.1/macos/lib/QtCore.framework/Versions/A/Headers
         /opt/Qt/6.8.1/macos/lib/QtWidgets.framework/Versions/A/Headers
         /opt/Qt/6.8.1/macos/include
         ${CMAKE_SOURCE_DIR}/src

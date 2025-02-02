@@ -2,15 +2,14 @@
 
 ## Features to be developed
 
-1. FIX installer's incorrect disk space estimate (size of maintenance tool is not taken into account)
-1. Match whole words or not
+1. Match whole words only
 1. Match by regular expressions
 1. Search by file extension
 1. Search by file size (range)
 1. Search by file modification and creation dates (ranges)
 1. Search within results
 1. Add back & forward buttons (to the navigation layout, which is above Search Folder control)
-1. READ-ONLY files when deleting: warn the user and/or remove read-only attrib
+1. Read-only files when deleting: warn the user and/or remove read-only attrib
 1. License
 
 ## Performance improvements
