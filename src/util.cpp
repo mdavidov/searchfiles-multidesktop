@@ -113,15 +113,16 @@ namespace Devonline
         //                .arg( elapsedTime.toString("H:mm:ss.zzz' (hr:min:sec.ms)'"));
     }
 
-    void indicateErrorDbg(const QString & text)
+    void indicateErrorDbg(const QString& text)
     {
+        (void) text;
         #ifndef NDEBUG
-            try
-            {
-                QMessageBox::warning( 0, text, text);
+            try {
+                #if !defined(Q_OS_MAC)
+                    QMessageBox::warning( 0, text, text);
+                #endif
             }
-            catch (...)
-            {
+            catch (...) {
             }
         #else
             (void) text;

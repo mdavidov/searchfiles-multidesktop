@@ -26,6 +26,7 @@ class QPushButton;
 class QTableWidget;
 class QTableWidgetItem;
 class QProgressDialog;
+class QFileinfo;
 class QFileSystemModel;
 class QKeyEvent;
 class QLineEdit;
@@ -97,6 +98,9 @@ private slots:
     void showHelpDialog();
 
 private:
+    bool isHidden(const QFileInfo& fileInfo) const;
+    QString FsItemType(const QFileInfo& fileInfo) const;
+
     QStringList findTextInFiles(const QStringList &files, const QString &text);
     void showFiles(const QStringList &files);
     QPushButton *createButton(const QString &text, const char *member);

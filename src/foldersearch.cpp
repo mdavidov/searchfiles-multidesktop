@@ -31,6 +31,7 @@
 #include <map>
 #include <QApplication>
 #include <QDir>
+#include <QFileInfo>
 #include <QIODevice>
 #include <QProcess>
 #include <QDesktopServices>
@@ -56,6 +57,10 @@ const int RELPATH_COL_IDX = 0;
 #else
     #define eCod_MIN_PATH_LEN 1
 #endif
+
+bool MainWindow ::isHidden(const QFileInfo& fileInfo) const {
+    return  fileInfo.isHidden() || fileInfo.fileName().startsWith('.');
+}
 
 MainWindow::~MainWindow()
 {
@@ -347,7 +352,7 @@ void MainWindow::scopeCheckClicked(int /*newCheckState*/)
 
 void MainWindow::goUpBtnClicked()
 {
-    const QString dirPath = dirComboBox->currentText();
+    const QString dirPath = dirComboBox->currentText().trimmed();
     if (dirPath.isEmpty())
         return;
     QDir dir(dirPath);
@@ -361,7 +366,8 @@ void MainWindow::goUpBtnClicked()
 
 void MainWindow::browseBtnClicked()
 {
-    const QString selDir = QFileDialog::getExistingDirectory(this, tr("Select folder"), dirComboBox->currentText());
+    const QString selDir = QFileDialog::getExistingDirectory(this, tr("Select folder"),
+                            dirComboBox->currentText().trimmed());
     if (!selDir.isEmpty())
         SetDirPath(selDir);
 }
@@ -406,8 +412,12 @@ void MainWindow::deleteBtnClicked()
     try {
         _opType = Devonline::Op::deletePerm;
         if (filesTable->selectedItems().isEmpty()) {
-            QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
-            return;
+            #if !defined(Q_OS_MAC)
+                QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
+            #else
+                qWarning() << OvSk_FsOp_SELECT_FOUNDFILES_TXT;
+            #endif
+            // return;
         }
 
         setStopped(false);
@@ -499,8 +509,12 @@ void MainWindow::shredBtnClicked()
         _opType = Devonline::Op::shredPerm;
         setStopped(true);
         if (filesTable->selectedItems().isEmpty()) {
-            QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
-            return;
+            #if !defined(Q_OS_MAC)
+                QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
+            #else
+                qWarning() << OvSk_FsOp_SELECT_FOUNDFILES_TXT;
+            #endif
+            // return;
         }
 
         // TODO - IMPLEMENT Shredding
@@ -635,14 +649,17 @@ bool MainWindow::findFilesPrep()
     _matchCase = matchCaseCheck->isChecked();
 
     qDebug() << "dirComboBox->currentText" << dirComboBox->currentText() << "length" << dirComboBox->currentText().length();
-    if (dirComboBox->currentText().length() == 0) {
+    const auto dirComboCurrent = dirComboBox->currentText().trimmed();
+    if (dirComboCurrent.length() == 0) {
         qDebug() << "Select a folder to search please.";
-        // #if !defined(Q_OS_MAC)
+        #if !defined(Q_OS_MAC)
             QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, QString("Select a folder to search please."));
-	    // #endif
-        return false;
+        #else
+            qWarning() << "Select a folder to search please.";
+	    #endif
+        // return false;
     }
-    _origDirPath = QDir::toNativeSeparators( dirComboBox->currentText());
+    _origDirPath = QDir::toNativeSeparators(dirComboCurrent);
     qDebug() << "_origDirPath" << _origDirPath;
     if (_origDirPath.startsWith("~")) {
         _origDirPath = (_origDirPath.length() > 1) ?
@@ -651,12 +668,14 @@ bool MainWindow::findFilesPrep()
         qDebug() << "_origDirPath" << _origDirPath;
     }
     QDir origDir = QDir(_origDirPath);
-    if (!origDir.exists()) {
+    if (_origDirPath.isEmpty() || !origDir.exists()) {
         const QString msg = OvSk_FsOp_DIR_NOT_EXISTS_TXT + _origDirPath;
         qDebug() << msg;
-        // #if !defined(Q_OS_MAC)
+        #if !defined(Q_OS_MAC)
             QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, msg);
-	    // #endif
+        #else
+            qWarning() << msg;
+	    #endif
         return false;
     }
     while (_origDirPath.length() > eCod_MIN_PATH_LEN && _origDirPath.endsWith( QDir::separator())) {
@@ -689,12 +708,14 @@ void MainWindow::findBtnClicked()
         return;
     }
     if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
-        filesTable->sortByColumn( -1, Qt::AscendingOrder);
-        filesTable->setSortingEnabled( true);
-        // #if !defined(Q_OS_MAC)
+        // filesTable->sortByColumn( -1, Qt::AscendingOrder);
+        // filesTable->setSortingEnabled( true);
+        #if !defined(Q_OS_MAC)
             QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
-	    // #endif
-        return;
+        #else
+            qWarning() << OvSk_FsOp_SELECT_ITEM_TYPE_TXT;
+	    #endif
+        // return;
     }
     filesTable->setSortingEnabled( false);
     Clear();
@@ -715,40 +736,45 @@ void MainWindow::findBtnClicked()
   catch (...) { Q_ASSERT(false); } // TODO tell the user
 }
 
-bool MainWindow::findItem(const QString & dirPath, const QFileInfo& fileInfo)
+bool MainWindow::findItem(const QString& dirPath, const QFileInfo& fileInfo)
 {
     try {
         if (isTimeToReport())
             qApp->processEvents();
-        const QString filePath = QDir::fromNativeSeparators( fileInfo.absoluteFilePath());
-        bool toExclude = fileInfo.isHidden() && exclHiddenCheck->isChecked();
-        if (!toExclude && !_exclFolderPatterns.isEmpty()) {
-            toExclude = StringContainsAnyWord( dirPath, _exclFolderPatterns);
-        }
-        if (!toExclude && fileInfo.isFile() && !_exclFilePatterns.isEmpty()) {
-            toExclude = StringContainsAnyWord( fileInfo.fileName(), _exclFilePatterns);
-        }
-        if (!toExclude && fileInfo.isFile() && !_exclusionWords.isEmpty()) {
-            toExclude = fileContainsAnyWord( filePath, _exclusionWords);
-        }
+        const auto filePath = QDir::fromNativeSeparators(fileInfo.absoluteFilePath());
+        bool toExclude = isHidden(fileInfo) && exclHiddenCheck->isChecked();
         if (!toExclude) {
-            bool toAppend = false;
-            if (fileInfo.isSymLink()) {
-                toAppend = symlinksCheck->isChecked();
-            }
-            if (fileInfo.isDir()) {
-                toAppend |= foldersCheck->isChecked();
-            }
+            if (!_exclFolderPatterns.isEmpty())
+                toExclude = StringContainsAnyWord( dirPath, _exclFolderPatterns);
             if (fileInfo.isFile()) {
-                toAppend |= filesCheck->isChecked() && (_searchWords.isEmpty() ||
-                            fileContainsAllWords( filePath, _searchWords));
+                if (!_exclFilePatterns.isEmpty())
+                    toExclude = StringContainsAnyWord( fileInfo.fileName(), _exclFilePatterns);
+                if (!_exclusionWords.isEmpty())
+                    toExclude = fileContainsAnyWord( filePath, _exclusionWords);
             }
-            if (toAppend)
-            {
-                _outFiles.append( filePath);
-                appendFileToTable( filePath, fileInfo);
-                _foundItemsSize += static_cast<quint64>(fileInfo.size());
-            }
+        }
+        if (toExclude) {
+            qDebug() << "EXCLUDED: " << filePath << "hidden:" << isHidden(fileInfo);
+            return false;
+        }
+        bool toAppend = false;
+        if (fileInfo.isSymLink() && _searchWords.isEmpty()) {
+            toAppend = symlinksCheck->isChecked();
+        }
+        if (fileInfo.isDir() && _searchWords.isEmpty()) {
+            toAppend = foldersCheck->isChecked();
+        }
+        if (fileInfo.isFile() && filesCheck->isChecked()) {
+            toAppend = _searchWords.isEmpty() || fileContainsAllWords( filePath, _searchWords);
+        }
+        if (toAppend) {
+            _outFiles.append( filePath);
+            appendFileToTable( filePath, fileInfo);
+            _foundItemsSize += static_cast<quint64>(fileInfo.size());
+            // qDebug() << "APPENDED" << filePath << "hidden:" << isHidden(fileInfo);
+        }
+        else if (fileInfo.isFile() && !_searchWords.isEmpty()) {
+            qDebug() << "NOT APPENDED" << filePath << "hidden:" << isHidden(fileInfo);
         }
         return true;
     }
@@ -1136,7 +1162,7 @@ QComboBox* MainWindow::createComboBoxText()
     return comboBox;
 }
 
-inline QString FsItemType(const QFileInfo & fileInfo)
+QString MainWindow::FsItemType(const QFileInfo & fileInfo) const
 {
     QString fsType;
     if (fileInfo.isSymLink()) {
@@ -1154,7 +1180,7 @@ inline QString FsItemType(const QFileInfo & fileInfo)
     else
         fsType = "";
 
-    if (fileInfo.isHidden() || fileInfo.fileName().startsWith("."))
+    if (isHidden(fileInfo))
         fsType += " - hidden";
 
     return fsType;
@@ -1164,8 +1190,8 @@ void MainWindow::appendFileToTable(const QString filePath, const QFileInfo & fil
 {
   try
   {
-    if (exclHiddenCheck->isChecked() &&
-        (fileInfo.isHidden() || fileInfo.fileName().startsWith("."))) {
+    if (exclHiddenCheck->isChecked() && isHidden(fileInfo)) {
+        qDebug() << "EXCLUDED: " << filePath << "hidden:" << isHidden(fileInfo);
         return;
     }
 
