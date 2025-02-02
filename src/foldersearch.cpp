@@ -415,7 +415,7 @@ void MainWindow::deleteBtnClicked()
             #if !defined(Q_OS_MAC)
                 QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
             #else
-                qWarning() << OvSk_FsOp_SELECT_FOUNDFILES_TXT;
+                qDebug() << OvSk_FsOp_SELECT_FOUNDFILES_TXT;
             #endif
             // return;
         }
@@ -512,7 +512,7 @@ void MainWindow::shredBtnClicked()
             #if !defined(Q_OS_MAC)
                 QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
             #else
-                qWarning() << OvSk_FsOp_SELECT_FOUNDFILES_TXT;
+                qDebug() << OvSk_FsOp_SELECT_FOUNDFILES_TXT;
             #endif
             // return;
         }
@@ -655,7 +655,7 @@ bool MainWindow::findFilesPrep()
         #if !defined(Q_OS_MAC)
             QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, QString("Select a folder to search please."));
         #else
-            qWarning() << "Select a folder to search please.";
+            qDebug() << "Select a folder to search please.";
 	    #endif
         // return false;
     }
@@ -674,7 +674,7 @@ bool MainWindow::findFilesPrep()
         #if !defined(Q_OS_MAC)
             QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, msg);
         #else
-            qWarning() << msg;
+            qDebug() << msg;
 	    #endif
         return false;
     }
@@ -713,7 +713,7 @@ void MainWindow::findBtnClicked()
         #if !defined(Q_OS_MAC)
             QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
         #else
-            qWarning() << OvSk_FsOp_SELECT_ITEM_TYPE_TXT;
+            qDebug() << OvSk_FsOp_SELECT_ITEM_TYPE_TXT;
 	    #endif
         // return;
     }
@@ -863,13 +863,20 @@ bool MainWindow::StringContainsAnyWord(const QString & theString, const QStringL
 bool MainWindow::fileContainsAllWords( const QString & filePath, const QStringList & wordList)
 {
     QFile file( filePath);
-    if (!file.open(QIODevice::ReadOnly))
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << "Cannot open file as text, error" << file.errorString() << filePath;
         return false;
+    }
+    qDebug() << "file size" << file.size() << "filePath" << filePath;
 
+    const auto fileContent = QString::fromUtf8(file.readAll());
+    qDebug() << "fileContent length" << fileContent.length();
     foreach (QString word, wordList)
     {
         if (!fileContainsWord( file, word))
             return false;
+        // if (!fileContent.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
+        //     return false;
     }
     return true;
 }
@@ -879,15 +886,12 @@ bool MainWindow::fileContainsWord( QFile & file, const QString & word)
     file.seek(0);
     QString line;
     QTextStream stream(&file);
-
     while (!stream.atEnd())
     {
         if (isTimeToReport())
             qApp->processEvents();
-
         if (_stopped)
             return false;
-
         line = stream.readLine();
         if (line.contains( word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
             return true;
@@ -895,36 +899,43 @@ bool MainWindow::fileContainsWord( QFile & file, const QString & word)
     return false;
 }
 
-bool MainWindow::fileContainsAnyWord( const QString & filePath, const QStringList & wordList)
+bool MainWindow::fileContainsAnyWord(const QString& filePath, const QStringList& wordList)
 {
     try
     {
-        QFile file( filePath);
-        if (!file.open(QIODevice::ReadOnly))
+        QFile file(filePath);
+        if (!file.open(QIODevice::ReadOnly)) {
+            qDebug() << "Cannot open file as text, error" << file.errorString() << filePath;
             return false;
+        }
+        qDebug() << "file size" << file.size() << "filePath" << filePath;
 
-        return fileContainsAnyWord( file, wordList);
+        return fileContainsAnyWord(file, wordList);
+        // const auto fileContent = QString::fromUtf8(file.readAll());
+        // qDebug() << "fileContent length" << fileContent.length();
+        // foreach (QString word, wordList)
+        // {
+        //     if (fileContent.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
+        //         return true;
+        // }
+        // return false;
     }
     catch (...) { Q_ASSERT(false); } // TODO tell the user
     return true;
 }
 
-bool MainWindow::fileContainsAnyWord( QFile & file,  const QStringList & wordList)
+bool MainWindow::fileContainsAnyWord(QFile& file,  const QStringList& wordList)
 {
     file.seek(0);
     QString line;
     QTextStream stream(&file);
-
     while (!stream.atEnd())
     {
         if (isTimeToReport())
             qApp->processEvents();
-
         if (_stopped)
             return false;
-
         line = stream.readLine();
-
         foreach (QString word, wordList)
         {
             if (line.contains( word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
@@ -934,14 +945,14 @@ bool MainWindow::fileContainsAnyWord( QFile & file,  const QStringList & wordLis
     return false;
 }
 
-QString readFileContents(const QString& filePath, const QFileInfo& fileInfo)
+QString readFileContent(const QString& filePath, const QFileInfo& fileInfo)
 {
     if (!fileInfo.isFile() || fileInfo.isDir() || fileInfo.isSymLink() || fileInfo.size() == 0) {
         return QString();
     }
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "Cannot open file as text, error" << file.errorString() << filePath;
+        qDebug() << "Cannot open file as text, error" << file.errorString() << filePath;
         return QString();
     }
     return QString::fromUtf8(file.readAll());
@@ -966,12 +977,12 @@ QStringList MainWindow::findTextInFiles( const QStringList& files, const QString
         }
         QFile file(files[i]);
         const auto fileInfo = QFileInfo(file);
-        const auto contents = readFileContents(fileInfo.absoluteFilePath(), fileInfo);
-        if (contents.isEmpty()) {
-            qWarning() << "File empty or failed to read it" << fileInfo.absoluteFilePath();
+        const auto content = readFileContent(fileInfo.absoluteFilePath(), fileInfo);
+        if (content.isEmpty()) {
+            qDebug() << "File empty or failed to read it" << fileInfo.absoluteFilePath();
             continue;
         }
-        if (contents.contains(textToFind, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
+        if (content.contains(textToFind, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
             foundFiles << files[i];
             appendFileToTable( files[i], fileInfo);
         }
