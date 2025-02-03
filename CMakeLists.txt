@@ -8,11 +8,18 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 IF(APPLE)
-    SET(Qt6_DIR "/opt/Qt/6.8.1/macos/lib/cmake/Qt6")
+    SET(Qt6_DIR "/opt/Qt/6.8.1/macos")
 ELSEIF(UNIX)
 ELSEIF(WIN32)
-    SET(Qt6_DIR "C:/Qt/6.8.1/msvc2022_64/lib/cmake/Qt6")
+    SET(Qt6_DIR "C:/Qt/6.8.1/msvc2022_64")
+    SET(CMAKE_PREFIX_PATH "C:/Qt/6.8.1/msvc2022_64")
 ENDIF()
+
+LIST(APPEND CMAKE_MODULE_PATH
+    "${Qt6_DIR}/lib/cmake/Qt6"
+    "${Qt6_DIR}/lib/cmake/Qt6Quick"
+    "${Qt6_DIR}/lib/cmake/Qt6Controls"
+)
 
 FIND_PACKAGE(Qt6 REQUIRED COMPONENTS
     Core
@@ -58,7 +65,11 @@ qt_add_executable(qt-file-readall src/qt-file-readall.cpp)
 qt_add_executable(qt-folder-scan src/qt-folder-scan.cpp)
 
 # Link Qt6 libraries
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+)
 
 # Set target properties
 if(APPLE)
