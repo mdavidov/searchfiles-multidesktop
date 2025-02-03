@@ -1247,7 +1247,7 @@ void MainWindow::appendFileToTable(const QString filePath, const QFileInfo& file
     filesTable->setItem(row, col++, ownerItem);
 
     filesTable->setRowHeight(row, 45);
-    //filesTable->scrollToItem(fileNameItem);
+    filesTable->scrollToItem(fileNameItem);
     filesFoundLabel->setText(tr("Found %1 items so far...").arg(row + 1));
   }
   catch(...) { Q_ASSERT(false); }
