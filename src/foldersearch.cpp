@@ -831,7 +831,8 @@ void MainWindow::findFilesRecursive( const QString & dirPath, qint32 subDirDepth
         QStringList subDirs = curDir.entryList( filters);
         foreach (QString subDir, subDirs)
         {
-            if (_stopped) return;
+            if (_stopped)
+                return;
             const QString absSubDirPath = curDir.absoluteFilePath( subDir);
             const QFileInfo subDirInfo( absSubDirPath);
             if (subDirInfo.isDir() && !subDirInfo.isSymLink()) // do not follow symlinks

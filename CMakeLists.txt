@@ -55,6 +55,7 @@ MESSAGE(STATUS "PROJECT_SOURCES: ${PROJECT_SOURCES}")
 
 qt_add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 qt_add_executable(qt-file-readall src/qt-file-readall.cpp)
+qt_add_executable(qt-folder-scan src/qt-folder-scan.cpp)
 
 # Link Qt6 libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
