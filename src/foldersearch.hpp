@@ -100,6 +100,9 @@ private slots:
 private:
     bool isHidden(const QFileInfo& fileInfo) const;
     QString FsItemType(const QFileInfo& fileInfo) const;
+    void updateTotals(const QString& currPath);
+    void getFileInfos(const QString& currPath, QFileInfoList& fileInfos) const;
+    void traverseDir(const QString& startPath, int maxDepth);
 
     // QStringList findTextInFiles(const QStringList &files, const QString &text);
     void showFiles(const QStringList &files);

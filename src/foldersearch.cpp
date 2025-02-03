@@ -613,12 +613,12 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
     sizeToHumanReadable(_totItemsSize, totItemsSizeStr);
     QString foundItemsSizeStr;
     sizeToHumanReadable(_foundItemsSize, foundItemsSizeStr);
-    const auto items = filesTable->rowCount() == 1 ? "item" : "items";
+    const auto itemsTxt = filesTable->rowCount() == 1 ? "item" : "items";
     const auto foundLabelText =
         prefix
-        + tr("Found %1 matching %2, combined size %3 (searched %4 items, combined size %5). ")
+        + tr("Found %1 matching %2, %3 (searched %4 items, %5). ")
             .arg(filesTable->rowCount())
-            .arg(items)
+            .arg(itemsTxt)
             .arg(foundItemsSizeStr)
             .arg(_totItemCount)
             .arg(totItemsSizeStr);
@@ -724,9 +724,8 @@ void MainWindow::findBtnClicked()
 
     if (findFilesPrep())
     {
-        // PROCESS FILES
-        qApp->processEvents();
-        findFilesRecursive( _origDirPath, 0);
+        // GO FIND THEM
+        traverseDir(_origDirPath, _unlimSubDirDepth ? -1 : _maxSubDirDepth);
     }
 
     setFilesFoundLabel( _stopped ? "INTERRUPTED. " : "COMPLETED. ");
@@ -787,12 +786,60 @@ bool MainWindow::findItem(const QString& dirPath, const QFileInfo& fileInfo)
 quint64 MainWindow::combinedSize(const QFileInfoList& items)
 {
     quint64 csz = 0;
-    foreach (QFileInfo item, items)
-    {
+    for (const auto& item : items) {
         if (_stopped) return csz;
         csz += static_cast<quint64>(item.size());
     }
     return csz;
+}
+
+void MainWindow::updateTotals(const QString& currPath)
+{
+    const QDir unFilteredDir = QDir(currPath);
+    static constexpr QDir::Filters unfilters = QDir::AllEntries | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot;
+    const QFileInfoList unFilteredItems = unFilteredDir.entryInfoList(unfilters);
+    _totItemCount += unFilteredItems.count();
+    _totItemsSize += combinedSize(unFilteredItems);
+}
+
+void MainWindow::getFileInfos(const QString& currPath, QFileInfoList& fileInfos) const
+{
+        QDir currDir(currPath);
+        currDir.setNameFilters(_fileNameSubfilters);
+        currDir.setFilter(_itemTypeFilter);
+        QDir::Filters filters = QDir::AllEntries | QDir::System | QDir::NoDotAndDotDot;
+        if (!exclHiddenCheck->isChecked())
+            filters |= QDir::Hidden;
+        fileInfos = currDir.entryInfoList(filters);
+}
+
+void MainWindow::traverseDir(const QString& startPath, int maxDepth)
+{
+    QQueue<QPair<QString, int>> dirQ;
+    dirQ.enqueue({startPath, 0});
+
+    while (!dirQ.empty()) {
+        const auto [currPath, currDepth] = dirQ.dequeue();
+        if (currDepth > maxDepth && maxDepth >= 0) {
+            return;
+        }
+        ++_dirCount;
+        if (isTimeToReport()) {
+            qApp->processEvents();
+            filesFoundLabel->setText( tr("Examined %1 items in %2 folders so far...").arg(_totItemCount).arg(_dirCount));
+        }
+        QFileInfoList fileInfos;
+        getFileInfos(currPath, fileInfos);
+        updateTotals(currPath);
+
+        for (const auto& entry : fileInfos) {
+            if (_stopped)
+                return;
+            if (entry.isDir() && !entry.isSymLink() && (currDepth < maxDepth || maxDepth < 0))
+                dirQ.enqueue({entry.absoluteFilePath(), currDepth + 1});
+            findItem(currPath, entry);
+        }
+    }
 }
 
 void MainWindow::findFilesRecursive( const QString & dirPath, qint32 subDirDepth)
