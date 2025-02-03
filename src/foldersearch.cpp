@@ -411,7 +411,7 @@ void MainWindow::deleteBtnClicked()
 {
     try {
         _opType = Devonline::Op::deletePerm;
-        if (filesTable->selectedItems().isEmpty()) {
+        if (filesTable->selectedItems().empty()) {
             #if !defined(Q_OS_MAC)
                 QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
             #else
@@ -419,11 +419,9 @@ void MainWindow::deleteBtnClicked()
             #endif
             // return;
         }
-
         setStopped(false);
         _elTimer.restart();
         qApp->processEvents();
-
         Uint64StringMap itemList;
         getSelectedItems(itemList); // GET SELECTED ITEMS
 
@@ -431,8 +429,8 @@ void MainWindow::deleteBtnClicked()
 
         emit filesTable->itemSelectionChanged();
         qApp->processEvents();
+        setFilesFoundLabel( _stopped ? "INTERRUPTED. " : "COMPLETED. ");
         setStopped(true);
-        setFilesFoundLabel();
     }
     catch (...) { Q_ASSERT(false); } // TODO tell the user
     setStopped(true);
@@ -460,11 +458,14 @@ void MainWindow::getSelectedItems(Uint64StringMap& itemList)
 
 void MainWindow::removeItems(const Uint64StringMap& itemList)
 {
+    qApp->processEvents();
     int delCnt = 0;
     for (Uint64StringMap::const_iterator it = itemList.cbegin(); it != itemList.cend(); ++it)
     {
         try {
-            if (_stopped) break;
+            if (_stopped) {
+                break;
+            }
             const QString path = it->second;
 
             if (!QFileInfo(path).isDir()) {
@@ -508,7 +509,7 @@ void MainWindow::shredBtnClicked()
     {
         _opType = Devonline::Op::shredPerm;
         setStopped(true);
-        if (filesTable->selectedItems().isEmpty()) {
+        if (filesTable->selectedItems().empty()) {
             #if !defined(Q_OS_MAC)
                 QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
             #else
@@ -562,6 +563,7 @@ void MainWindow::Clear()
         _elTimer.restart();
         _prevEl = 0;
         setStopped(true);
+        qApp->processEvents();
     }
     catch (...) { Q_ASSERT(false); }
 }
@@ -605,24 +607,23 @@ void MainWindow::setStopped(bool stopped)
   catch (...) { Q_ASSERT(false); }
 }
 
-void MainWindow::setFilesFoundLabel(const QString & prefix/*= QString()*/)
+void MainWindow::setFilesFoundLabel(const QString& prefix)
 {
     QString totItemsSizeStr;
     sizeToHumanReadable(_totItemsSize, totItemsSizeStr);
     QString foundItemsSizeStr;
     sizeToHumanReadable(_foundItemsSize, foundItemsSizeStr);
-    if (filesTable->rowCount() == 0) {
-        filesFoundLabel->setText( prefix + tr("Found no items (searched %1 items, combined size %2).")
-            .arg(_totItemCount).arg(totItemsSizeStr));
-    }
-    else if (filesTable->rowCount() == 1) {
-        filesFoundLabel->setText( prefix + tr("Found 1 item, size %1 (searched %2 items, combined size %3). ")
-            .arg(foundItemsSizeStr).arg(_totItemCount).arg(totItemsSizeStr));
-    }
-    else if (filesTable->rowCount() > 1) {
-        filesFoundLabel->setText( prefix + tr("Found %1 items, combined size %2 (searched %3 items, combined size %4). ")
-            .arg(filesTable->rowCount()).arg(foundItemsSizeStr).arg(_totItemCount).arg(totItemsSizeStr));
-    }
+    const auto items = filesTable->rowCount() == 1 ? "item" : "items";
+    const auto foundLabelText =
+        prefix
+        + tr("Found %1 matching %2, combined size %3 (searched %4 items, combined size %5). ")
+            .arg(filesTable->rowCount())
+            .arg(items)
+            .arg(foundItemsSizeStr)
+            .arg(_totItemCount)
+            .arg(totItemsSizeStr);
+    filesFoundLabel->setText(foundLabelText);
+    qDebug() << foundLabelText;
 }
 
 bool MainWindow::findFilesPrep()
@@ -704,7 +705,7 @@ void MainWindow::findBtnClicked()
         filesTable->sortByColumn( -1, Qt::AscendingOrder);
         filesTable->setSortingEnabled( true);
         setStopped(true);
-        setFilesFoundLabel(tr("Stopped. "));
+        setFilesFoundLabel(tr("STOPPED. "));
         return;
     }
     if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
@@ -724,6 +725,7 @@ void MainWindow::findBtnClicked()
     if (findFilesPrep())
     {
         // PROCESS FILES
+        qApp->processEvents();
         findFilesRecursive( _origDirPath, 0);
     }
 
@@ -744,12 +746,12 @@ bool MainWindow::findItem(const QString& dirPath, const QFileInfo& fileInfo)
         const auto filePath = QDir::fromNativeSeparators(fileInfo.absoluteFilePath());
         bool toExclude = isHidden(fileInfo) && exclHiddenCheck->isChecked();
         if (!toExclude) {
-            if (!_exclFolderPatterns.isEmpty())
+            if (!_exclFolderPatterns.empty())
                 toExclude = StringContainsAnyWord( dirPath, _exclFolderPatterns);
             if (fileInfo.isFile()) {
-                if (!_exclFilePatterns.isEmpty())
+                if (!_exclFilePatterns.empty())
                     toExclude = StringContainsAnyWord( fileInfo.fileName(), _exclFilePatterns);
-                if (!_exclusionWords.isEmpty())
+                if (!_exclusionWords.empty())
                     toExclude = fileContainsAnyWord( filePath, _exclusionWords);
             }
         }
@@ -758,14 +760,15 @@ bool MainWindow::findItem(const QString& dirPath, const QFileInfo& fileInfo)
             return false;
         }
         bool toAppend = false;
-        if (fileInfo.isSymLink() && _searchWords.isEmpty()) {
+        if (fileInfo.isSymLink() && _searchWords.empty()) {
             toAppend = symlinksCheck->isChecked();
         }
-        if (fileInfo.isDir() && _searchWords.isEmpty()) {
+        if (fileInfo.isDir() && _searchWords.empty()) {
             toAppend = foldersCheck->isChecked();
         }
         if (fileInfo.isFile() && filesCheck->isChecked()) {
-            toAppend = _searchWords.isEmpty() || fileContainsAllWords( filePath, _searchWords);
+            toAppend = _searchWords.empty() ||
+                       fileContainsAllWordsChunked(filePath, _searchWords);
         }
         if (toAppend) {
             _outFiles.append( filePath);
@@ -773,7 +776,7 @@ bool MainWindow::findItem(const QString& dirPath, const QFileInfo& fileInfo)
             _foundItemsSize += static_cast<quint64>(fileInfo.size());
             // qDebug() << "APPENDED" << filePath << "hidden:" << isHidden(fileInfo);
         }
-        else if (fileInfo.isFile() && !_searchWords.isEmpty()) {
+        else if (fileInfo.isFile() && !_searchWords.empty()) {
             qDebug() << "NOT APPENDED" << filePath << "hidden:" << isHidden(fileInfo);
         }
         return true;
@@ -813,7 +816,8 @@ void MainWindow::findFilesRecursive( const QString & dirPath, qint32 subDirDepth
     _totItemsSize += combinedSize(unFilteredItems);
     foreach (QFileInfo fileInfo, fileInfos)
     {
-        if (_stopped) return;
+        if (_stopped)
+            return;
         findItem(dirPath, fileInfo);
     }
 
@@ -864,7 +868,7 @@ bool MainWindow::fileContainsAllWords( const QString & filePath, const QStringLi
 {
     QFile file( filePath);
     if (!file.open(QIODevice::ReadOnly)) {
-        qDebug() << "Cannot open file as text, error" << file.errorString() << filePath;
+        qDebug() << "Cannot open file, error" << file.errorString() << filePath;
         return false;
     }
     qDebug() << "file size" << file.size() << "filePath" << filePath;
@@ -873,10 +877,12 @@ bool MainWindow::fileContainsAllWords( const QString & filePath, const QStringLi
     qDebug() << "fileContent length" << fileContent.length();
     foreach (QString word, wordList)
     {
-        if (!fileContainsWord( file, word))
+        if (!fileContent.isEmpty()) {
+            if (!fileContent.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
+                return false;
+        }
+        else if (!fileContainsWord(file, word))
             return false;
-        // if (!fileContent.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
-        //     return false;
     }
     return true;
 }
@@ -899,13 +905,43 @@ bool MainWindow::fileContainsWord( QFile & file, const QString & word)
     return false;
 }
 
+bool MainWindow::stringContainsAllWords(const QString& str, const QStringList& words) const
+{
+    for (const QString& word : words) {
+        if (!str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
+            return false;
+    }
+    return true;
+}
+
+bool MainWindow::fileContainsAllWordsChunked(const QString& filePath, const QStringList& words)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << "Cannot open file, error" << file.errorString();
+        return false;
+    }
+    qDebug() << "CHUNKED algo: file size" << file.size() << "path" << filePath;
+    static constexpr qint64 CHUNK_SIZE = 200 * 1024 * 1024;
+    while (!file.atEnd()) {
+        if (isTimeToReport())
+            qApp->processEvents();
+        if (_stopped)
+            return false;
+        const QByteArray chunk = file.read(CHUNK_SIZE);
+        if (!stringContainsAllWords(QString::fromUtf8(chunk), words))
+            return false;
+    }
+    return true;
+}
+
 bool MainWindow::fileContainsAnyWord(const QString& filePath, const QStringList& wordList)
 {
     try
     {
         QFile file(filePath);
         if (!file.open(QIODevice::ReadOnly)) {
-            qDebug() << "Cannot open file as text, error" << file.errorString() << filePath;
+            qDebug() << "Cannot open file, error" << file.errorString() << filePath;
             return false;
         }
         qDebug() << "file size" << file.size() << "filePath" << filePath;
@@ -943,76 +979,6 @@ bool MainWindow::fileContainsAnyWord(QFile& file,  const QStringList& wordList)
         }
     }
     return false;
-}
-
-QString readFileContent(const QString& filePath, const QFileInfo& fileInfo)
-{
-    if (!fileInfo.isFile() || fileInfo.isDir() || fileInfo.isSymLink() || fileInfo.size() == 0) {
-        return QString();
-    }
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qDebug() << "Cannot open file as text, error" << file.errorString() << filePath;
-        return QString();
-    }
-    return QString::fromUtf8(file.readAll());
-}
-
-QStringList MainWindow::findTextInFiles( const QStringList& files, const QString& textToFind)
-{
-    if (files.isEmpty()) {
-        setFilesFoundLabel();
-        return QStringList();
-    }
-    QStringList foundFiles;
-
-    for (int i = 0; i < files.size(); ++i)
-    {
-        if (_stopped) {
-            break;
-        }
-        if (isTimeToReport()) {
-            qApp->processEvents();
-            filesFoundLabel->setText( tr("Searching file %1 of %2...").arg(i).arg(files.size()));
-        }
-        QFile file(files[i]);
-        const auto fileInfo = QFileInfo(file);
-        const auto content = readFileContent(fileInfo.absoluteFilePath(), fileInfo);
-        if (content.isEmpty()) {
-            qDebug() << "File empty or failed to read it" << fileInfo.absoluteFilePath();
-            continue;
-        }
-        if (content.contains(textToFind, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
-            foundFiles << files[i];
-            appendFileToTable( files[i], fileInfo);
-        }
-    }
-    qApp->processEvents();
-    setFilesFoundLabel();
-    return foundFiles;
-}
-
-void MainWindow::showFiles(const QStringList & files)
-{
-    if (files.isEmpty()) {
-        setFilesFoundLabel();
-        return;
-    }
-
-    for (int i = 0; i < files.count(); ++i)
-    {
-        if (_stopped) {
-            break;
-        }
-        if (isTimeToReport()) {
-            qApp->processEvents();
-            filesFoundLabel->setText( tr("Adding item %1 of %2...").arg(i).arg(files.count()));
-        }
-
-        appendFileToTable( files[i], QFileInfo( files[i]));
-    }
-    qApp->processEvents();
-    setFilesFoundLabel();
 }
 
 inline bool MainWindow::isTimeToReport()
@@ -1197,7 +1163,7 @@ QString MainWindow::FsItemType(const QFileInfo & fileInfo) const
     return fsType;
 }
 
-void MainWindow::appendFileToTable(const QString filePath, const QFileInfo & fileInfo)
+void MainWindow::appendFileToTable(const QString filePath, const QFileInfo& fileInfo)
 {
   try
   {
@@ -1416,7 +1382,7 @@ void MainWindow::showContextMenu(const QPoint& point)
         }
 
         // Enable/disable actions based on selection
-        bool hasSelection = !filesTable->selectedItems().isEmpty();
+        bool hasSelection = !filesTable->selectedItems().empty();
         copyPathAct->setEnabled(hasSelection);
         propertiesAct->setEnabled(hasSelection);
         openRunAct->setEnabled(hasSelection);
@@ -1432,7 +1398,7 @@ void MainWindow::openRunSlot()
     try
     {
         const auto selectedItems = filesTable->selectedItems();
-        if (selectedItems.isEmpty()) {
+        if (selectedItems.empty()) {
             qDebug() << "openRunSlot: No item selected.";
             return;
         }
@@ -1450,7 +1416,7 @@ void MainWindow::openContainingFolderSlot()
     try
     {
         const auto selectedItems = filesTable->selectedItems();
-        if (selectedItems.isEmpty()) {
+        if (selectedItems.empty()) {
             qDebug() << "openContainingFolderSlot: No item selected.";
             return;
         }
@@ -1469,7 +1435,7 @@ void MainWindow::copyPathSlot()
     try
     {
         const auto selectedItems = filesTable->selectedItems();
-        if (selectedItems.isEmpty()) {
+        if (selectedItems.empty()) {
             qDebug() << "copyPathSlot: No item selected.";
             return;
         }
@@ -1490,7 +1456,7 @@ void MainWindow::propertiesSlot()
     try
     {
         auto selectedItems = filesTable->selectedItems();
-        if (selectedItems.isEmpty()) {
+        if (selectedItems.empty()) {
             qDebug() << "propertiesSlot: No item selected.";
             return;
         }

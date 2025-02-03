@@ -72,9 +72,9 @@ if(APPLE)
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/images/Info.plist
     )
     include_directories(
-        /opt/Qt/6.8.1/macos/lib/QtCore.framework/Versions/A/Headers
-        /opt/Qt/6.8.1/macos/lib/QtWidgets.framework/Versions/A/Headers
         /opt/Qt/6.8.1/macos/include
+        /opt/Qt/6.8.1/macos/lib/QtCore.framework/Headers
+        /opt/Qt/6.8.1/macos/lib/QtWidgets.framework/Headers
         ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/images
     )
@@ -96,6 +96,7 @@ elseif(UNIX AND NOT APPLE)
     SET(CMAKE_INSTALL_PREFIX /usr/local)
     include_directories(
         /usr/include/x86_64-linux-gnu/qt6
+        /usr/include/x86_64-linux-gnu/qt6/QtCore
         /usr/include/x86_64-linux-gnu/qt6/QtWidgets
         ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/images

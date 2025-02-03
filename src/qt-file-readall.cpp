@@ -9,7 +9,7 @@
 QString readFileContents(const QString& filePath)
 {
     QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    if (!file.open(QIODevice::ReadOnly))
         return QString();
     
     return QString::fromUtf8(file.readAll());
@@ -18,7 +18,7 @@ QString readFileContents(const QString& filePath)
 // QStringView readFileContentsView(const QStringView& filePath)
 // {
 //     QFile file(filePath);
-//     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+//     if (!file.open(QIODevice::ReadOnly))
 //         return QString();
 //    
 //     return QString::fromUtf8(file.readAll());
@@ -36,7 +36,7 @@ QByteArray readBinaryFile(const QString& filePath)
 QString readFileContentsText(const QString& filePath)
 {
     QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    if (!file.open(QIODeviceBase::ReadOnly))
         return QString();
     
     QTextStream in(&file);
@@ -49,12 +49,12 @@ QByteArray readLargeFile(const QString& filePath)
     if (!file.open(QIODevice::ReadOnly))
         return QByteArray();
     
-    QByteArray contents;
+    QByteArray content;
     constexpr qint64 chunkSize = 1024 * 1024; // 1MB chunks
     while (!file.atEnd()) {
-        contents.append(file.read(chunkSize));
+        content.append(file.read(chunkSize));
     }
-    return contents;
+    return content;
 }
 
 QString readFileWithEncoding(const QString& filePath, const QStringConverter::Encoding encoding)
@@ -77,16 +77,16 @@ int main(int argc, char* argv[])
 
     auto fileName = QString(argv[1]);
     auto filePath = QFileInfo(fileName).absoluteFilePath();
-    const auto contents = readFileContents(filePath);
-    if (contents.isEmpty()) {
+    const auto content = readFileContents(filePath);
+    if (content.isEmpty()) {
         qWarning("Failed to read file: %s", qPrintable(fileName));
         return 1;
     }
-    qInfo() << "\n" << filePath << "\n\n" << contents << "\n\n";
+    qInfo() << "\n" << filePath << "\n\n" << content << "\n\n";
 
-    // Process the file contents here
+    // Process the file content here
     const auto text = QString("qt-file-readall.cpp");
-    if (contents.contains(text))
+    if (content.contains(text))
         qInfo() << "File contains " << text;
     else
         qInfo() << "File does NOT contain " << text;
