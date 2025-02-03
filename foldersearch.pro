@@ -13,7 +13,7 @@ HEADERS  =  \
     src/config.h \
     src/version.h \
     src/util.h \
-    src/getinfo.h \
+    src/foldersearch.hpp \
     src/exlineedit.h \
     src/searchlineedit.h
 
@@ -25,7 +25,7 @@ SOURCES  =  \
     src/util.cpp \
     src/main.cpp \
     src/config.cpp \
-    src/getinfo.cpp \
+    src/foldersearch.cpp \
     src/exlineedit.cpp \
     src/searchlineedit.cpp
 
@@ -56,12 +56,12 @@ INSTALLS += target
 symbian: include($$QT_SOURCE_TREE/examples/symbianpkgrules.pri)
 
 RESOURCES += \
-    getinfo.qrc
+    foldersearch.qrc
 
 OTHER_FILES += \
     TODO.md \
-    installers/inno/getinfo.bat \
-    installers/inno/getinfo.iss
+    installers/inno/foldersearch.bat \
+    installers/inno/foldersearch.iss
 
 DISTFILES += \
     README.md

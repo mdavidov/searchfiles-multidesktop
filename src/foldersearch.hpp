@@ -26,6 +26,7 @@ class QPushButton;
 class QTableWidget;
 class QTableWidgetItem;
 class QProgressDialog;
+class QFileinfo;
 class QFileSystemModel;
 class QKeyEvent;
 class QLineEdit;
@@ -88,6 +89,7 @@ private slots:
     void dirPathEditTextChanged(const QString & text);
     void completerTimeout();
     void openRunSlot();
+    void openContainingFolderSlot();
     void copyPathSlot();
     void propertiesSlot();
     void showContextMenu(const QPoint & point);
@@ -96,7 +98,10 @@ private slots:
     void showHelpDialog();
 
 private:
-    QStringList findTextInFiles(const QStringList &files, const QString &text);
+    bool isHidden(const QFileInfo& fileInfo) const;
+    QString FsItemType(const QFileInfo& fileInfo) const;
+
+    // QStringList findTextInFiles(const QStringList &files, const QString &text);
     void showFiles(const QStringList &files);
     QPushButton *createButton(const QString &text, const char *member);
     QComboBox * createComboBoxFSys(const QString & text, bool setCompleter = false);
@@ -109,11 +114,14 @@ private:
     bool findItem(const QString & dirPath, const QFileInfo& fileInfo);
     inline bool isTimeToReport();
     void setStopped(bool stopped);
-    void setFilesFoundLabel(const QString & prefix = QString());
+    void setFilesFoundLabel(const QString& prefix);
     quint64 combinedSize(const QFileInfoList& items);
 
     QStringList GetSimpleNamePatterns( const QString & rawNamePatters) const;
     bool StringContainsAnyWord( const QString & theString, const QStringList & wordList) const;
+
+    bool stringContainsAllWords(const QString& str, const QStringList& words) const;
+    bool fileContainsAllWordsChunked(const QString& filePath, const QStringList& words);
 
     bool fileContainsAllWords(const QString & filePath, const QStringList & wordList);
     bool fileContainsWord(    QFile & file,             const QString & word);
@@ -173,11 +181,12 @@ private:
 
     QTableWidget *filesTable;
 
-    QList<QShortcut *> shortcuts;
-    QAction * openRunAct;
-    QAction * copyPathAct;
-    QAction * propertiesAct;
-    QMenu * contextMenu;
+    QList<QShortcut*> shortcuts;
+    QAction* openRunAct;
+    QAction* openContaingFolderAct;
+    QAction* copyPathAct;
+    QAction* propertiesAct;
+    QMenu* contextMenu;
 
     QWidget * centralWgt;
 

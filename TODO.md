@@ -1,31 +1,29 @@
+# TODO
 
-WHEN ENTER KEY IS PRESSED: START THE SEARCH !!!
+## Features to be developed
 
-INSTALLER / DEPLOYER
+1. Match whole words only
+1. Match by regular expressions
+1. Search by file extension
+1. Search by file size (range)
+1. Search by file modification and creation dates (ranges)
+1. Search within results
+1. Add back & forward buttons (to the navigation layout, which is above Search Folder control)
+1. Read-only files when deleting: warn the user and/or remove read-only attrib
+1. License
 
-ABOUT DIALOG
+## Performance improvements
 
-ADD TEXT BOX "{SF}:" to the left of directory combo box
+1. Read in the whole file (up to 100 MB) when searching for words
+1. Exclude binary files when searching for words
+    * will be selectable by user
+    * exclude by extension (.exe, .dll, .o, .so, .obj, .dylib, etc.)
+    * exclude by file type (use command like file, otool, etc.)
 
-READ-ONLY files: warn the user and/or remove read-only attrib
+## DONE
 
-FUNC. DECOMPOSITION: deleteBtnClicked(), etc.
-
-Add back & forward buttons (to the navigation layout, which is above Search Folder control)
-
-SEARCH WITHIN RESULTS !!!
-
-Add REGULAR EXPRESSIONS option to Search Words
-
-see also ONLINE / PHONE NOTES 
-
-DO NOT:  STATICALLY LINK ALL LIBS: Qt, boost, etc.
-
---------------------------------------------------------------------------------
-
-DONE: Use QLineEdit and its PlaceholderText
-DONE: Search Folder control must be up the top (same/similar to Search.Files win store app)
-DONE: Max Subfolder Depth must be two RADIO BUTTONS: Unlimited & Limited
-DONE: Move Match Case check box to the right of Search Words line edit
-DONE: Search button must be separated from Stop button
-DONE: FUNC. DECOMPOSITION: findFilesRec() and findItem()
+1. WHEN ENTER KEY IS PRESSED: START THE SEARCH !!!
+1. INSTALLER
+1. ABOUT DIALOG
+1. ADD TEXT BOX "Search folder {SF}:" to the left of directory combo box
+1. STATICALLY LINK ALL LIBS

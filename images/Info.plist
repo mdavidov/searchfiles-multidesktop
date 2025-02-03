@@ -3,10 +3,10 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIconFile</key>
-    <string>getinfo.icns</string>
+    <string>foldersearch.icns</string>
     <key>CFBundleIdentifier</key>
-    <string>au.devonline.getinfo</string>
+    <string>au.devonline.foldersearch</string>
     <key>CFBundleName</key>
-    <string>getinfo</string>
+    <string>foldersearch</string>
 </dict>
 </plist>
