@@ -123,8 +123,6 @@ MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
 
 void MainWindow::onEnterKeyPressed()
 {
-    // Handle the Enter key press event
-    qDebug() << "Enter key pressed!";
     findBtnClicked();
 }
 
@@ -323,14 +321,10 @@ void MainWindow::createMainLayout()
 void MainWindow::modifyFont(QWidget * widget, qreal ptSzDelta, bool bold, bool italic, bool underline)
 {
     QFont font(widget->font());
-
-    // qDebug() << "Font orig: " << font.toString();
     font.setPointSizeF(font.pointSizeF() + ptSzDelta);
     font.setBold(bold);
     font.setItalic(italic);
     font.setUnderline(underline);
-    // qDebug() << "Font new:  " << font.toString();
-
     widget->setFont(font);
 }
 
@@ -414,7 +408,7 @@ void MainWindow::deleteBtnClicked()
         _reportTimer.restart();
         qApp->processEvents();
         Uint64StringMap itemList;
-        getSelectedItems(itemList); // GET SELECTED ITEMS
+        getSelectedItems(itemList);
 
         removeItems(itemList); // REMOVE ITEMS
 
@@ -511,7 +505,7 @@ void MainWindow::shredBtnClicked()
             // return;
         }
 
-        // TODO - IMPLEMENT Shredding
+        // TODO: IMPLEMENT Shredding
 
         emit filesTable->itemSelectionChanged();
     }
@@ -642,7 +636,6 @@ bool MainWindow::findFilesPrep()
 
     _matchCase = matchCaseCheck->isChecked();
 
-    qDebug() << "dirComboBox->currentText" << dirComboBox->currentText() << "length" << dirComboBox->currentText().length();
     const auto dirComboCurrent = dirComboBox->currentText().trimmed();
     if (dirComboCurrent.length() == 0) {
         qDebug() << "Select a folder to search please.";
@@ -748,7 +741,6 @@ bool MainWindow::findItem(const QString& dirPath, const QFileInfo& fileInfo)
             }
         }
         if (toExclude) {
-            // qDebug() << "EXCLUDED:" << filePath << "hidden:" << isHidden(fileInfo);
             return false;
         }
         bool toAppend = false;
@@ -797,7 +789,6 @@ bool MainWindow::stringContainsAllWords(const QString& str, const QStringList& w
         if (!str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
             return false;
     }
-    qDebug() << "STRING CONTAINS ALL WORDS:" << str.sliced(0, 85) << "length:" << str.length() << "words:" << words;
     return true;
 }
 
@@ -811,14 +802,6 @@ bool MainWindow::fileContainsAllWordsChunked(const QString& filePath, const QStr
         return false;
     }
     static constexpr qint64 CHUNK_SIZE = 200 * 1024 * 1024;
-    if (file.size() <= CHUNK_SIZE) {
-        const auto content = QString::fromUtf8(file.readAll());
-        if (stringContainsAllWords(content, words) == true) {
-            qDebug() << "READALL: FILE CONTAINS ALL WORDS" << filePath << "file size:" << file.size() << "words:" << words;
-            return true;
-        }
-        return false;
-    }
     while (!file.atEnd()) {
         if (isTimeToReport())
             qApp->processEvents();
@@ -827,13 +810,11 @@ bool MainWindow::fileContainsAllWordsChunked(const QString& filePath, const QStr
         const auto rsize = std::min(file.size() - file.pos(), CHUNK_SIZE);
         const auto chunk = (rsize > 0) ? QString::fromUtf8(file.read(rsize)) : QString();
         if (chunk.isEmpty()) {
-            qDebug() << "CHUNK empty: file size:" << file.size() << "path:" << filePath;
             return false;
         }
         if (!stringContainsAllWords(chunk, words))
             return false;
     }
-    qDebug() << "FILE CONTAINS ALL WORDS:" << filePath << "size:" << file.size() << "words:" << words;
     return true;
 }
 
@@ -847,14 +828,6 @@ bool MainWindow::fileContainsAnyWordChunked(const QString& filePath, const QStri
         return false;
     }
     static constexpr qint64 CHUNK_SIZE = 200 * 1024 * 1024;
-    if (file.size() <= CHUNK_SIZE) {
-        const auto content = QString::fromUtf8(file.readAll());
-        if (stringContainsAnyWord(content, words) == true) {
-            qDebug() << "READALL: FILE CONTAINS ANY WORD" << filePath << "file size:" << file.size() << "words:" << words;
-            return true;
-        }
-        return false;
-    }
     while (!file.atEnd()) {
         if (isTimeToReport())
             qApp->processEvents();
@@ -863,12 +836,9 @@ bool MainWindow::fileContainsAnyWordChunked(const QString& filePath, const QStri
         const auto rsize = std::min(file.size() - file.pos(), CHUNK_SIZE);
         const auto chunk = (rsize > 0) ? QString::fromUtf8(file.read(rsize)) : QString();
         if (chunk.isEmpty()) {
-            qDebug() << "CHUNK empty: file size:" << file.size() << "path:" << filePath;
             return false;
         }
-        qDebug() << "READ SIZE:" << rsize << "STR:" << chunk.sliced(0, 85) << "FILE SIZE:" << file.size() << "words:" << words;
         if (stringContainsAnyWord(chunk, words)) {
-            qDebug() << "FILE CONTAINS ANY WORD" << filePath << "file size:" << file.size() << "words:" << words;
             return true;
         }
     }
@@ -885,7 +855,6 @@ bool MainWindow::stringContainsAnyWord(const QString& str,  const QStringList& w
         if (_stopped)
             return false;
         if (str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
-            qDebug() << "STRING CONTAINS ANY WORD:" << str.sliced(0, 85) << "length:" << str.length() << "words:" << words;
             return true;
         }
     }
@@ -929,7 +898,6 @@ void MainWindow::dirPathEditTextChanged(const QString& newText)
             return;
 
         const qint64 timeDiff = _editTextTimeDiff.elapsed();
-        // qDebug() << "timeDiff:" << timeDiff;
 
         if (newText.endsWith(QDir::separator()))
         {
@@ -962,9 +930,6 @@ void MainWindow::dirPathEditTextChanged(const QString& newText)
                 dirComboBox->completer()->setCompletionPrefix(newText);
             }
         }
-        // qDebug() << "newText:            " << newText;
-        // qDebug() << "filesys root path:  " << fileSystemModel->rootPath();
-        // qDebug() << "completion prefix:  " << dirComboBox->completer()->completionPrefix();
 
         Cfg::St().setValue( Cfg::origDirPathKey,  QDir::toNativeSeparators(newText));
 
@@ -1306,7 +1271,6 @@ void MainWindow::openRunSlot()
     {
         const auto selectedItems = filesTable->selectedItems();
         if (selectedItems.empty()) {
-            qDebug() << "openRunSlot: No item selected.";
             return;
         }
         const auto item = selectedItems.first();
@@ -1324,7 +1288,6 @@ void MainWindow::openContainingFolderSlot()
     {
         const auto selectedItems = filesTable->selectedItems();
         if (selectedItems.empty()) {
-            qDebug() << "openContainingFolderSlot: No item selected.";
             return;
         }
         const auto item = selectedItems.first();
@@ -1343,7 +1306,6 @@ void MainWindow::copyPathSlot()
     {
         const auto selectedItems = filesTable->selectedItems();
         if (selectedItems.empty()) {
-            qDebug() << "copyPathSlot: No item selected.";
             return;
         }
         auto clipboard = QApplication::clipboard();
@@ -1364,7 +1326,6 @@ void MainWindow::propertiesSlot()
     {
         auto selectedItems = filesTable->selectedItems();
         if (selectedItems.empty()) {
-            qDebug() << "propertiesSlot: No item selected.";
             return;
         }
         const auto item = selectedItems.first();
