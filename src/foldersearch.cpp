@@ -867,15 +867,13 @@ bool MainWindow::fileContainsAnyWordChunked(const QString& filePath, const QStri
             return false;
         }
         qDebug() << "READ SIZE:" << rsize << "STR:" << chunk.sliced(0, 85) << "FILE SIZE:" << file.size() << "words:" << words;
-        if (stringContainsAnyWord(chunk, words) == true) {
+        if (stringContainsAnyWord(chunk, words)) {
             qDebug() << "FILE CONTAINS ANY WORD" << filePath << "file size:" << file.size() << "words:" << words;
             return true;
         }
     }
     return false;
 }
-
-#include <iostream>
 
 bool MainWindow::stringContainsAnyWord(const QString& str,  const QStringList& words)
 {
@@ -886,10 +884,10 @@ bool MainWindow::stringContainsAnyWord(const QString& str,  const QStringList& w
             qApp->processEvents();
         if (_stopped)
             return false;
-        if (str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
-            std::cout << "stringContainsAnyWord found word:" << word.toStdString() << std::endl;
+        if (str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
             qDebug() << "STRING CONTAINS ANY WORD:" << str.sliced(0, 85) << "length:" << str.length() << "words:" << words;
             return true;
+        }
     }
     return false;
 }
