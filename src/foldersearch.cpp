@@ -396,15 +396,6 @@ static void updateComboBox(QComboBox *comboBox)
         comboBox->addItem(comboBox->currentText());
 }
 
-void MainWindow::GetFileInfos(QFileInfoList & fileInfos) const
-{
-    const QList<QTableWidgetItem *>  selectedItems = filesTable->selectedItems();
-    foreach (const QTableWidgetItem * item, selectedItems) {
-        if (filesTable->column( item) == RELPATH_COL_IDX)
-            fileInfos.append( QFileInfo( item->data(Qt::UserRole).toString() )); //( item->text()));
-    }
-}
-
 /////////////////////////////////////////////////
 
 void MainWindow::deleteBtnClicked()
@@ -420,7 +411,7 @@ void MainWindow::deleteBtnClicked()
             // return;
         }
         setStopped(false);
-        _elTimer.restart();
+        _reportTimer.restart();
         qApp->processEvents();
         Uint64StringMap itemList;
         getSelectedItems(itemList); // GET SELECTED ITEMS
@@ -463,16 +454,15 @@ void MainWindow::removeItems(const Uint64StringMap& itemList)
     for (Uint64StringMap::const_iterator it = itemList.cbegin(); it != itemList.cend(); ++it)
     {
         try {
-            if (_stopped) {
-                break;
-            }
-            const QString path = it->second;
+            if (_stopped)
+                return;
+            const auto path = it->second;
 
             if (!QFileInfo(path).isDir()) {
                 // RM FILE
-                QFile file( it->second);
-                const auto fsize = static_cast<quint64>(file.size());
-                const bool rmok = file.remove();
+                QFile file(path);
+                const auto fsize = quint64(file.size());
+                const auto rmok = file.remove();
                 if (rmok) {
                     filesTable->removeRow(static_cast<int>(it->first));
                     _totItemsSize -= fsize;
@@ -485,12 +475,15 @@ void MainWindow::removeItems(const Uint64StringMap& itemList)
             }
             else {
                 // RM DIR
-                QDir dir( path);
-                bool rmok = dir.rmdir( path);
-                if (!rmok)
-                     rmok = dir.removeRecursively();
-                if ( rmok) {
+                QDir dir(path);
+                const auto dsize = deepDirSize(path);
+                const auto dcount = dir.count();
+                const auto rmok = dir.removeRecursively();
+                if (rmok) {
                     filesTable->removeRow(static_cast<int>(it->first));
+                    _totItemsSize -= dsize;
+                    // _foundItemsSize -= dsize;
+                    _totItemCount -= dcount;
                     ++delCnt;
                     if ((delCnt % 5) == 0)
                         emit filesTable->itemSelectionChanged();
@@ -560,8 +553,8 @@ void MainWindow::Clear()
         _totItemCount = 0;
         _totItemsSize = 0;
         _foundItemsSize = 0;
-        _elTimer.restart();
-        _prevEl = 0;
+        _reportTimer.restart();
+        _prevElapsed = 0;
         setStopped(true);
         qApp->processEvents();
     }
@@ -688,8 +681,8 @@ bool MainWindow::findFilesPrep()
 
     _searchWords        = wordsLineEdit->text().split(" ", Qt::SkipEmptyParts);;
     _exclusionWords     = exclFilesByTextCombo->text().split(" ", Qt::SkipEmptyParts);
-    _exclFilePatterns   = GetSimpleNamePatterns( exclByFileNameCombo->text());
-    _exclFolderPatterns = GetSimpleNamePatterns( exclByFolderNameCombo->text());
+    _exclFilePatterns   = getSimpleNamePatterns( exclByFileNameCombo->text());
+    _exclFolderPatterns = getSimpleNamePatterns( exclByFolderNameCombo->text());
 
     bool maxValid = false;
     _maxSubDirDepth =  maxSubDirDepthEdt->text().toInt(&maxValid);
@@ -725,7 +718,7 @@ void MainWindow::findBtnClicked()
     if (findFilesPrep())
     {
         // GO FIND THEM
-        traverseDir(_origDirPath, _unlimSubDirDepth ? -1 : _maxSubDirDepth);
+        deepFindFiles(_origDirPath, _unlimSubDirDepth ? -1 : _maxSubDirDepth);
     }
 
     setFilesFoundLabel( _stopped ? "INTERRUPTED. " : "COMPLETED. ");
@@ -746,24 +739,24 @@ bool MainWindow::findItem(const QString& dirPath, const QFileInfo& fileInfo)
         bool toExclude = isHidden(fileInfo) && exclHiddenCheck->isChecked();
         if (!toExclude) {
             if (!_exclFolderPatterns.empty())
-                toExclude = StringContainsAnyWord( dirPath, _exclFolderPatterns);
+                toExclude = stringContainsAnyWord(dirPath, _exclFolderPatterns);
             if (fileInfo.isFile()) {
                 if (!_exclFilePatterns.empty())
-                    toExclude = StringContainsAnyWord( fileInfo.fileName(), _exclFilePatterns);
-                if (!_exclusionWords.empty())
-                    toExclude = fileContainsAnyWord( filePath, _exclusionWords);
+                    toExclude = stringContainsAnyWord(fileInfo.fileName(), _exclFilePatterns);
+                if (!_exclusionWords.empty() && _searchWords.empty())
+                    toExclude = fileContainsAnyWordChunked(filePath, _exclusionWords);
             }
         }
         if (toExclude) {
-            qDebug() << "EXCLUDED: " << filePath << "hidden:" << isHidden(fileInfo);
+            qDebug() << "EXCLUDED:" << filePath << "hidden:" << isHidden(fileInfo);
             return false;
         }
         bool toAppend = false;
-        if (fileInfo.isSymLink() && _searchWords.empty()) {
-            toAppend = symlinksCheck->isChecked();
-        }
-        if (fileInfo.isDir() && _searchWords.empty()) {
-            toAppend = foldersCheck->isChecked();
+        if (_searchWords.empty()) {
+            if (fileInfo.isSymLink())
+                toAppend = symlinksCheck->isChecked();
+            else if (fileInfo.isDir())
+                toAppend = foldersCheck->isChecked();
         }
         if (fileInfo.isFile() && filesCheck->isChecked()) {
             toAppend = _searchWords.empty() ||
@@ -802,93 +795,20 @@ void MainWindow::updateTotals(const QString& currPath)
     _totItemsSize += combinedSize(unFilteredItems);
 }
 
-void MainWindow::getFileInfos(const QString& currPath, QFileInfoList& fileInfos) const
+bool MainWindow::stringContainsAllWords(const QString& str, const QStringList& words)
 {
-        QDir currDir(currPath);
-        currDir.setNameFilters(_fileNameSubfilters);
-        currDir.setFilter(_itemTypeFilter);
-        QDir::Filters filters = QDir::AllEntries | QDir::System | QDir::NoDotAndDotDot;
-        if (!exclHiddenCheck->isChecked())
-            filters |= QDir::Hidden;
-        fileInfos = currDir.entryInfoList(filters);
-}
-
-void MainWindow::traverseDir(const QString& startPath, int maxDepth)
-{
-    QQueue<QPair<QString, int>> dirQ;
-    dirQ.enqueue({startPath, 0});
-
-    while (!dirQ.empty()) {
-        const auto [currPath, currDepth] = dirQ.dequeue();
-        if (currDepth > maxDepth && maxDepth >= 0) {
-            return;
-        }
-        ++_dirCount;
-        if (isTimeToReport()) {
+    for (const auto& word : words) {
+        if (isTimeToReport())
             qApp->processEvents();
-            filesFoundLabel->setText( tr("Examined %1 items in %2 folders so far...").arg(_totItemCount).arg(_dirCount));
-        }
-        QFileInfoList fileInfos;
-        getFileInfos(currPath, fileInfos);
-        updateTotals(currPath);
-
-        for (const auto& entry : fileInfos) {
-            if (_stopped)
-                return;
-            if (entry.isDir() && !entry.isSymLink() && (currDepth < maxDepth || maxDepth < 0))
-                dirQ.enqueue({entry.absoluteFilePath(), currDepth + 1});
-            findItem(currPath, entry);
-        }
-    }
-}
-
-void MainWindow::findFilesRecursive( const QString & dirPath, qint32 subDirDepth)
-{
-    // report progress
-    ++_dirCount;
-    if (isTimeToReport()) {
-        qApp->processEvents();
-        filesFoundLabel->setText( tr("Examined %1 items in %2 folders so far...").arg(_totItemCount).arg(_dirCount));
-    }
-
-    // find all items by name filters
-    QDir currentDir = QDir( dirPath);
-    currentDir.setNameFilters( _fileNameSubfilters);
-    currentDir.setFilter( _itemTypeFilter);
-    const QFileInfoList fileInfos = currentDir.entryInfoList();
-    QDir unFilteredDir = QDir( dirPath);
-    static const QDir::Filters unFilter = QDir::AllEntries | QDir::Drives | QDir::System | QDir::Hidden | QDir::NoDotAndDotDot;
-    const QFileInfoList unFilteredItems = unFilteredDir.entryInfoList(unFilter);
-    _totItemCount += unFilteredItems.count();
-    _totItemsSize += combinedSize(unFilteredItems);
-    foreach (QFileInfo fileInfo, fileInfos)
-    {
         if (_stopped)
-            return;
-        findItem(dirPath, fileInfo);
+            return false;
+        if (!str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
+            return false;
     }
-
-    // recurse into each subdir
-    if (_unlimSubDirDepth || subDirDepth < _maxSubDirDepth || _maxSubDirDepth < 0)
-    {
-        const QDir curDir = QDir( dirPath);
-        QDir::Filters filters = QDir::Dirs | QDir::Drives | QDir::System | QDir::NoDotAndDotDot;
-        if (!exclHiddenCheck->isChecked())
-            filters |= QDir::Hidden;
-        QStringList subDirs = curDir.entryList( filters);
-        foreach (QString subDir, subDirs)
-        {
-            if (_stopped)
-                return;
-            const QString absSubDirPath = curDir.absoluteFilePath( subDir);
-            const QFileInfo subDirInfo( absSubDirPath);
-            if (subDirInfo.isDir() && !subDirInfo.isSymLink()) // do not follow symlinks
-                findFilesRecursive( absSubDirPath, subDirDepth + 1);
-        }
-    }
+    return true;
 }
 
-QStringList MainWindow::GetSimpleNamePatterns( const QString & rawNamePatters) const
+QStringList MainWindow::getSimpleNamePatterns( const QString & rawNamePatters) const
 {
     QStringList outPatters;
     const QStringList tempPatterns = rawNamePatters.split(";", Qt::SkipEmptyParts);
@@ -902,66 +822,6 @@ QStringList MainWindow::GetSimpleNamePatterns( const QString & rawNamePatters) c
     return outPatters;
 }
 
-bool MainWindow::StringContainsAnyWord(const QString & theString, const QStringList & wordList) const
-{
-    foreach (QString word, wordList)
-    {
-        if (theString.contains(word, Qt::CaseInsensitive))
-            return true;
-    }
-    return false;
-}
-
-bool MainWindow::fileContainsAllWords( const QString & filePath, const QStringList & wordList)
-{
-    QFile file( filePath);
-    if (!file.open(QIODevice::ReadOnly)) {
-        qDebug() << "Cannot open file, error" << file.errorString() << filePath;
-        return false;
-    }
-    qDebug() << "file size" << file.size() << "filePath" << filePath;
-
-    const auto fileContent = QString::fromUtf8(file.readAll());
-    qDebug() << "fileContent length" << fileContent.length();
-    foreach (QString word, wordList)
-    {
-        if (!fileContent.isEmpty()) {
-            if (!fileContent.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
-                return false;
-        }
-        else if (!fileContainsWord(file, word))
-            return false;
-    }
-    return true;
-}
-
-bool MainWindow::fileContainsWord( QFile & file, const QString & word)
-{
-    file.seek(0);
-    QString line;
-    QTextStream stream(&file);
-    while (!stream.atEnd())
-    {
-        if (isTimeToReport())
-            qApp->processEvents();
-        if (_stopped)
-            return false;
-        line = stream.readLine();
-        if (line.contains( word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
-            return true;
-    }
-    return false;
-}
-
-bool MainWindow::stringContainsAllWords(const QString& str, const QStringList& words) const
-{
-    for (const QString& word : words) {
-        if (!str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
-            return false;
-    }
-    return true;
-}
-
 bool MainWindow::fileContainsAllWordsChunked(const QString& filePath, const QStringList& words)
 {
     QFile file(filePath);
@@ -969,7 +829,7 @@ bool MainWindow::fileContainsAllWordsChunked(const QString& filePath, const QStr
         qDebug() << "Cannot open file, error" << file.errorString();
         return false;
     }
-    qDebug() << "CHUNKED algo: file size" << file.size() << "path" << filePath;
+    // qDebug() << "CHUNKED incl: file size" << file.size() << "path" << filePath;
     static constexpr qint64 CHUNK_SIZE = 200 * 1024 * 1024;
     while (!file.atEnd()) {
         if (isTimeToReport())
@@ -983,56 +843,45 @@ bool MainWindow::fileContainsAllWordsChunked(const QString& filePath, const QStr
     return true;
 }
 
-bool MainWindow::fileContainsAnyWord(const QString& filePath, const QStringList& wordList)
+bool MainWindow::fileContainsAnyWordChunked(const QString& filePath, const QStringList& words)
 {
-    try
-    {
-        QFile file(filePath);
-        if (!file.open(QIODevice::ReadOnly)) {
-            qDebug() << "Cannot open file, error" << file.errorString() << filePath;
-            return false;
-        }
-        qDebug() << "file size" << file.size() << "filePath" << filePath;
-
-        return fileContainsAnyWord(file, wordList);
-        // const auto fileContent = QString::fromUtf8(file.readAll());
-        // qDebug() << "fileContent length" << fileContent.length();
-        // foreach (QString word, wordList)
-        // {
-        //     if (fileContent.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
-        //         return true;
-        // }
-        // return false;
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << "Cannot open file, error" << file.errorString();
+        return false;
     }
-    catch (...) { Q_ASSERT(false); } // TODO tell the user
-    return true;
-}
-
-bool MainWindow::fileContainsAnyWord(QFile& file,  const QStringList& wordList)
-{
-    file.seek(0);
-    QString line;
-    QTextStream stream(&file);
-    while (!stream.atEnd())
-    {
+    // qDebug() << "CHUNKED excl: file size" << file.size() << "path" << filePath;
+    static constexpr qint64 CHUNK_SIZE = 200 * 1024 * 1024;
+    while (!file.atEnd()) {
         if (isTimeToReport())
             qApp->processEvents();
         if (_stopped)
             return false;
-        line = stream.readLine();
-        foreach (QString word, wordList)
-        {
-            if (line.contains( word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
-                return true;
-        }
+        const QByteArray chunk = file.read(CHUNK_SIZE);
+        if (stringContainsAnyWord(QString::fromUtf8(chunk), words))
+            return true;
+    }
+    return false;
+}
+
+bool MainWindow::stringContainsAnyWord(const QString& str,  const QStringList& wordList)
+{
+    for (const auto& word : wordList) {
+        if (isTimeToReport())
+            qApp->processEvents();
+        if (_stopped)
+            return false;
+        if (str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
+            return true;
     }
     return false;
 }
 
 inline bool MainWindow::isTimeToReport()
 {
-    if ((_elTimer.elapsed() - _prevEl) >= 100) {
-        _prevEl = _elTimer.elapsed();
+    const auto elapsed = _reportTimer.elapsed();
+    if ((elapsed - _prevElapsed) >= 200) {
+        _prevElapsed = elapsed;
         return true;
     }
     else
@@ -1215,11 +1064,6 @@ void MainWindow::appendFileToTable(const QString filePath, const QFileInfo& file
 {
   try
   {
-    if (exclHiddenCheck->isChecked() && isHidden(fileInfo)) {
-        qDebug() << "EXCLUDED: " << filePath << "hidden:" << isHidden(fileInfo);
-        return;
-    }
-
     auto fileNameItem = new TableWidgetItem;
     auto fileName = fileInfo.fileName();
     if (fileInfo.isSymLink())
@@ -1577,6 +1421,72 @@ void MainWindow::showAboutDialog() {
 void MainWindow::showHelpDialog() {
     HelpDialog dialog(this);
     dialog.exec();
+}
+
+void MainWindow::getFileInfos(const QString& currPath, QFileInfoList& fileInfos) const
+{
+    QDir currDir(currPath);
+    currDir.setNameFilters(_fileNameSubfilters);
+    currDir.setFilter(_itemTypeFilter);
+    QDir::Filters filters = QDir::AllEntries | QDir::System | QDir::NoDotAndDotDot;
+    if (!exclHiddenCheck->isChecked())
+        filters |= QDir::Hidden;
+    fileInfos = currDir.entryInfoList(filters);
+}
+
+void MainWindow::deepFindFiles(const QString& startPath, int maxDepth)
+{
+    QQueue<QPair<QString, int>> dirQ;
+    dirQ.enqueue({startPath, 0});
+
+    while (!dirQ.empty()) {
+        const auto [currPath, currDepth] = dirQ.dequeue();
+        if (_stopped || (currDepth > maxDepth && maxDepth >= 0))
+            return;
+        ++_dirCount;
+        if (isTimeToReport()) {
+            qApp->processEvents();
+            filesFoundLabel->setText( tr("Examined %1 items in %2 folders so far...").arg(_totItemCount).arg(_dirCount));
+        }
+        QFileInfoList fileInfos;
+        getFileInfos(currPath, fileInfos);
+        updateTotals(currPath);
+
+        for (const auto& finfo : fileInfos) {
+            if (_stopped)
+                return;
+            if (finfo.isDir() && !finfo.isSymLink() && (currDepth < maxDepth || maxDepth < 0))
+                dirQ.enqueue({finfo.absoluteFilePath(), currDepth + 1});
+            findItem(currPath, finfo);
+        }
+    }
+}
+
+quint64 MainWindow::deepDirSize(const QString& startPath)
+{
+    QQueue<QString> dirQ;
+    dirQ.enqueue(startPath);
+    quint64 dirSize = 0;
+
+    while (!dirQ.empty()) {
+        if (_stopped)
+            return dirSize;
+        if (isTimeToReport())
+            qApp->processEvents();
+        const auto currPath = dirQ.dequeue();
+        QFileInfoList fileInfos;
+        getFileInfos(currPath, fileInfos);
+
+        for (const auto& finfo : fileInfos) {
+            if (_stopped)
+                return dirSize;
+            if (finfo.isDir() && !finfo.isSymLink())
+                dirQ.enqueue(finfo.absoluteFilePath());
+            else
+                dirSize += quint64(finfo.size());
+        }
+    }
+    return dirSize;
 }
 
 } // namespace Devonline

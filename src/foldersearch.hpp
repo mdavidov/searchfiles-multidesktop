@@ -66,8 +66,6 @@ public:
     ~MainWindow();
 
     void SetDirPath( const QString & dirPath);
-    void GetFilePaths( QStringList & filePaths) const { filePaths = _outFiles; }
-    void GetFileInfos( QFileInfoList & fileInfos) const;
     Devonline::Op::Type GetOp() const { return _opType; }
     void Clear();
 
@@ -102,7 +100,6 @@ private:
     QString FsItemType(const QFileInfo& fileInfo) const;
     void updateTotals(const QString& currPath);
     void getFileInfos(const QString& currPath, QFileInfoList& fileInfos) const;
-    void traverseDir(const QString& startPath, int maxDepth);
 
     // QStringList findTextInFiles(const QStringList &files, const QString &text);
     void showFiles(const QStringList &files);
@@ -113,23 +110,20 @@ private:
     void appendFileToTable(const QString filePath, const QFileInfo & fileInfo);
 
     bool findFilesPrep();
-    void findFilesRecursive( const QString & dirPath, qint32 subDirDepth);
+    void deepFindFiles(const QString& startPath, int maxDepth);
+    quint64 deepDirSize(const QString& startPath);
     bool findItem(const QString & dirPath, const QFileInfo& fileInfo);
     inline bool isTimeToReport();
     void setStopped(bool stopped);
     void setFilesFoundLabel(const QString& prefix);
     quint64 combinedSize(const QFileInfoList& items);
+    QStringList getSimpleNamePatterns( const QString & rawNamePatters) const;
 
-    QStringList GetSimpleNamePatterns( const QString & rawNamePatters) const;
-    bool StringContainsAnyWord( const QString & theString, const QStringList & wordList) const;
+    bool stringContainsAllWords(const QString& str, const QStringList& words);
+    bool stringContainsAnyWord(const QString& str, const QStringList& words);
 
-    bool stringContainsAllWords(const QString& str, const QStringList& words) const;
     bool fileContainsAllWordsChunked(const QString& filePath, const QStringList& words);
-
-    bool fileContainsAllWords(const QString & filePath, const QStringList & wordList);
-    bool fileContainsWord(    QFile & file,             const QString & word);
-    bool fileContainsAnyWord( const QString & filePath, const QStringList & wordList);
-    bool fileContainsAnyWord( QFile & file,             const QStringList & wordList);
+    bool fileContainsAnyWordChunked(const QString& filePath, const QStringList& words);
 
     void showMoreOptions(bool show);
 
@@ -217,8 +211,8 @@ private:
     qint64 _totItemCount;
     quint64 _totItemsSize;
     quint64 _foundItemsSize;
-    QElapsedTimer _elTimer;
-    qint64 _prevEl;
+    QElapsedTimer _reportTimer;
+    qint64 _prevElapsed;
     Devonline::Op::Type _opType;
     bool _stopped;
 };
