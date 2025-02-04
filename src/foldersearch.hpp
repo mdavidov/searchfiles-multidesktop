@@ -112,12 +112,11 @@ private:
     bool findFilesPrep();
     void deepFindFiles(const QString& startPath, int maxDepth);
     quint64 deepDirSize(const QString& startPath);
-    bool findItem(const QString & dirPath, const QFileInfo& fileInfo);
+    bool appendOrExcludeItem(const QString & dirPath, const QFileInfo& fileInfo);
     inline bool isTimeToReport();
     void setStopped(bool stopped);
     void setFilesFoundLabel(const QString& prefix);
     quint64 combinedSize(const QFileInfoList& items);
-    QStringList getSimpleNamePatterns( const QString & rawNamePatters) const;
 
     bool stringContainsAllWords(const QString& str, const QStringList& words);
     bool stringContainsAnyWord(const QString& str, const QStringList& words);

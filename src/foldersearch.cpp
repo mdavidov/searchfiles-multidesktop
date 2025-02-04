@@ -672,14 +672,16 @@ bool MainWindow::findFilesPrep()
 		_origDirPath += QDir::separator();
     }
 
-    _searchWords        = wordsLineEdit->text().split(" ", Qt::SkipEmptyParts);;
+    _searchWords        = wordsLineEdit->text().split(" ", Qt::SkipEmptyParts);
     _exclusionWords     = exclFilesByTextCombo->text().split(" ", Qt::SkipEmptyParts);
-    _exclFilePatterns   = getSimpleNamePatterns( exclByFileNameCombo->text());
-    _exclFolderPatterns = getSimpleNamePatterns( exclByFolderNameCombo->text());
+    _exclFilePatterns   = exclByFileNameCombo->text().split(" ", Qt::SkipEmptyParts);
+    _exclFolderPatterns = exclByFolderNameCombo->text().split(" ", Qt::SkipEmptyParts);
 
     bool maxValid = false;
     _maxSubDirDepth =  maxSubDirDepthEdt->text().toInt(&maxValid);
-    _unlimSubDirDepth = (!maxValid || unlimSubDirDepthBtn->isChecked());
+    if (!maxValid)
+        _maxSubDirDepth = 0;
+    _unlimSubDirDepth = unlimSubDirDepthBtn->isChecked();
     return true;
 }
 
@@ -723,25 +725,25 @@ void MainWindow::findBtnClicked()
   catch (...) { Q_ASSERT(false); } // TODO tell the user
 }
 
-bool MainWindow::findItem(const QString& dirPath, const QFileInfo& fileInfo)
+bool MainWindow::appendOrExcludeItem(const QString& dirPath, const QFileInfo& fileInfo)
 {
     try {
         if (isTimeToReport())
             qApp->processEvents();
         const auto filePath = QDir::fromNativeSeparators(fileInfo.absoluteFilePath());
-        bool toExclude = isHidden(fileInfo) && exclHiddenCheck->isChecked();
-        if (!toExclude) {
-            if (!_exclFolderPatterns.empty())
-                toExclude = stringContainsAnyWord(dirPath, _exclFolderPatterns);
-            if (fileInfo.isFile()) {
-                if (!_exclFilePatterns.empty())
-                    toExclude = stringContainsAnyWord(fileInfo.fileName(), _exclFilePatterns);
-                if (!_exclusionWords.empty() && _searchWords.empty())
-                    toExclude = fileContainsAnyWordChunked(filePath, _exclusionWords);
-            }
-        }
-        if (toExclude) {
+        if (!_exclFolderPatterns.empty() && stringContainsAnyWord(dirPath, _exclFolderPatterns)) {
+            // qDebug() << "Excluded by folder name" << _exclFolderPatterns << dirPath;
             return false;
+        }
+        if (fileInfo.isFile()) {
+            if (!_exclFilePatterns.empty() && stringContainsAnyWord(fileInfo.fileName(), _exclFilePatterns)) {
+                // qDebug() << "Excluded by file name" << _exclFilePatterns << fileInfo.fileName();
+                return false;
+            }
+            if (!_exclusionWords.empty() && fileContainsAnyWordChunked(filePath, _exclusionWords)) {
+                // qDebug() << "Excluded by file content" << _exclusionWords << filePath;
+                return false;
+            }
         }
         bool toAppend = false;
         if (_searchWords.empty()) {
@@ -757,24 +759,11 @@ bool MainWindow::findItem(const QString& dirPath, const QFileInfo& fileInfo)
         if (toAppend) {
             _outFiles.append( filePath);
             appendFileToTable( filePath, fileInfo);
-            _foundItemsSize += static_cast<quint64>(fileInfo.size());
+            _foundItemsSize += quint64(fileInfo.size());
         }
         return true;
     }
     catch (...) { Q_ASSERT(false); return false; } // TODO tell the user
-}
-
-QStringList MainWindow::getSimpleNamePatterns( const QString & rawNamePatters) const
-{
-    QStringList outPatters;
-    const QStringList tempPatterns = rawNamePatters.split(";", Qt::SkipEmptyParts);
-    foreach (QString tempPat, tempPatterns)
-    {
-        QString trimmedPat = tempPat.trimmed();
-        QString & procPat = trimmedPat.remove(QChar('*'), Qt::CaseInsensitive);
-        outPatters.append( procPat);
-    }
-    return outPatters;
 }
 
 bool MainWindow::stringContainsAllWords(const QString& str, const QStringList& words)
@@ -790,6 +779,23 @@ bool MainWindow::stringContainsAllWords(const QString& str, const QStringList& w
             return false;
     }
     return true;
+}
+
+bool MainWindow::stringContainsAnyWord(const QString& str,  const QStringList& words)
+{
+    if (str.isEmpty() || words.empty())
+        return false;
+    for (const auto& word : words) {
+        if (isTimeToReport())
+            qApp->processEvents();
+        if (_stopped)
+            return false;
+        if (str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
+            qDebug() << "stringContainsAnyWord true, word:" << word;
+            return true;
+        }
+    }
+    return false;
 }
 
 bool MainWindow::fileContainsAllWordsChunked(const QString& filePath, const QStringList& words)
@@ -839,22 +845,6 @@ bool MainWindow::fileContainsAnyWordChunked(const QString& filePath, const QStri
             return false;
         }
         if (stringContainsAnyWord(chunk, words)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool MainWindow::stringContainsAnyWord(const QString& str,  const QStringList& words)
-{
-    if (str.isEmpty() || words.empty())
-        return false;
-    for (const auto& word : words) {
-        if (isTimeToReport())
-            qApp->processEvents();
-        if (_stopped)
-            return false;
-        if (str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
             return true;
         }
     }
@@ -1452,7 +1442,7 @@ void MainWindow::deepFindFiles(const QString& startPath, int maxDepth)
                 return;
             if (finfo.isDir() && !finfo.isSymLink() && (currDepth < maxDepth || maxDepth < 0))
                 dirQ.enqueue({finfo.absoluteFilePath(), currDepth + 1});
-            findItem(currPath, finfo);
+            appendOrExcludeItem(currPath, finfo);
         }
     }
 }
