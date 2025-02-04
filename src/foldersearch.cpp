@@ -28,7 +28,7 @@
 #include "config.h"
 #include "util.h"
 #include "keypress.hpp"
-#include <map>
+#include <algorithm>
 #include <QApplication>
 #include <QDir>
 #include <QFileInfo>
@@ -748,7 +748,7 @@ bool MainWindow::findItem(const QString& dirPath, const QFileInfo& fileInfo)
             }
         }
         if (toExclude) {
-            qDebug() << "EXCLUDED:" << filePath << "hidden:" << isHidden(fileInfo);
+            // qDebug() << "EXCLUDED:" << filePath << "hidden:" << isHidden(fileInfo);
             return false;
         }
         bool toAppend = false;
@@ -766,46 +766,10 @@ bool MainWindow::findItem(const QString& dirPath, const QFileInfo& fileInfo)
             _outFiles.append( filePath);
             appendFileToTable( filePath, fileInfo);
             _foundItemsSize += static_cast<quint64>(fileInfo.size());
-            // qDebug() << "APPENDED" << filePath << "hidden:" << isHidden(fileInfo);
-        }
-        else if (fileInfo.isFile() && !_searchWords.empty()) {
-            qDebug() << "NOT APPENDED" << filePath << "hidden:" << isHidden(fileInfo);
         }
         return true;
     }
     catch (...) { Q_ASSERT(false); return false; } // TODO tell the user
-}
-
-quint64 MainWindow::combinedSize(const QFileInfoList& items)
-{
-    quint64 csz = 0;
-    for (const auto& item : items) {
-        if (_stopped) return csz;
-        csz += static_cast<quint64>(item.size());
-    }
-    return csz;
-}
-
-void MainWindow::updateTotals(const QString& currPath)
-{
-    const QDir unFilteredDir = QDir(currPath);
-    static constexpr QDir::Filters unfilters = QDir::AllEntries | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot;
-    const QFileInfoList unFilteredItems = unFilteredDir.entryInfoList(unfilters);
-    _totItemCount += unFilteredItems.count();
-    _totItemsSize += combinedSize(unFilteredItems);
-}
-
-bool MainWindow::stringContainsAllWords(const QString& str, const QStringList& words)
-{
-    for (const auto& word : words) {
-        if (isTimeToReport())
-            qApp->processEvents();
-        if (_stopped)
-            return false;
-        if (!str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
-            return false;
-    }
-    return true;
 }
 
 QStringList MainWindow::getSimpleNamePatterns( const QString & rawNamePatters) const
@@ -819,59 +783,112 @@ QStringList MainWindow::getSimpleNamePatterns( const QString & rawNamePatters) c
         outPatters.append( procPat);
     }
     return outPatters;
-    return outPatters;
+}
+
+bool MainWindow::stringContainsAllWords(const QString& str, const QStringList& words)
+{
+    if (str.isEmpty() || words.empty())
+        return false;
+    for (const auto& word : words) {
+        if (isTimeToReport())
+            qApp->processEvents();
+        if (_stopped)
+            return false;
+        if (!str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
+            return false;
+    }
+    qDebug() << "STRING CONTAINS ALL WORDS:" << str.sliced(0, 85) << "length:" << str.length() << "words:" << words;
+    return true;
 }
 
 bool MainWindow::fileContainsAllWordsChunked(const QString& filePath, const QStringList& words)
 {
     QFile file(filePath);
+    if (file.size() == 0 || QFileInfo(file).fileName() == ".DS_Store")
+        return false;
     if (!file.open(QIODevice::ReadOnly)) {
         qDebug() << "Cannot open file, error" << file.errorString();
         return false;
     }
-    // qDebug() << "CHUNKED incl: file size" << file.size() << "path" << filePath;
     static constexpr qint64 CHUNK_SIZE = 200 * 1024 * 1024;
+    if (file.size() <= CHUNK_SIZE) {
+        const auto content = QString::fromUtf8(file.readAll());
+        if (stringContainsAllWords(content, words) == true) {
+            qDebug() << "READALL: FILE CONTAINS ALL WORDS" << filePath << "file size:" << file.size() << "words:" << words;
+            return true;
+        }
+        return false;
+    }
     while (!file.atEnd()) {
         if (isTimeToReport())
             qApp->processEvents();
         if (_stopped)
             return false;
-        const QByteArray chunk = file.read(CHUNK_SIZE);
-        if (!stringContainsAllWords(QString::fromUtf8(chunk), words))
+        const auto rsize = std::min(file.size() - file.pos(), CHUNK_SIZE);
+        const auto chunk = (rsize > 0) ? QString::fromUtf8(file.read(rsize)) : QString();
+        if (chunk.isEmpty()) {
+            qDebug() << "CHUNK empty: file size:" << file.size() << "path:" << filePath;
+            return false;
+        }
+        if (!stringContainsAllWords(chunk, words))
             return false;
     }
+    qDebug() << "FILE CONTAINS ALL WORDS:" << filePath << "size:" << file.size() << "words:" << words;
     return true;
 }
 
 bool MainWindow::fileContainsAnyWordChunked(const QString& filePath, const QStringList& words)
 {
     QFile file(filePath);
+    if (file.size() == 0 || QFileInfo(file).fileName() == ".DS_Store")
+        return false;
     if (!file.open(QIODevice::ReadOnly)) {
         qDebug() << "Cannot open file, error" << file.errorString();
         return false;
     }
-    // qDebug() << "CHUNKED excl: file size" << file.size() << "path" << filePath;
     static constexpr qint64 CHUNK_SIZE = 200 * 1024 * 1024;
+    if (file.size() <= CHUNK_SIZE) {
+        const auto content = QString::fromUtf8(file.readAll());
+        if (stringContainsAnyWord(content, words) == true) {
+            qDebug() << "READALL: FILE CONTAINS ANY WORD" << filePath << "file size:" << file.size() << "words:" << words;
+            return true;
+        }
+        return false;
+    }
     while (!file.atEnd()) {
         if (isTimeToReport())
             qApp->processEvents();
         if (_stopped)
             return false;
-        const QByteArray chunk = file.read(CHUNK_SIZE);
-        if (stringContainsAnyWord(QString::fromUtf8(chunk), words))
+        const auto rsize = std::min(file.size() - file.pos(), CHUNK_SIZE);
+        const auto chunk = (rsize > 0) ? QString::fromUtf8(file.read(rsize)) : QString();
+        if (chunk.isEmpty()) {
+            qDebug() << "CHUNK empty: file size:" << file.size() << "path:" << filePath;
+            return false;
+        }
+        qDebug() << "READ SIZE:" << rsize << "STR:" << chunk.sliced(0, 85) << "FILE SIZE:" << file.size() << "words:" << words;
+        if (stringContainsAnyWord(chunk, words) == true) {
+            qDebug() << "FILE CONTAINS ANY WORD" << filePath << "file size:" << file.size() << "words:" << words;
             return true;
+        }
     }
     return false;
 }
 
-bool MainWindow::stringContainsAnyWord(const QString& str,  const QStringList& wordList)
+#include <iostream>
+
+bool MainWindow::stringContainsAnyWord(const QString& str,  const QStringList& words)
 {
-    for (const auto& word : wordList) {
+    if (str.isEmpty() || words.empty())
+        return false;
+    for (const auto& word : words) {
         if (isTimeToReport())
             qApp->processEvents();
         if (_stopped)
             return false;
         if (str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
+            std::cout << "stringContainsAnyWord found word:" << word.toStdString() << std::endl;
+            qDebug() << "STRING CONTAINS ANY WORD:" << str.sliced(0, 85) << "length:" << str.length() << "words:" << words;
             return true;
     }
     return false;
@@ -1432,6 +1449,25 @@ void MainWindow::getFileInfos(const QString& currPath, QFileInfoList& fileInfos)
     if (!exclHiddenCheck->isChecked())
         filters |= QDir::Hidden;
     fileInfos = currDir.entryInfoList(filters);
+}
+
+quint64 MainWindow::combinedSize(const QFileInfoList& items)
+{
+    quint64 csz = 0;
+    for (const auto& item : items) {
+        if (_stopped) return csz;
+        csz += static_cast<quint64>(item.size());
+    }
+    return csz;
+}
+
+void MainWindow::updateTotals(const QString& currPath)
+{
+    const QDir unFilteredDir = QDir(currPath);
+    static constexpr QDir::Filters unfilters = QDir::AllEntries | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot;
+    const QFileInfoList unFilteredItems = unFilteredDir.entryInfoList(unfilters);
+    _totItemCount += unFilteredItems.count();
+    _totItemsSize += combinedSize(unFilteredItems);
 }
 
 void MainWindow::deepFindFiles(const QString& startPath, int maxDepth)
