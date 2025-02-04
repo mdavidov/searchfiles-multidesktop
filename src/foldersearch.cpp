@@ -58,8 +58,8 @@ const int RELPATH_COL_IDX = 0;
     #define eCod_MIN_PATH_LEN 1
 #endif
 
-bool MainWindow ::isHidden(const QFileInfo& fileInfo) const {
-    return  fileInfo.isHidden() || fileInfo.fileName().startsWith('.');
+bool MainWindow ::isHidden(const QFileInfo& finfo) const {
+    return  finfo.isHidden() || finfo.fileName().startsWith('.');
 }
 
 MainWindow::~MainWindow()
@@ -725,41 +725,38 @@ void MainWindow::findBtnClicked()
   catch (...) { Q_ASSERT(false); } // TODO tell the user
 }
 
-bool MainWindow::appendOrExcludeItem(const QString& dirPath, const QFileInfo& fileInfo)
+bool MainWindow::appendOrExcludeItem(const QString& dirPath, const QFileInfo& finfo)
 {
     try {
         if (isTimeToReport())
             qApp->processEvents();
-        const auto filePath = QDir::fromNativeSeparators(fileInfo.absoluteFilePath());
+        const auto filePath = QDir::fromNativeSeparators(finfo.absoluteFilePath());
         if (!_exclFolderPatterns.empty() && stringContainsAnyWord(dirPath, _exclFolderPatterns)) {
-            // qDebug() << "Excluded by folder name" << _exclFolderPatterns << dirPath;
             return false;
         }
-        if (fileInfo.isFile()) {
-            if (!_exclFilePatterns.empty() && stringContainsAnyWord(fileInfo.fileName(), _exclFilePatterns)) {
-                // qDebug() << "Excluded by file name" << _exclFilePatterns << fileInfo.fileName();
+        if (finfo.isFile()) {
+            if (!_exclFilePatterns.empty() && stringContainsAnyWord(finfo.fileName(), _exclFilePatterns)) {
                 return false;
             }
             if (!_exclusionWords.empty() && fileContainsAnyWordChunked(filePath, _exclusionWords)) {
-                // qDebug() << "Excluded by file content" << _exclusionWords << filePath;
                 return false;
             }
         }
         bool toAppend = false;
         if (_searchWords.empty()) {
-            if (fileInfo.isSymLink())
+            if (finfo.isSymLink())
                 toAppend = symlinksCheck->isChecked();
-            else if (fileInfo.isDir())
+            else if (finfo.isDir())
                 toAppend = foldersCheck->isChecked();
         }
-        if (fileInfo.isFile() && filesCheck->isChecked()) {
+        if (finfo.isFile() && filesCheck->isChecked()) {
             toAppend = _searchWords.empty() ||
                        fileContainsAllWordsChunked(filePath, _searchWords);
         }
         if (toAppend) {
             _outFiles.append( filePath);
-            appendFileToTable( filePath, fileInfo);
-            _foundItemsSize += quint64(fileInfo.size());
+            appendFileToTable( filePath, finfo);
+            _foundItemsSize += quint64(finfo.size());
         }
         return true;
     }
@@ -791,7 +788,6 @@ bool MainWindow::stringContainsAnyWord(const QString& str,  const QStringList& w
         if (_stopped)
             return false;
         if (str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
-            qDebug() << "stringContainsAnyWord true, word:" << word;
             return true;
         }
     }
@@ -1006,48 +1002,48 @@ QComboBox* MainWindow::createComboBoxText()
     return comboBox;
 }
 
-QString MainWindow::FsItemType(const QFileInfo & fileInfo) const
+QString MainWindow::FsItemType(const QFileInfo & finfo) const
 {
     QString fsType;
-    if (fileInfo.isSymLink()) {
-        if (fileInfo.isDir())
+    if (finfo.isSymLink()) {
+        if (finfo.isDir())
             fsType = OvSk_FsOp_SYMLINK_TXT " to folder";
-        else if (fileInfo.isFile())
+        else if (finfo.isFile())
             fsType = OvSk_FsOp_SYMLINK_TXT " to file";
         else
             fsType = OvSk_FsOp_SYMLINK_TXT;
     }
-    else if (fileInfo.isDir())
+    else if (finfo.isDir())
         fsType = "Folder";
-    else if (fileInfo.isFile())
+    else if (finfo.isFile())
         fsType = "File";
     else
         fsType = "";
 
-    if (isHidden(fileInfo))
+    if (isHidden(finfo))
         fsType += " - hidden";
 
     return fsType;
 }
 
-void MainWindow::appendFileToTable(const QString filePath, const QFileInfo& fileInfo)
+void MainWindow::appendFileToTable(const QString filePath, const QFileInfo& finfo)
 {
   try
   {
     auto fileNameItem = new TableWidgetItem;
-    auto fileName = fileInfo.fileName();
-    if (fileInfo.isSymLink())
-        fileName += " -> " + fileInfo.symLinkTarget();
-    else if (fileInfo.isDir())
+    auto fileName = finfo.fileName();
+    if (finfo.isSymLink())
+        fileName += " -> " + finfo.symLinkTarget();
+    else if (finfo.isDir())
         fileName += QDir::separator();
     fileNameItem->setData(Qt::DisplayRole, QDir::toNativeSeparators(fileName));
     fileNameItem->setFlags(fileNameItem->flags() ^ Qt::ItemIsEditable);
-    auto absFilePath = QDir::toNativeSeparators(fileInfo.absoluteFilePath());
-    if (fileInfo.isDir())
+    auto absFilePath = QDir::toNativeSeparators(finfo.absoluteFilePath());
+    if (finfo.isDir())
         absFilePath += QDir::separator();
     fileNameItem->setData(Qt::ToolTipRole, QVariant(absFilePath));
 
-    const QString fpath = QDir::toNativeSeparators( fileInfo.path());
+    const QString fpath = QDir::toNativeSeparators( finfo.path());
     const auto dlen = QDir::toNativeSeparators( _origDirPath).length();
     QString relPath = (fpath.length() <= dlen) ? "" : fpath.right( fpath.length() - dlen);
     if (relPath.startsWith( QDir::separator()))
@@ -1057,40 +1053,40 @@ void MainWindow::appendFileToTable(const QString filePath, const QFileInfo& file
     filePathItem->setFlags( filePathItem->flags() ^ Qt::ItemIsEditable);
     filePathItem->setData( Qt::UserRole, QDir::toNativeSeparators( filePath));
     auto fpTooltip = "{SF} = " + dirComboBox->currentText();
-    if (!fpTooltip.endsWith(QDir::separator()) && fileInfo.isDir())
+    if (!fpTooltip.endsWith(QDir::separator()) && finfo.isDir())
          fpTooltip += QDir::separator();
     filePathItem->setData(Qt::ToolTipRole, QVariant(fpTooltip));
 
-    auto fileExt = !fileInfo.suffix().isEmpty() ? "." + fileInfo.suffix() : "";
-    if (fileExt == fileName || fileInfo.isDir())
+    auto fileExt = !finfo.suffix().isEmpty() ? "." + finfo.suffix() : "";
+    if (fileExt == fileName || finfo.isDir())
         fileExt = "";
     auto fileExtItem = new TableWidgetItem(fileExt);
     fileExtItem->setFlags( fileExtItem->flags() ^ Qt::ItemIsEditable);
     fileExtItem->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 
-    //const QString dateModStr = fileInfo.lastModified().toString( Qt::SystemLocaleShortDate); //( Qt::ISODate); ( "yyyy.MM.dd HH:mm:ss");
+    //const QString dateModStr = finfo.lastModified().toString( Qt::SystemLocaleShortDate); //( Qt::ISODate); ( "yyyy.MM.dd HH:mm:ss");
     QTableWidgetItem * dateModItem = new QTableWidgetItem();
     dateModItem->setTextAlignment( Qt::AlignHCenter | Qt::AlignVCenter);
     dateModItem->setFlags( dateModItem->flags() ^ Qt::ItemIsEditable);
-    dateModItem->setData( Qt::DisplayRole, fileInfo.lastModified());
+    dateModItem->setData( Qt::DisplayRole, finfo.lastModified());
 
-    const double sizeKB = fileInfo.size() > 0 && fileInfo.size() < 104 ?
-                            0.1 : double(fileInfo.size()) / double(1024);
+    const double sizeKB = finfo.size() > 0 && finfo.size() < 104 ?
+                            0.1 : double(finfo.size()) / double(1024);
     const QString sizeKBqs = QString::number(sizeKB, 'f', 1);
     const double sizeKBround = sizeKBqs.toDouble();
     QString sizeText;
-    sizeToHumanReadable( static_cast<quint64>(fileInfo.size()), sizeText);
+    sizeToHumanReadable( static_cast<quint64>(finfo.size()), sizeText);
     QTableWidgetItem * sizeItem = new QTableWidgetItem();
     sizeItem->setFlags( sizeItem->flags() ^ Qt::ItemIsEditable);
     sizeItem->setTextAlignment( Qt::AlignHCenter | Qt::AlignVCenter);
-    sizeItem->setData( Qt::DisplayRole, fileInfo.isFile() ? QVariant(sizeKBround) : QVariant(""));
-    sizeItem->setData( Qt::ToolTipRole, fileInfo.isFile() ? QVariant(sizeText) : QVariant(""));
+    sizeItem->setData( Qt::DisplayRole, finfo.isFile() ? QVariant(sizeKBround) : QVariant(""));
+    sizeItem->setData( Qt::ToolTipRole, finfo.isFile() ? QVariant(sizeText) : QVariant(""));
 
-    auto fsTypeItem = new TableWidgetItem(FsItemType(fileInfo));
+    auto fsTypeItem = new TableWidgetItem(FsItemType(finfo));
     fsTypeItem->setFlags(fsTypeItem->flags() ^ Qt::ItemIsEditable);
     fsTypeItem->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 
-    auto ownerItem = new TableWidgetItem(fileInfo.owner());
+    auto ownerItem = new TableWidgetItem(finfo.owner());
     ownerItem->setFlags(ownerItem->flags() ^ Qt::ItemIsEditable);
     ownerItem->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
     ownerItem->setData(Qt::ToolTipRole, QVariant("Username of the item's owner."));
@@ -1264,9 +1260,9 @@ void MainWindow::openRunSlot()
             return;
         }
         const auto item = selectedItems.first();
-        const auto fileInfo = QFileInfo(item->data(Qt::UserRole).toString());
+        const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
         // absoluteFilePath() is good for both files and folders
-        const auto url = QUrl::fromLocalFile(fileInfo.absoluteFilePath());
+        const auto url = QUrl::fromLocalFile(finfo.absoluteFilePath());
         QDesktopServices::openUrl(url);
     }
     catch (...) { Q_ASSERT(false); }
@@ -1281,10 +1277,10 @@ void MainWindow::openContainingFolderSlot()
             return;
         }
         const auto item = selectedItems.first();
-        const auto fileInfo = QFileInfo(item->data(Qt::UserRole).toString());
+        const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
         // absolutePath() is the containing folder (i.e. absolute path
         // without the file/folder name)
-        const auto url = QUrl::fromLocalFile(fileInfo.absolutePath());
+        const auto url = QUrl::fromLocalFile(finfo.absolutePath());
         QDesktopServices::openUrl(url);
     }
     catch (...) { Q_ASSERT(false); }
@@ -1304,8 +1300,8 @@ void MainWindow::copyPathSlot()
             return;
         }
         const auto item = selectedItems.first();
-        const auto fileInfo = QFileInfo(item->data(Qt::UserRole).toString());
-        clipboard->setText(QDir::toNativeSeparators(fileInfo.absoluteFilePath()));
+        const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
+        clipboard->setText(QDir::toNativeSeparators(finfo.absoluteFilePath()));
     }
     catch (...) { Q_ASSERT(false); }
 }
@@ -1319,8 +1315,8 @@ void MainWindow::propertiesSlot()
             return;
         }
         const auto item = selectedItems.first();
-        const auto fileInfo = QFileInfo(item->data(Qt::UserRole).toString());
-        const auto filePath = QDir::toNativeSeparators(fileInfo.absoluteFilePath());
+        const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
+        const auto filePath = QDir::toNativeSeparators(finfo.absoluteFilePath());
 #if defined(Q_OS_LINUX)
         QProcess::startDetached("xdg-open", QStringList() << filePath);
 #elif defined(Q_OS_MACOS)

@@ -61,7 +61,7 @@ public slots:
 
 class MainWindow : public QMainWindow {
 private slots:
-    void handleResult(const QString& file, const QFileInfo& fileInfo) {
+    void handleResult(const QString& file, const QFileInfo& finfo) {
         // Update UI with found file
         filesTable->insertRow(filesTable->rowCount());
         // Add file details to table

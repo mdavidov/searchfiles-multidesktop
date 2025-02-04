@@ -96,8 +96,8 @@ private slots:
     void showHelpDialog();
 
 private:
-    bool isHidden(const QFileInfo& fileInfo) const;
-    QString FsItemType(const QFileInfo& fileInfo) const;
+    bool isHidden(const QFileInfo& finfo) const;
+    QString FsItemType(const QFileInfo& finfo) const;
     void updateTotals(const QString& currPath);
     void getFileInfos(const QString& currPath, QFileInfoList& fileInfos) const;
 
@@ -107,12 +107,12 @@ private:
     QComboBox * createComboBoxFSys(const QString & text, bool setCompleter = false);
     QComboBox * createComboBoxText();
     void createFilesTable();
-    void appendFileToTable(const QString filePath, const QFileInfo & fileInfo);
+    void appendFileToTable(const QString filePath, const QFileInfo & finfo);
 
     bool findFilesPrep();
     void deepFindFiles(const QString& startPath, int maxDepth);
     quint64 deepDirSize(const QString& startPath);
-    bool appendOrExcludeItem(const QString & dirPath, const QFileInfo& fileInfo);
+    bool appendOrExcludeItem(const QString & dirPath, const QFileInfo& finfo);
     inline bool isTimeToReport();
     void setStopped(bool stopped);
     void setFilesFoundLabel(const QString& prefix);
