@@ -781,8 +781,9 @@ bool MainWindow::stringContainsAllWords(const QString& str, const QStringList& w
             qApp->processEvents();
         if (_stopped)
             return false;
-        if (!str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive))
+        if (!str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
             return false;
+        }
     }
     return true;
 }
@@ -823,8 +824,9 @@ bool MainWindow::fileContainsAllWordsChunked(const QString& filePath, const QStr
         if (chunk.isEmpty()) {
             return false;
         }
-        if (!stringContainsAllWords(chunk, words))
+        if (!stringContainsAllWords(chunk, words)) {
             return false;
+        }
     }
     return true;
 }
@@ -1419,10 +1421,8 @@ void MainWindow::deepFindFiles(const QString& startPath, int maxDepth)
     QQueue<QPair<QString, int>> dirQ;
     dirQ.enqueue({startPath, 0});
 
-    while (!dirQ.empty()) {
+    while (!dirQ.empty() && !_stopped) {
         const auto [currPath, currDepth] = dirQ.dequeue();
-        if (_stopped || (currDepth > maxDepth && maxDepth >= 0))
-            return;
         ++_dirCount;
         if (isTimeToReport()) {
             qApp->processEvents();
@@ -1436,8 +1436,9 @@ void MainWindow::deepFindFiles(const QString& startPath, int maxDepth)
         for (const auto& finfo : fileInfos) {
             if (_stopped)
                 return;
-            if (finfo.isDir() && !finfo.isSymLink() && (currDepth < maxDepth || maxDepth < 0))
+            if (finfo.isDir() && !finfo.isSymLink() && (currDepth < maxDepth || maxDepth < 0)) {
                 dirQ.enqueue({finfo.absoluteFilePath(), currDepth + 1});
+            }
             appendOrExcludeItem(currPath, finfo);
         }
     }
@@ -1450,9 +1451,7 @@ std::pair<quint64, quint64> MainWindow::deepDirCountSize(const QString& startPat
     quint64 dirCount = 0;
     quint64 dirSize = 0;
 
-    while (!dirQ.empty()) {
-        if (_stopped)
-            return {0, 0};
+    while (!dirQ.empty() && !_stopped) {
         if (isTimeToReport())
             qApp->processEvents();
         const auto currPath = dirQ.dequeue();
@@ -1461,7 +1460,7 @@ std::pair<quint64, quint64> MainWindow::deepDirCountSize(const QString& startPat
 
         for (const auto& finfo : fileInfos) {
             if (_stopped)
-                return {0, 0};
+                break;
             dirCount++;
             if (finfo.isDir() && !finfo.isSymLink())
                 dirQ.enqueue(finfo.absoluteFilePath());

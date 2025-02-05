@@ -41,10 +41,9 @@ public slots:
                     emit scanCancelled();
                     return;
                 }
-
                 itemCount++;
-
-                if (entry.isDir()) {
+                // Do not follow symlinks
+                if (entry.isDir() && !entry.isSymLink()) {
                     folderQueue.enqueue(entry.absoluteFilePath());
                     emit folderFound(entry.absoluteFilePath(), entry);
                 }
@@ -53,7 +52,6 @@ public slots:
                 }
             }
         }
-
         progressTimer.stop();
         emit scanComplete();
     }
