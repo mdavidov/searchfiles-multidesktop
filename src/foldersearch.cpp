@@ -459,9 +459,10 @@ void MainWindow::removeItems(const Uint64StringMap& itemList)
                 const auto rmok = file.remove();
                 if (rmok) {
                     filesTable->removeRow(static_cast<int>(it->first));
-                    _totItemsSize -= fsize;
-                    _foundItemsSize -= fsize;
-                    _totItemCount -= 1;
+                    _totSize -= fsize;
+                    _foundSize -= fsize;
+                    _totCount -= 1;
+                    _foundCount -= 1;
                     ++delCnt;
                     if ((delCnt % 5) == 0)
                         emit filesTable->itemSelectionChanged();
@@ -470,14 +471,16 @@ void MainWindow::removeItems(const Uint64StringMap& itemList)
             else {
                 // RM DIR
                 QDir dir(path);
-                const auto dsize = deepDirSize(path);
-                const auto dcount = dir.count();
+                const auto [dcount, dsize] = deepDirCountSize(path);
                 const auto rmok = dir.removeRecursively();
                 if (rmok) {
                     filesTable->removeRow(static_cast<int>(it->first));
-                    _totItemsSize -= dsize;
-                    // _foundItemsSize -= dsize;
-                    _totItemCount -= dcount;
+                    _totSize -= dsize;
+                    if (_foundSize > dsize)
+                        _foundSize -= dsize;
+                    _totCount -= dcount;
+                    if (_foundCount > dcount)
+                        _foundCount -= dcount;
                     ++delCnt;
                     if ((delCnt % 5) == 0)
                         emit filesTable->itemSelectionChanged();
@@ -544,9 +547,10 @@ void MainWindow::Clear()
         filesFoundLabel->setText("");
         _outFiles.clear();
         _dirCount = 0;
-        _totItemCount = 0;
-        _totItemsSize = 0;
-        _foundItemsSize = 0;
+        _totCount = 0;
+        _totSize = 0;
+        _foundCount = 0;
+        _foundSize = 0;
         _reportTimer.restart();
         _prevElapsed = 0;
         setStopped(true);
@@ -597,20 +601,24 @@ void MainWindow::setStopped(bool stopped)
 void MainWindow::setFilesFoundLabel(const QString& prefix)
 {
     QString totItemsSizeStr;
-    sizeToHumanReadable(_totItemsSize, totItemsSizeStr);
+    sizeToHumanReadable(_totSize, totItemsSizeStr);
     QString foundItemsSizeStr;
-    sizeToHumanReadable(_foundItemsSize, foundItemsSizeStr);
+    sizeToHumanReadable(_foundSize, foundItemsSizeStr);
     const auto itemsTxt = filesTable->rowCount() == 1 ? "item" : "items";
     const auto foundLabelText =
         prefix
         + tr("Found %1 matching %2, %3 (searched %4 items, %5). ")
-            .arg(filesTable->rowCount())
+            .arg(_foundCount)  // (filesTable->rowCount())
             .arg(itemsTxt)
             .arg(foundItemsSizeStr)
-            .arg(_totItemCount)
+            .arg(_totCount)
             .arg(totItemsSizeStr);
     filesFoundLabel->setText(foundLabelText);
     qDebug() << foundLabelText;
+    if (_foundCount != quint64(filesTable->rowCount())) {
+        qDebug() << "ERROR: _foundCount" << _foundCount
+                 << "!= filesTable->rowCount()" << filesTable->rowCount();
+    }
 }
 
 bool MainWindow::findFilesPrep()
@@ -756,7 +764,8 @@ bool MainWindow::appendOrExcludeItem(const QString& dirPath, const QFileInfo& fi
         if (toAppend) {
             _outFiles.append( filePath);
             appendFileToTable( filePath, finfo);
-            _foundItemsSize += quint64(finfo.size());
+            _foundCount++;
+            _foundSize += quint64(finfo.size());
         }
         return true;
     }
@@ -875,23 +884,19 @@ void MainWindow::dirPathEditTextChanged(const QString& newText)
 {
     try
     {
-        if (_ignoreDirPathChange)
-        {
+        if (_ignoreDirPathChange) {
             _ignoreDirPathChange = false;
             return;
         }
         if (newText.isEmpty())
             return;
-
         const qint64 timeDiff = _editTextTimeDiff.elapsed();
 
-        if (newText.endsWith(QDir::separator()))
-        {
+        if (newText.endsWith(QDir::separator())) {
             fileSystemModel->setRootPath(newText);
             dirComboBox->completer()->setCompletionPrefix(newText);
             #if defined(Q_OS_WIN)
-                if (newText.length() == 1)
-                {
+                if (newText.length() == 1) {
                     _ignoreDirPathChange = true;
                     fileSystemModel->setRootPath(eCod_TOP_ROOT_PATH);
                     dirComboBox->completer()->setCompletionPrefix(eCod_TOP_ROOT_PATH);
@@ -900,25 +905,19 @@ void MainWindow::dirPathEditTextChanged(const QString& newText)
             #endif
             _completerTimer.start(33);
         }
-        else if (newText.isEmpty())
-        {
-            if (timeDiff < 40 || timeDiff > 120)
-            {
+        else if (newText.isEmpty()) {
+            if (timeDiff < 40 || timeDiff > 120) {
                 fileSystemModel->setRootPath("");
                 dirComboBox->completer()->setCompletionPrefix("");
                 _completerTimer.start(33);
             }
         }
-        else // newText is not empty
-        {
-            if (dirComboBox->completer()->completionPrefix().isEmpty() && timeDiff < 30)
-            {
+        else { // newText is not empty
+            if (dirComboBox->completer()->completionPrefix().isEmpty() && timeDiff < 30) {
                 dirComboBox->completer()->setCompletionPrefix(newText);
             }
         }
-
         Cfg::St().setValue( Cfg::origDirPathKey,  QDir::toNativeSeparators(newText));
-
         _editTextTimeDiff.restart();
     }
     catch(...) { Q_ASSERT(false); }
@@ -1411,8 +1410,8 @@ void MainWindow::updateTotals(const QString& currPath)
     const QDir unFilteredDir = QDir(currPath);
     static constexpr QDir::Filters unfilters = QDir::AllEntries | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot;
     const QFileInfoList unFilteredItems = unFilteredDir.entryInfoList(unfilters);
-    _totItemCount += unFilteredItems.count();
-    _totItemsSize += combinedSize(unFilteredItems);
+    _totCount += unFilteredItems.count();
+    _totSize += combinedSize(unFilteredItems);
 }
 
 void MainWindow::deepFindFiles(const QString& startPath, int maxDepth)
@@ -1427,7 +1426,8 @@ void MainWindow::deepFindFiles(const QString& startPath, int maxDepth)
         ++_dirCount;
         if (isTimeToReport()) {
             qApp->processEvents();
-            filesFoundLabel->setText( tr("Examined %1 items in %2 folders so far...").arg(_totItemCount).arg(_dirCount));
+            filesFoundLabel->setText(tr("Examined %1 items in %2 folders so far...")
+                .arg(_totCount).arg(_dirCount));
         }
         QFileInfoList fileInfos;
         getFileInfos(currPath, fileInfos);
@@ -1443,15 +1443,16 @@ void MainWindow::deepFindFiles(const QString& startPath, int maxDepth)
     }
 }
 
-quint64 MainWindow::deepDirSize(const QString& startPath)
+std::pair<quint64, quint64> MainWindow::deepDirCountSize(const QString& startPath)
 {
     QQueue<QString> dirQ;
     dirQ.enqueue(startPath);
+    quint64 dirCount = 0;
     quint64 dirSize = 0;
 
     while (!dirQ.empty()) {
         if (_stopped)
-            return dirSize;
+            return {0, 0};
         if (isTimeToReport())
             qApp->processEvents();
         const auto currPath = dirQ.dequeue();
@@ -1460,14 +1461,15 @@ quint64 MainWindow::deepDirSize(const QString& startPath)
 
         for (const auto& finfo : fileInfos) {
             if (_stopped)
-                return dirSize;
+                return {0, 0};
+            dirCount++;
             if (finfo.isDir() && !finfo.isSymLink())
                 dirQ.enqueue(finfo.absoluteFilePath());
             else
                 dirSize += quint64(finfo.size());
         }
     }
-    return dirSize;
+    return {dirCount, dirSize};
 }
 
 } // namespace Devonline

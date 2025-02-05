@@ -111,7 +111,7 @@ private:
 
     bool findFilesPrep();
     void deepFindFiles(const QString& startPath, int maxDepth);
-    quint64 deepDirSize(const QString& startPath);
+    std::pair<quint64, quint64> deepDirCountSize(const QString& startPath);
     bool appendOrExcludeItem(const QString & dirPath, const QFileInfo& finfo);
     inline bool isTimeToReport();
     void setStopped(bool stopped);
@@ -207,9 +207,10 @@ private:
     QStringList _outFiles;
     QFileInfoList _outFileInfos;
     qint64 _dirCount;
-    qint64 _totItemCount;
-    quint64 _totItemsSize;
-    quint64 _foundItemsSize;
+    qint64 _totCount;
+    quint64 _totSize;
+    quint64 _foundSize;
+    quint64 _foundCount;
     QElapsedTimer _reportTimer;
     qint64 _prevElapsed;
     Devonline::Op::Type _opType;
