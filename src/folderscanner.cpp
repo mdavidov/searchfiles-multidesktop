@@ -19,7 +19,7 @@ FolderScanner::FolderScanner(QObject* parent)
 }
 
 void FolderScanner::reportProgress() {
-    emit progressUpdate(foundCount);
+    emit progressUpdate(foundCount, foundSize, totCount, totSize);
 }
 
 void FolderScanner::stop() {

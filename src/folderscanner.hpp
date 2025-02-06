@@ -20,7 +20,7 @@ public:
 
 signals:
     void itemFound(const QString& path, const QFileInfo& info);
-    void progressUpdate(int itemsProcessed);
+    void progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
     void scanComplete();
     void scanCancelled();
 

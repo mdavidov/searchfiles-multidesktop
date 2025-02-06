@@ -98,6 +98,8 @@ private slots:
     void showHelpDialog();
 
 private:
+    FolderScanner* scanner{nullptr};
+
     bool isHidden(const QFileInfo& finfo) const;
     QString FsItemType(const QFileInfo& finfo) const;
     void updateTotals(const QString& currPath);
@@ -114,9 +116,8 @@ private:
     void scanFolder(const QString& startPath, const int maxDepth);
     void scanThreadFinished();
     void itemFound(const QString& path, const QFileInfo& info);
-    void progressUpdate(quint64 count);
+    void progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
 
-    FolderScanner* _scanner{nullptr};
     bool findFilesPrep(FolderScanner* scanner);
     void deepFindFiles(const QString& startPath, int maxDepth);
     std::pair<quint64, quint64> deepDirCountSize(const QString& startPath);

@@ -522,7 +522,7 @@ void MainWindow::shredBtnClicked()
 void MainWindow::cancelBtnClicked()
 {
     setStopped(true);
-    _scanner->stop();
+    scanner->stop();
     //reject();
 }
 
@@ -620,14 +620,14 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
     filesFoundLabel->setText(foundLabelText);
     qDebug() << foundLabelText;
     if (_foundCount != quint64(filesTable->rowCount())) {
-        qDebug() << "ERROR: _foundCount" << _foundCount
+        qDebug() << "WARNING: _foundCount" << _foundCount
                  << "!= filesTable->rowCount()" << filesTable->rowCount();
     }
 }
 
-bool MainWindow::findFilesPrep(FolderScanner* scanner)
+bool MainWindow::findFilesPrep(FolderScanner* scanner_)
 {
-    _scanner = scanner;
+    scanner = scanner_;
     _fileNameFilter = namesLineEdit->text();
     scanner->params.fileNameFilter = _fileNameFilter;
     updateComboBox( dirComboBox);
@@ -723,7 +723,8 @@ void MainWindow::findBtnClicked()
         filesTable->sortByColumn( -1, Qt::AscendingOrder);
         filesTable->setSortingEnabled( true);
         setStopped(true);
-        setFilesFoundLabel(tr("STOPPED. "));
+        scanner->stop();
+        setFilesFoundLabel(tr("INTERRUPTED. "));
         return;
     }
     if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
@@ -1131,7 +1132,7 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
         filesTable->setRowHeight(row, 45);
         if (isTimeToReport()) {
             filesTable->scrollToItem(fileNameItem);
-            //filesFoundLabel->setText(tr("Found %1 items so far...").arg(row + 1));
+            filesFoundLabel->setText(tr("Found %1 items so far...").arg(row + 1));
         }
     }
     if (isTimeToReport()) {
@@ -1505,7 +1506,7 @@ void MainWindow::scanFolder(const QString& startPath, const int maxDepth)
 {
     // Create scanner and move it to the thread
     auto scanThread = new QThread(this);
-    auto scanner = new FolderScanner;
+    scanner = new FolderScanner;
 
     // Will only start the thread if initialization succeeded
     if (!findFilesPrep(scanner)) {
@@ -1527,7 +1528,7 @@ void MainWindow::scanFolder(const QString& startPath, const int maxDepth)
 
     // Connect signals/slots
     connect(scanThread, &QThread::started,
-        [scanner, startPath, maxDepth]() { scanner->doDeepScan(startPath, maxDepth); });
+        [this, startPath, maxDepth]() { this->scanner->doDeepScan(startPath, maxDepth); });
 
     connect(scanner, &FolderScanner::itemFound, this, &MainWindow::itemFound);
     connect(scanner, &FolderScanner::progressUpdate, this, &MainWindow::progressUpdate);
@@ -1544,7 +1545,7 @@ void MainWindow::scanFolder(const QString& startPath, const int maxDepth)
 
 void MainWindow::scanThreadFinished()
 {
-    //setFilesFoundLabel(_stopped ? "INTERRUPTED. " : "COMPLETED. ");
+    setFilesFoundLabel(_stopped ? "INTERRUPTED. " : "COMPLETED. ");
     setStopped(true);
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(true);
@@ -1555,8 +1556,11 @@ void MainWindow::itemFound(const QString& path, const QFileInfo& info) {
         appendItemToTable(path, info);
 }
 
-void MainWindow::progressUpdate(quint64 count) {
-    filesFoundLabel->setText(tr("Processed %1 items...").arg(count));
+void MainWindow::progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize) {
+    _foundCount = foundCount;
+    _foundSize = foundSize;
+    _totCount = totCount;
+    _totSize = totSize;
 }
 
 } // namespace Devonline
