@@ -17,8 +17,10 @@
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFileInfoList>
+#include <QStringList>
 #include <QtWidgets>
 
+#pragma region
 QT_BEGIN_NAMESPACE
 class QComboBox;
 class QLabel;
@@ -31,15 +33,15 @@ class QFileSystemModel;
 class QKeyEvent;
 class QLineEdit;
 QT_END_NAMESPACE
+#pragma endregion
 
 namespace Devonline
 {
+class FolderScanner;
 
 template<class _Ty>
-struct bigger
-{
-    bool operator()(const _Ty& left, const _Ty& right) const
-    {
+struct bigger {
+    bool operator()(const _Ty& left, const _Ty& right) const {
         return (left > right);
     }
 };
@@ -107,27 +109,32 @@ private:
     QComboBox * createComboBoxFSys(const QString & text, bool setCompleter = false);
     QComboBox * createComboBoxText();
     void createFilesTable();
-    void appendFileToTable(const QString filePath, const QFileInfo & finfo);
+    void appendItemToTable(const QString filePath, const QFileInfo & finfo);
 
-    bool findFilesPrep();
+    void scanFolder(const QString& startPath, const int maxDepth);
+    void onScanThreadFinished();
+    void onItemFound(const QString& path, const QFileInfo& info);
+    void handleFolderFound(const QString& path, const QFileInfo& info);
+    void updateProgress(quint64 count);
+
+    bool findFilesPrep(FolderScanner* scanner);
     void deepFindFiles(const QString& startPath, int maxDepth);
     std::pair<quint64, quint64> deepDirCountSize(const QString& startPath);
-    bool appendOrExcludeItem(const QString & dirPath, const QFileInfo& finfo);
+    // bool appendOrExcludeItem(const QString& dirPath, const QFileInfo& info);
     inline bool isTimeToReport();
     void setStopped(bool stopped);
     void setFilesFoundLabel(const QString& prefix);
     quint64 combinedSize(const QFileInfoList& items);
 
-    bool stringContainsAllWords(const QString& str, const QStringList& words);
-    bool stringContainsAnyWord(const QString& str, const QStringList& words);
-
-    bool fileContainsAllWordsChunked(const QString& filePath, const QStringList& words);
-    bool fileContainsAnyWordChunked(const QString& filePath, const QStringList& words);
+    // bool stringContainsAllWords(const QString& str, const QStringList& words);
+    // bool stringContainsAnyWord(const QString& str, const QStringList& words);
+    // bool fileContainsAllWordsChunked(const QString& filePath, const QStringList& words);
+    // bool fileContainsAnyWordChunked(const QString& filePath, const QStringList& words);
 
     void showMoreOptions(bool show);
 
     static void modifyFont(QWidget * widget, qreal ptSzDelta, bool bold, bool italic, bool underline);
-    QFileSystemModel * newFileSystemModel(QCompleter * completer, const QString & currentDir);
+    QFileSystemModel * newFileSystemModel(QCompleter* completer, const QString & currentDir);
     void setAllTips(QWidget * widget, const QString & text);
 
     void createSubDirLayout();
@@ -190,6 +197,7 @@ private:
     bool _ignoreDirPathChange; // TODO move to Completer (which will subclass QCompleter
     QTimer _completerTimer;    // TODO move to Completer (which will subclass QCompleter
     QElapsedTimer _editTextTimeDiff; // TODO move to Completer (which will subclass QCompleter
+
     QString _origDirPath;
     QString _fileNameFilter;
     QStringList _fileNameSubfilters;
@@ -204,7 +212,6 @@ private:
     QStringList _exclFilePatterns;
     QStringList _exclFolderPatterns;
 
-    QStringList _outFiles;
     QFileInfoList _outFileInfos;
     qint64 _dirCount;
     qint64 _totCount;

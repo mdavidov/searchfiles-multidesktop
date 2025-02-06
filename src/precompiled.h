@@ -29,10 +29,14 @@
 #include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
+#include <QFileInfoList>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QObject>
+#include <QQueue>
 #include <QString>
 #include <QtCore/QRegularExpression>
 #include <QTextStream>
 #include <QtGui>
+#include <QTimer>
 #include <QtWidgets>

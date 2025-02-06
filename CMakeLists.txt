@@ -38,12 +38,15 @@ set(PROJECT_SOURCES
     src/common.h
     src/config.h
     src/config.cpp
+    src/folderscanner.hpp
+    src/folderscanner.cpp
     src/foldersearch.hpp
     src/foldersearch.cpp
     src/exlineedit.h
     src/exlineedit.cpp
     src/keypress.hpp
     src/keypress.cpp
+    src/scanparams.hpp
     src/searchlineedit.h
     src/searchlineedit.cpp
     src/util.h
@@ -88,7 +91,6 @@ if(APPLE)
         /opt/Qt/6.8.1/macos/lib/QtCore.framework/Headers
         /opt/Qt/6.8.1/macos/lib/QtWidgets.framework/Headers
         ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_SOURCE_DIR}/images
     )
     link_directories(
         /opt/Qt/6.8.1/macos/lib
@@ -111,7 +113,6 @@ elseif(UNIX AND NOT APPLE)
         /usr/include/x86_64-linux-gnu/qt6/QtCore
         /usr/include/x86_64-linux-gnu/qt6/QtWidgets
         ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_SOURCE_DIR}/images
     )
     link_directories(
         /usr/lib/x86_64-linux-gnu
@@ -130,7 +131,6 @@ elseif(WIN32)
     include_directories(
         C:/Qt/6.8.1/msvc2022_64/include
         ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_SOURCE_DIR}/images
     )
     link_directories(
         C:/Qt/6.8.1/msvc2022_64/lib
