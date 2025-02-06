@@ -67,7 +67,7 @@ private slots:
         // Add file details to table
     }
 
-    void updateProgress(int value) {
+    void progressUpdate(int value) {
         // Update progress bar or status
         progressBar->setValue(value);
         statusLabel->setText(tr("Searched %1 files...").arg(value));
@@ -88,7 +88,7 @@ void MainWindow::startSearch()
 
     // Connect progress and results
     connect(worker, &SearchWorker::resultFound, this, &MainWindow::handleResult);
-    connect(worker, &SearchWorker::progressUpdate, this, &MainWindow::updateProgress);
+    connect(worker, &SearchWorker::progressUpdate, this, &MainWindow::progressUpdate);
 
     qthread->start();
 }

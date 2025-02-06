@@ -112,11 +112,11 @@ private:
     void appendItemToTable(const QString filePath, const QFileInfo & finfo);
 
     void scanFolder(const QString& startPath, const int maxDepth);
-    void onScanThreadFinished();
-    void onItemFound(const QString& path, const QFileInfo& info);
-    void handleFolderFound(const QString& path, const QFileInfo& info);
-    void updateProgress(quint64 count);
+    void scanThreadFinished();
+    void itemFound(const QString& path, const QFileInfo& info);
+    void progressUpdate(quint64 count);
 
+    FolderScanner* _scanner{nullptr};
     bool findFilesPrep(FolderScanner* scanner);
     void deepFindFiles(const QString& startPath, int maxDepth);
     std::pair<quint64, quint64> deepDirCountSize(const QString& startPath);

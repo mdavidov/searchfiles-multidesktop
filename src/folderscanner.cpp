@@ -1,5 +1,6 @@
 #include "folderscanner.hpp"
 #include "scanparams.hpp"
+#include <shared_mutex>
 #include <QObject>
 #include <QDir>
 #include <QFileInfo>
@@ -8,6 +9,40 @@
 
 namespace Devonline
 {
+FolderScanner::FolderScanner(QObject* parent)
+: QObject(parent), progressTimer(this), prevElapsed(0)
+{
+    connect(&progressTimer, &QTimer::timeout, this, QOverload<>::of(&FolderScanner::reportProgress));
+    progressTimer.setInterval(333); // msec
+    progressTimer.setSingleShot(false);
+    eventsTimer.start();
+}
+
+void FolderScanner::reportProgress() {
+    emit progressUpdate(foundCount);
+}
+
+void FolderScanner::stop() {
+    std::unique_lock<std::shared_mutex> lock(mutex);
+    stopped = true;
+}
+
+bool FolderScanner::isStopped() const {
+    std::shared_lock<std::shared_mutex> lock(mutex);
+    return stopped;
+}
+
+inline bool FolderScanner::timeToProcEvents()
+{
+    const auto elapsed = eventsTimer.elapsed();
+    if ((elapsed - prevElapsed) >= 200) {  // msec
+        prevElapsed = elapsed;
+        return true;
+    }
+    else
+        return false;
+}
+
 void FolderScanner::doDeepScan(const QString& startPath, const int maxDepth) {
     stopped = false;
     foundCount = 0;
@@ -16,7 +51,7 @@ void FolderScanner::doDeepScan(const QString& startPath, const int maxDepth) {
     QQueue<QPair<QString, int>> dirQ;
     dirQ.enqueue({startPath, 0});
 
-    while (!dirQ.empty() && !stopped) {
+    while (!dirQ.empty() && !isStopped()) {
         const auto [currPath, currDepth] = dirQ.dequeue();
         ++dirCount;
         QFileInfoList fileInfos;
@@ -28,6 +63,9 @@ void FolderScanner::doDeepScan(const QString& startPath, const int maxDepth) {
                 progressTimer.stop();
                 emit scanCancelled();
                 return;
+            }
+            if (timeToProcEvents()) {
+                qApp->processEvents();
             }
             auto add = false;
             if (info.isDir() && !info.isSymLink() && (currDepth < maxDepth || maxDepth < 0)) {

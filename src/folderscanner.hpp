@@ -2,6 +2,7 @@
 
 #include "scanparams.hpp"
 #include <atomic>
+#include <shared_mutex>
 #include <QDir>
 #include <QFileInfo>
 #include <QFileInfoList>
@@ -15,10 +16,7 @@ namespace Devonline
 class FolderScanner : public QObject {
     Q_OBJECT
 public:
-    explicit FolderScanner(QObject* parent = nullptr) : QObject(parent) {
-        connect(&progressTimer, &QTimer::timeout, this, &FolderScanner::reportProgress);
-        progressTimer.setInterval(200); // Report progress every 200ms
-    }
+    explicit FolderScanner(QObject* parent=nullptr);
 
 signals:
     void itemFound(const QString& path, const QFileInfo& info);
@@ -28,15 +26,10 @@ signals:
 
 public slots:
     void doDeepScan(const QString& startPath, const int maxDepth);
-
-    void stop() {
-        stopped = true;  // stopped is atomic
-    }
+    void stop();
 
 private slots:
-    void reportProgress() {
-        emit progressUpdate(foundCount);
-    }
+    void reportProgress();
 
 private:
     bool appendOrExcludeItem(const QString& dirPath, const QFileInfo& info);
@@ -52,8 +45,16 @@ public:
     ScanParams params{};
 
 private:
+    mutable std::shared_mutex mutex;  // mutable allows modification in const methods
+    bool stopped{ false };
+    bool isStopped() const;
+
+    QElapsedTimer eventsTimer;
+    qint64 prevElapsed;
+    inline bool timeToProcEvents();
+
     QTimer progressTimer;
-    std::atomic<bool> stopped{false};
+
     std::atomic<quint64> dirCount{0};
     std::atomic<quint64> totCount{0};
     std::atomic<quint64> totSize{0};

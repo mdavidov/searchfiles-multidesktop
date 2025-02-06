@@ -319,7 +319,7 @@ void MainWindow::createMainLayout()
     centralWgt = new QWidget();
     setCentralWidget(centralWgt);
     centralWgt->setLayout(mainLayout);
-    resize(920, 480);
+    resize(1000, 625);
 }
 
 void MainWindow::modifyFont(QWidget * widget, qreal ptSzDelta, bool bold, bool italic, bool underline)
@@ -522,6 +522,7 @@ void MainWindow::shredBtnClicked()
 void MainWindow::cancelBtnClicked()
 {
     setStopped(true);
+    _scanner->stop();
     //reject();
 }
 
@@ -626,6 +627,7 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
 
 bool MainWindow::findFilesPrep(FolderScanner* scanner)
 {
+    _scanner = scanner;
     _fileNameFilter = namesLineEdit->text();
     scanner->params.fileNameFilter = _fileNameFilter;
     updateComboBox( dirComboBox);
@@ -648,6 +650,10 @@ bool MainWindow::findFilesPrep(FolderScanner* scanner)
     if (!exclHiddenCheck->isChecked())
         _itemTypeFilter |= QDir::Hidden;
     scanner->params.itemTypeFilter = _itemTypeFilter;
+
+    scanner->params.inclFiles = filesCheck->isChecked() || symlinksCheck->isChecked();
+    scanner->params.inclFolders = foldersCheck->isChecked() || symlinksCheck->isChecked();
+    scanner->params.inclSymlinks = symlinksCheck->isChecked();
     scanner->params.exclHidden = exclHiddenCheck->isChecked();
 
     _matchCase = matchCaseCheck->isChecked();
@@ -1109,21 +1115,28 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
     ownerItem->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
     ownerItem->setData(Qt::ToolTipRole, QVariant("Username of the item's owner."));
 
-    const int row = filesTable->rowCount();
-    filesTable->insertRow(row);
-    int col = 0;
+    if (!_stopped) {
+        const int row = filesTable->rowCount();
+        filesTable->insertRow(row);
+        int col = 0;
 
-    filesTable->setItem(row, col++, filePathItem);
-    filesTable->setItem(row, col++, fileNameItem);
-    filesTable->setItem(row, col++, sizeItem);
-    filesTable->setItem(row, col++, dateModItem);
-    filesTable->setItem(row, col++, fileExtItem);
-    filesTable->setItem(row, col++, fsTypeItem);
-    filesTable->setItem(row, col++, ownerItem);
+        filesTable->setItem(row, col++, filePathItem);
+        filesTable->setItem(row, col++, fileNameItem);
+        filesTable->setItem(row, col++, sizeItem);
+        filesTable->setItem(row, col++, dateModItem);
+        filesTable->setItem(row, col++, fileExtItem);
+        filesTable->setItem(row, col++, fsTypeItem);
+        filesTable->setItem(row, col++, ownerItem);
 
-    filesTable->setRowHeight(row, 45);
-    filesTable->scrollToItem(fileNameItem);
-    filesFoundLabel->setText(tr("Found %1 items so far...").arg(row + 1));
+        filesTable->setRowHeight(row, 45);
+        if (isTimeToReport()) {
+            filesTable->scrollToItem(fileNameItem);
+            //filesFoundLabel->setText(tr("Found %1 items so far...").arg(row + 1));
+        }
+    }
+    if (isTimeToReport()) {
+        qApp->processEvents();
+    }
   }
   catch(...) { Q_ASSERT(false); }
 }
@@ -1506,7 +1519,7 @@ void MainWindow::scanFolder(const QString& startPath, const int maxDepth)
     scanner->moveToThread(scanThread);
 
     // First: Connect your function to handle thread completion
-    connect(scanThread, &QThread::finished, this, &MainWindow::onScanThreadFinished);
+    connect(scanThread, &QThread::finished, this, &MainWindow::scanThreadFinished);
 
     // Then: Connect the cleanup connections after your handler
     connect(scanThread, &QThread::finished, scanner, &QObject::deleteLater);
@@ -1516,32 +1529,33 @@ void MainWindow::scanFolder(const QString& startPath, const int maxDepth)
     connect(scanThread, &QThread::started,
         [scanner, startPath, maxDepth]() { scanner->doDeepScan(startPath, maxDepth); });
 
-    connect(scanner, &FolderScanner::itemFound, this, &MainWindow::onItemFound);
-    connect(scanner, &FolderScanner::progressUpdate, this, &MainWindow::updateProgress);
+    connect(scanner, &FolderScanner::itemFound, this, &MainWindow::itemFound);
+    connect(scanner, &FolderScanner::progressUpdate, this, &MainWindow::progressUpdate);
 
     connect(scanner, &FolderScanner::scanComplete, scanThread, &QThread::quit);
     connect(scanner, &FolderScanner::scanCancelled, scanThread, &QThread::quit);
 
     // Connect cancel button
-    connect(cancelButton, &QPushButton::clicked, scanner, &FolderScanner::stop);
+    //connect(cancelButton, &QPushButton::clicked, scanner, &FolderScanner::stop);
 
     // DO IT
     scanThread->start();
 }
 
-void MainWindow::onScanThreadFinished()
+void MainWindow::scanThreadFinished()
 {
-    setFilesFoundLabel(_stopped ? "INTERRUPTED. " : "COMPLETED. ");
+    //setFilesFoundLabel(_stopped ? "INTERRUPTED. " : "COMPLETED. ");
     setStopped(true);
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(true);
 }
 
-void MainWindow::onItemFound(const QString& path, const QFileInfo& info) {
-    appendItemToTable(path, info);
+void MainWindow::itemFound(const QString& path, const QFileInfo& info) {
+    if (!_stopped)
+        appendItemToTable(path, info);
 }
 
-void MainWindow::updateProgress(quint64 count) {
+void MainWindow::progressUpdate(quint64 count) {
     filesFoundLabel->setText(tr("Processed %1 items...").arg(count));
 }
 
