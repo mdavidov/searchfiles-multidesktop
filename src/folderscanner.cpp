@@ -142,7 +142,7 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
         }
         return toAppend;
     }
-    catch (...) { Q_ASSERT(false); return false; } // TODO tell the user
+    catch (...) { Q_ASSERT(false); return false; } // tell the user?
 }
 
 void FolderScanner::getAllDirs(const QString& currPath, QFileInfoList& infos) const
@@ -346,7 +346,7 @@ void FolderScanner::deepRemove(const Uint64StringMap& itemList)
             //if (timeToProcEvents())
             //    qApp->processEvents();
         }
-        catch (...) { Q_ASSERT(false); } // TODO tell the user
+        catch (...) { Q_ASSERT(false); } // tell the user?
     }
 }
 }

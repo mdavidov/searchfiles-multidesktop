@@ -56,7 +56,7 @@ const QString stopText( "S&top");
 const int N_COL = 7;
 const int RELPATH_COL_IDX = 0;
 
-static const int BATCH_SIZE = 100;
+static int BATCH_SIZE = 100;
 QVector<QVector<QTableWidgetItem*>> itemBuffer;
 
 #if defined(Q_OS_WIN)
@@ -424,7 +424,7 @@ void MainWindow::deleteBtnClicked()
         setFilesFoundLabel( _stopped ? "INTERRUPTED. " : "COMPLETED. ");
         setStopped(true);
     }
-    catch (...) { Q_ASSERT(false); } // TODO tell the user
+    catch (...) { Q_ASSERT(false); } // tell the user?
     setStopped(true);
 }
 
@@ -595,7 +595,6 @@ bool MainWindow::findFilesPrep(FolderScanner* scanner_)
     if (!exclHiddenCheck->isChecked())
         _itemTypeFilter |= QDir::Hidden;
     scanner->params.itemTypeFilter = _itemTypeFilter;
-    scanner->params.itemTypeFilter = QDir::NoFilter;  // TESTING ONLY: TODO: MUST REMOVE THIS LINE
 
     scanner->params.inclFiles = filesCheck->isChecked() || symlinksCheck->isChecked();
     scanner->params.inclFolders = foldersCheck->isChecked() || symlinksCheck->isChecked();
@@ -651,13 +650,13 @@ bool MainWindow::findFilesPrep(FolderScanner* scanner_)
     scanner->params.exclFilePatterns = _exclFilePatterns;
     scanner->params.exclFolderPatterns = _exclFolderPatterns;
 
+    BATCH_SIZE = (_searchWords.isEmpty() && _exclusionWords.isEmpty()) ? 300 : 1;
+
     bool maxValid = false;
     _maxSubDirDepth =  maxSubDirDepthEdt->text().toInt(&maxValid);
     if (!maxValid)
         _maxSubDirDepth = 0;
     _unlimSubDirDepth = unlimSubDirDepthBtn->isChecked();
-    // scanner->params.maxSubDirDepth = _maxSubDirDepth;
-    // scanner->params.unlimSubDirDepth = _unlimSubDirDepth;
     return true;
 }
 
@@ -669,13 +668,11 @@ void MainWindow::findBtnClicked()
         scanner->stop();
         setStopped(true);
         setFilesFoundLabel(tr("INTERRUPTED. "));
-        //filesTable->sortByColumn(-1, Qt::AscendingOrder);
-        //filesTable->setSortingEnabled(true);
+        filesTable->sortByColumn(-1, Qt::AscendingOrder);
+        filesTable->setSortingEnabled(true);
         return;
     }
     if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
-        // filesTable->sortByColumn( -1, Qt::AscendingOrder);
-        // filesTable->setSortingEnabled( true);
         #if !defined(Q_OS_MAC)
             QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
         #else
@@ -701,7 +698,7 @@ void MainWindow::findBtnClicked()
     //filesTable->sortByColumn( -1, Qt::AscendingOrder);
     //filesTable->setSortingEnabled( true);
   }
-  catch (...) { Q_ASSERT(false); } // TODO tell the user
+  catch (...) { Q_ASSERT(false); } // tell the user?
 }
 
 inline bool MainWindow::timeToProcEvents()
@@ -1014,9 +1011,9 @@ void MainWindow::createFilesTable()
     filesTable->setWordWrap(true);
     filesTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     filesTable->setAlternatingRowColors(true);
-    filesTable->sortByColumn( -1, Qt::AscendingOrder);
-    filesTable->setSortingEnabled( false);
-    filesTable->setShowGrid( true);
+    filesTable->sortByColumn(-1, Qt::AscendingOrder);
+    filesTable->setSortingEnabled(false);
+    filesTable->setShowGrid(true);
 
     filesTable->verticalHeader()->hide();
     filesTable->verticalHeader()->setSectionResizeMode( QHeaderView::Interactive);
