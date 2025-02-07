@@ -10,11 +10,8 @@
 namespace Devonline
 {
 FolderScanner::FolderScanner(QObject* parent)
-: QObject(parent), progressTimer(this), prevElapsed(0)
+: QObject(parent), prevElapsed(0)
 {
-    connect(&progressTimer, &QTimer::timeout, this, QOverload<>::of(&FolderScanner::reportProgress));
-    progressTimer.setInterval(333); // msec
-    progressTimer.setSingleShot(false);
     eventsTimer.start();
 }
 
@@ -32,10 +29,25 @@ bool FolderScanner::isStopped() const {
     return stopped;
 }
 
+inline void FolderScanner::processEvents()
+{
+    const auto elapsed = eventsTimer.elapsed();
+    // Like all static vars, local function statics are initialised only once,
+    // first time the function is called.
+    static qint64 prev = elapsed;
+    const auto diff = elapsed - prev;
+    if (diff >= 200) {  // msec
+        // Static var prev keeps its value for the next call of this function.
+        prev = elapsed;
+        qApp->processEvents();
+    }
+}
+
 inline bool FolderScanner::timeToProcEvents()
 {
     const auto elapsed = eventsTimer.elapsed();
-    if ((elapsed - prevElapsed) >= 200) {  // msec
+    const auto diff = elapsed - prevElapsed;
+    if (diff >= 200) {  // msec
         prevElapsed = elapsed;
         return true;
     }
@@ -43,44 +55,55 @@ inline bool FolderScanner::timeToProcEvents()
         return false;
 }
 
-void FolderScanner::doDeepScan(const QString& startPath, const int maxDepth) {
+void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
     stopped = false;
     foundCount = 0;
-    progressTimer.start();
 
     QQueue<QPair<QString, int>> dirQ;
     dirQ.enqueue({startPath, 0});
 
     while (!dirQ.empty() && !isStopped()) {
+        processEvents();
         const auto [currPath, currDepth] = dirQ.dequeue();
         ++dirCount;
-        QFileInfoList fileInfos;
-        getFileInfos(currPath, fileInfos);
-        updateTotals(currPath);
-
-        for (const auto& info : fileInfos) {
+        QFileInfoList dirInfos;
+        getAllDirs(currPath, dirInfos);
+        for (const auto& dir : dirInfos) {
+            processEvents();
             if (stopped) {
-                progressTimer.stop();
+                reportProgress();
                 emit scanCancelled();
                 return;
             }
-            if (timeToProcEvents()) {
-                qApp->processEvents();
+            //if (timeToProcEvents()) {
+            //    qApp->processEvents();
+            //}
+            if (maxDepth < 0 || currDepth < maxDepth) {
+                dirQ.enqueue({ dir.absoluteFilePath(), currDepth + 1 });
             }
-            auto add = false;
-            if (info.isDir() && !info.isSymLink() && (currDepth < maxDepth || maxDepth < 0)) {
-                dirQ.enqueue({info.absoluteFilePath(), currDepth + 1});
-                add = appendOrExcludeItem(currPath, info);
+        }
+        updateTotals(currPath);
+
+        QFileInfoList infos;
+        getFileInfos(currPath, infos);
+        int count = 0;
+        for (const auto& info : infos) {
+            processEvents();
+            if (stopped) {
+                reportProgress();
+                emit scanCancelled();
+                return;
             }
-            else {
-                add = appendOrExcludeItem(currPath, info);
-            }
-            if (add) {
+            //if (timeToProcEvents()) {
+            //    qApp->processEvents();
+            //}
+            if (appendOrExcludeItem(currPath, info)) {
+                ++count;
                 emit itemFound(info.absoluteFilePath(), info);
             }
         }
     }
-    progressTimer.stop();
+    reportProgress();
     emit scanComplete();
 }
 
@@ -122,34 +145,56 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
     catch (...) { Q_ASSERT(false); return false; } // TODO tell the user
 }
 
-void FolderScanner::getFileInfos(const QString& currPath, QFileInfoList& fileInfos) const
+void FolderScanner::getAllDirs(const QString& currPath, QFileInfoList& infos) const
 {
+    // Don't need files and not following symlinks
+    // QDir::AllDirs means "don't apply name filters to directories"
+    // Because we want to traverse the whole dir structure (except maybe hidden)
     QDir currDir(currPath);
-    currDir.setNameFilters(params.fileNameSubfilters);
-    currDir.setFilter(params.itemTypeFilter);
-    QDir::Filters filters = QDir::AllEntries | QDir::System | QDir::NoDotAndDotDot;
+    auto filters = QDir::Dirs | QDir::AllDirs | QDir::Drives | QDir::System | QDir::NoSymLinks | QDir::NoDotAndDotDot;
     if (!params.exclHidden)
         filters |= QDir::Hidden;
-    fileInfos = currDir.entryInfoList(filters);
+    infos = currDir.entryInfoList(filters);
+}
+
+void FolderScanner::getFileInfos(const QString& currPath, QFileInfoList& infos) /*const*/
+{
+    QDir currDir(currPath);
+    if (!params.nameFilters.empty()) {
+        currDir.setNameFilters(params.nameFilters);
+        currDir.setFilter(params.itemTypeFilter);
+        infos = currDir.entryInfoList();
+    }
+    else {
+        getAllItems(currPath, infos);
+    }
+}
+
+void FolderScanner::getAllItems(const QString& path, QFileInfoList& infos) const
+{
+    const QDir dir = QDir(path);
+    const auto filters = QDir::AllEntries | QDir::AllDirs | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot;
+    infos = dir.entryInfoList(filters);
 }
 
 quint64 FolderScanner::combinedSize(const QFileInfoList& items)
 {
     quint64 csz = 0;
     for (const auto& item : items) {
-        if (stopped) return csz;
+        processEvents();
+        if (stopped)
+            return 0;
         csz += quint64(item.size());
     }
     return csz;
 }
 
-void FolderScanner::updateTotals(const QString& currPath)
+void FolderScanner::updateTotals(const QString& path)
 {
-    const QDir unFilteredDir = QDir(currPath);
-    static constexpr QDir::Filters unfilters = QDir::AllEntries | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot;
-    const QFileInfoList unFilteredItems = unFilteredDir.entryInfoList(unfilters);
-    totCount += unFilteredItems.count();
-    totSize += combinedSize(unFilteredItems);
+    QFileInfoList infos;
+    getAllItems(path, infos);
+    totCount += infos.count();
+    totSize += combinedSize(infos);
 }
 
 bool FolderScanner::stringContainsAllWords(const QString& str, const QStringList& words)
@@ -224,5 +269,84 @@ bool FolderScanner::fileContainsAnyWordChunked(const QString& filePath, const QS
         }
     }
     return false;
+}
+
+std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPath)
+{
+    QQueue<QString> dirQ;
+    dirQ.enqueue(startPath);
+    quint64 count = 0;
+    quint64 size = 0;
+
+    while (!dirQ.empty() && !stopped) {
+        processEvents();
+        //if (timeToProcEvents())
+        //    qApp->processEvents();
+        const auto currPath = dirQ.dequeue();
+        QFileInfoList infos;
+        getAllItems(currPath, infos);
+        for (const auto& info : infos) {
+            if (stopped)
+                break;
+            count++;
+            if (info.isDir() && !info.isSymLink())
+                dirQ.enqueue(info.absoluteFilePath());
+            size += quint64(info.size());
+        }
+    }
+    return { count, size };
+}
+
+void FolderScanner::deepRemove(const Uint64StringMap& itemList)
+{
+    qApp->processEvents();
+    int delCnt = 0;
+    for (Uint64StringMap::const_iterator it = itemList.cbegin(); it != itemList.cend(); ++it)
+    {
+        try {
+            if (stopped)
+                return;
+            const auto path = it->second;
+
+            if (!QFileInfo(path).isDir()) {
+                // RM FILE
+                QFile file(path);
+                //const auto fsize = quint64(file.size());
+                const auto rmok = file.remove();
+                if (rmok) {
+                    //filesTable->removeRow(static_cast<int>(it->first));
+                    //_totSize -= fsize;
+                    //_foundSize -= fsize;
+                    //_totCount -= 1;
+                    //_foundCount -= 1;
+                    ++delCnt;
+                    //if ((delCnt % 5) == 0)
+                    //    emit filesTable->itemSelectionChanged();
+                }
+            }
+            else {
+                // RM DIR
+                QDir dir(path);
+                const auto [dcount, dsize] = deepCountSize(path);
+                const auto rmok = dir.removeRecursively();
+                if (rmok) {
+                    //filesTable->removeRow(static_cast<int>(it->first));
+                    //_totSize -= dsize;
+                    //if (_foundSize > dsize)
+                    //    _foundSize -= dsize;
+                    //_totCount -= dcount;
+                    //if (_foundCount > dcount)
+                    //    _foundCount -= dcount;
+                    ++delCnt;
+                    //if ((delCnt % 5) == 0)
+                    //    emit filesTable->itemSelectionChanged();
+                }
+            }
+            processEvents();
+            //if (timeToProcEvents())
+            //    qApp->processEvents();
+        }
+        catch (...) { Q_ASSERT(false); } // TODO tell the user
+    }
 }
 }

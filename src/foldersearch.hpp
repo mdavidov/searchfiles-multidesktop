@@ -13,6 +13,7 @@
 #undef QT_NO_CONTEXTMENU
 
 #include "common.h"
+#include "folderscanner.hpp"
 #include <QMainWindow>
 #include <QDir>
 #include <QElapsedTimer>
@@ -38,15 +39,6 @@ QT_END_NAMESPACE
 namespace Devonline
 {
 class FolderScanner;
-
-template<class _Ty>
-struct bigger {
-    bool operator()(const _Ty& left, const _Ty& right) const {
-        return (left > right);
-    }
-};
-
-using Uint64StringMap = std::map<quint64, QString, bigger<quint64>>;
 
 class TableWidgetItem : public QTableWidgetItem
 {
@@ -102,35 +94,23 @@ private:
 
     bool isHidden(const QFileInfo& finfo) const;
     QString FsItemType(const QFileInfo& finfo) const;
-    void updateTotals(const QString& currPath);
-    void getFileInfos(const QString& currPath, QFileInfoList& fileInfos) const;
 
-    // QStringList findTextInFiles(const QStringList &files, const QString &text);
-    void showFiles(const QStringList &files);
     QPushButton *createButton(const QString &text, const char *member);
     QComboBox * createComboBoxFSys(const QString & text, bool setCompleter = false);
     QComboBox * createComboBoxText();
     void createFilesTable();
     void appendItemToTable(const QString filePath, const QFileInfo & finfo);
 
-    void scanFolder(const QString& startPath, const int maxDepth);
+    void deepScanFolderOnThread(const QString& startPath, const int maxDepth);
     void scanThreadFinished();
     void itemFound(const QString& path, const QFileInfo& info);
     void progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
+    void flushItemBuffer();
 
     bool findFilesPrep(FolderScanner* scanner);
-    void deepFindFiles(const QString& startPath, int maxDepth);
-    std::pair<quint64, quint64> deepDirCountSize(const QString& startPath);
-    // bool appendOrExcludeItem(const QString& dirPath, const QFileInfo& info);
-    inline bool isTimeToReport();
+    inline bool timeToProcEvents();
     void setStopped(bool stopped);
     void setFilesFoundLabel(const QString& prefix);
-    quint64 combinedSize(const QFileInfoList& items);
-
-    // bool stringContainsAllWords(const QString& str, const QStringList& words);
-    // bool stringContainsAnyWord(const QString& str, const QStringList& words);
-    // bool fileContainsAllWordsChunked(const QString& filePath, const QStringList& words);
-    // bool fileContainsAnyWordChunked(const QString& filePath, const QStringList& words);
 
     void showMoreOptions(bool show);
 
@@ -146,7 +126,6 @@ private:
     void createContextMenu();
 
     void getSelectedItems( Uint64StringMap& itemList);
-    void removeItems(const Uint64StringMap& itemList);
 
 private:
     QLineEdit*  namesLineEdit;
@@ -201,7 +180,7 @@ private:
 
     QString _origDirPath;
     QString _fileNameFilter;
-    QStringList _fileNameSubfilters;
+    QStringList _nameFilters;
     QDir::Filters _itemTypeFilter;
     bool _matchCase;
 

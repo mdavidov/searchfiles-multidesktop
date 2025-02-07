@@ -13,6 +13,14 @@
 namespace Devonline
 {
 
+template<class _Ty>
+struct bigger {
+    bool operator()(const _Ty& left, const _Ty& right) const {
+        return (left > right);
+    }
+};
+using Uint64StringMap = std::map<quint64, QString, bigger<quint64>>;
+
 class FolderScanner : public QObject {
     Q_OBJECT
 public:
@@ -25,15 +33,19 @@ signals:
     void scanCancelled();
 
 public slots:
-    void doDeepScan(const QString& startPath, const int maxDepth);
     void stop();
+    void deepScan(const QString& startPath, const int maxDepth);
+    std::pair<quint64, quint64> deepCountSize(const QString& startPath);
+    void deepRemove(const Uint64StringMap& itemList);
 
 private slots:
     void reportProgress();
 
 private:
     bool appendOrExcludeItem(const QString& dirPath, const QFileInfo& info);
-    void getFileInfos(const QString& path, QFileInfoList& infos) const;
+    void getAllDirs(const QString& path, QFileInfoList& infos) const;
+    void getFileInfos(const QString& path, QFileInfoList& infos) /*const*/;
+    void getAllItems(const QString& path, QFileInfoList& infos) const;
     quint64 combinedSize(const QFileInfoList& items);
     void updateTotals(const QString& path);
     bool stringContainsAllWords(const QString& str, const QStringList& words);
@@ -52,8 +64,7 @@ private:
     QElapsedTimer eventsTimer;
     qint64 prevElapsed;
     inline bool timeToProcEvents();
-
-    QTimer progressTimer;
+    inline void processEvents();
 
     std::atomic<quint64> dirCount{0};
     std::atomic<quint64> totCount{0};

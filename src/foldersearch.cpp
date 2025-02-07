@@ -23,7 +23,6 @@
 
 #include "precompiled.h"
 #include "foldersearch.hpp"
-#include "folderscanner.hpp"
 #include "scanparams.hpp"
 #include "aboutdialog.h"
 #include <algorithm>
@@ -54,7 +53,11 @@ namespace Devonline
 const QString findText( "&Search");
 const QString stopText( "S&top");
 
+const int N_COL = 7;
 const int RELPATH_COL_IDX = 0;
+
+static const int BATCH_SIZE = 100;
+QVector<QVector<QTableWidgetItem*>> itemBuffer;
 
 #if defined(Q_OS_WIN)
     #define eCod_MIN_PATH_LEN 3
@@ -414,7 +417,7 @@ void MainWindow::deleteBtnClicked()
         Uint64StringMap itemList;
         getSelectedItems(itemList);
 
-        removeItems(itemList); // REMOVE ITEMS
+        //removeItems(itemList); // REMOVE ITEMS
 
         emit filesTable->itemSelectionChanged();
         qApp->processEvents();
@@ -439,61 +442,9 @@ void MainWindow::getSelectedItems(Uint64StringMap& itemList)
             Q_ASSERT(itemList.find(row) == itemList.end());
             if (itemList.find(row) == itemList.end())
                 itemList.insert(std::pair<int, QString>(row, path));
-            if (isTimeToReport())
+            if (timeToProcEvents())
                 qApp->processEvents();
         }
-    }
-}
-
-void MainWindow::removeItems(const Uint64StringMap& itemList)
-{
-    qApp->processEvents();
-    int delCnt = 0;
-    for (Uint64StringMap::const_iterator it = itemList.cbegin(); it != itemList.cend(); ++it)
-    {
-        try {
-            if (_stopped)
-                return;
-            const auto path = it->second;
-
-            if (!QFileInfo(path).isDir()) {
-                // RM FILE
-                QFile file(path);
-                const auto fsize = quint64(file.size());
-                const auto rmok = file.remove();
-                if (rmok) {
-                    filesTable->removeRow(static_cast<int>(it->first));
-                    _totSize -= fsize;
-                    _foundSize -= fsize;
-                    _totCount -= 1;
-                    _foundCount -= 1;
-                    ++delCnt;
-                    if ((delCnt % 5) == 0)
-                        emit filesTable->itemSelectionChanged();
-                }
-            }
-            else {
-                // RM DIR
-                QDir dir(path);
-                const auto [dcount, dsize] = deepDirCountSize(path);
-                const auto rmok = dir.removeRecursively();
-                if (rmok) {
-                    filesTable->removeRow(static_cast<int>(it->first));
-                    _totSize -= dsize;
-                    if (_foundSize > dsize)
-                        _foundSize -= dsize;
-                    _totCount -= dcount;
-                    if (_foundCount > dcount)
-                        _foundCount -= dcount;
-                    ++delCnt;
-                    if ((delCnt % 5) == 0)
-                        emit filesTable->itemSelectionChanged();
-                }
-            }
-            if (isTimeToReport())
-                qApp->processEvents();
-        }
-        catch (...) { Q_ASSERT(false); } // TODO tell the user
     }
 }
 
@@ -628,28 +579,23 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
 bool MainWindow::findFilesPrep(FolderScanner* scanner_)
 {
     scanner = scanner_;
+
+    // SET QDir FILTERS
     _fileNameFilter = namesLineEdit->text();
-    scanner->params.fileNameFilter = _fileNameFilter;
+    scanner->params.nameFilters = namesLineEdit->text().split(" ", Qt::SkipEmptyParts);
     updateComboBox( dirComboBox);
 
-    // GET FILTERS
-    if (_fileNameFilter.isEmpty())
-        _fileNameFilter = "*";
-    const QString tmpFilter = _fileNameFilter.replace( QRegularExpression("[ ]*;[ ]*"), ";");
-    _fileNameSubfilters = tmpFilter.split(";", Qt::SkipEmptyParts);
-    scanner->params.fileNameFilter = _fileNameFilter;
-    scanner->params.fileNameSubfilters = _fileNameSubfilters;
-
-    _itemTypeFilter = QDir::Filters( QDir::Drives | QDir::System | QDir::NoDotAndDotDot);
-    if (filesCheck->isChecked()   || symlinksCheck->isChecked())
+    _itemTypeFilter = QDir::Filters(QDir::Drives | QDir::System | QDir::NoDotAndDotDot);
+    if (filesCheck->isChecked())
         _itemTypeFilter |= QDir::Files;
-    if (foldersCheck->isChecked() || symlinksCheck->isChecked())
+    if (foldersCheck->isChecked() && _searchWords.isEmpty())
         _itemTypeFilter |= QDir::Dirs;
-    if (!symlinksCheck->isChecked())
+    if (!symlinksCheck->isChecked() || !_searchWords.isEmpty())
         _itemTypeFilter |= QDir::NoSymLinks;
     if (!exclHiddenCheck->isChecked())
         _itemTypeFilter |= QDir::Hidden;
     scanner->params.itemTypeFilter = _itemTypeFilter;
+    scanner->params.itemTypeFilter = QDir::NoFilter;  // TESTING ONLY: TODO: MUST REMOVE THIS LINE
 
     scanner->params.inclFiles = filesCheck->isChecked() || symlinksCheck->isChecked();
     scanner->params.inclFolders = foldersCheck->isChecked() || symlinksCheck->isChecked();
@@ -720,11 +666,11 @@ void MainWindow::findBtnClicked()
   try
   {
     if (!_stopped) {
-        filesTable->sortByColumn( -1, Qt::AscendingOrder);
-        filesTable->setSortingEnabled( true);
-        setStopped(true);
         scanner->stop();
+        setStopped(true);
         setFilesFoundLabel(tr("INTERRUPTED. "));
+        //filesTable->sortByColumn(-1, Qt::AscendingOrder);
+        //filesTable->setSortingEnabled(true);
         return;
     }
     if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
@@ -741,7 +687,7 @@ void MainWindow::findBtnClicked()
     Clear();
     setStopped(false);
 
-    scanFolder(_origDirPath, _unlimSubDirDepth ? -1 : _maxSubDirDepth);
+    deepScanFolderOnThread(_origDirPath, _unlimSubDirDepth ? -1 : _maxSubDirDepth);
 
     //if (findFilesPrep())
     //{
@@ -758,131 +704,7 @@ void MainWindow::findBtnClicked()
   catch (...) { Q_ASSERT(false); } // TODO tell the user
 }
 
-// bool MainWindow::appendOrExcludeItem(const QString& dirPath, const QFileInfo& finfo)
-// {
-//     try {
-//         if (isTimeToReport())
-//             qApp->processEvents();
-//         const auto filePath = QDir::fromNativeSeparators(finfo.absoluteFilePath());
-//         if (!_exclFolderPatterns.empty() && stringContainsAnyWord(dirPath, _exclFolderPatterns)) {
-//             return false;
-//         }
-//         if (finfo.isFile()) {
-//             if (!_exclFilePatterns.empty() && stringContainsAnyWord(finfo.fileName(), _exclFilePatterns)) {
-//                 return false;
-//             }
-//             if (!_exclusionWords.empty() && fileContainsAnyWordChunked(filePath, _exclusionWords)) {
-//                 return false;
-//             }
-//         }
-//         bool toAppend = false;
-//         if (_searchWords.empty()) {
-//             if (finfo.isSymLink())
-//                 toAppend = symlinksCheck->isChecked();
-//             else if (finfo.isDir())
-//                 toAppend = foldersCheck->isChecked();
-//         }
-//         if (finfo.isFile() && filesCheck->isChecked()) {
-//             toAppend = _searchWords.empty() ||
-//                        fileContainsAllWordsChunked(filePath, _searchWords);
-//         }
-//         if (toAppend) {
-//             appendItemToTable( filePath, finfo);
-//             _foundCount++;
-//             _foundSize += quint64(finfo.size());
-//         }
-//         return true;
-//     }
-//     catch (...) { Q_ASSERT(false); return false; } // TODO tell the user
-// }
-
-// bool MainWindow::stringContainsAllWords(const QString& str, const QStringList& words)
-// {
-//     if (str.isEmpty() || words.empty())
-//         return false;
-//     for (const auto& word : words) {
-//         if (isTimeToReport())
-//             qApp->processEvents();
-//         if (_stopped)
-//             return false;
-//         if (!str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
-//             return false;
-//         }
-//     }
-//     return true;
-// }
-
-// bool MainWindow::stringContainsAnyWord(const QString& str,  const QStringList& words)
-// {
-//     if (str.isEmpty() || words.empty())
-//         return false;
-//     for (const auto& word : words) {
-//         if (isTimeToReport())
-//             qApp->processEvents();
-//         if (_stopped)
-//             return false;
-//         if (str.contains(word, _matchCase ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
-//             return true;
-//         }
-//     }
-//     return false;
-// }
-
-// bool MainWindow::fileContainsAllWordsChunked(const QString& filePath, const QStringList& words)
-// {
-//     QFile file(filePath);
-//     if (file.size() == 0 || QFileInfo(file).fileName() == ".DS_Store")
-//         return false;
-//     if (!file.open(QIODevice::ReadOnly)) {
-//         qDebug() << "Cannot open file, error" << file.errorString();
-//         return false;
-//     }
-//     static constexpr qint64 CHUNK_SIZE = 200 * 1024 * 1024;
-//     while (!file.atEnd()) {
-//         if (isTimeToReport())
-//             qApp->processEvents();
-//         if (_stopped)
-//             return false;
-//         const auto rsize = std::min(file.size() - file.pos(), CHUNK_SIZE);
-//         const auto chunk = (rsize > 0) ? QString::fromUtf8(file.read(rsize)) : QString();
-//         if (chunk.isEmpty()) {
-//             return false;
-//         }
-//         if (!stringContainsAllWords(chunk, words)) {
-//             return false;
-//         }
-//     }
-//     return true;
-// }
-
-// bool MainWindow::fileContainsAnyWordChunked(const QString& filePath, const QStringList& words)
-// {
-//     QFile file(filePath);
-//     if (file.size() == 0 || QFileInfo(file).fileName() == ".DS_Store")
-//         return false;
-//     if (!file.open(QIODevice::ReadOnly)) {
-//         qDebug() << "Cannot open file, error" << file.errorString();
-//         return false;
-//     }
-//     static constexpr qint64 CHUNK_SIZE = 200 * 1024 * 1024;
-//     while (!file.atEnd()) {
-//         if (isTimeToReport())
-//             qApp->processEvents();
-//         if (_stopped)
-//             return false;
-//         const auto rsize = std::min(file.size() - file.pos(), CHUNK_SIZE);
-//         const auto chunk = (rsize > 0) ? QString::fromUtf8(file.read(rsize)) : QString();
-//         if (chunk.isEmpty()) {
-//             return false;
-//         }
-//         if (stringContainsAnyWord(chunk, words)) {
-//             return true;
-//         }
-//     }
-//     return false;
-// }
-
-inline bool MainWindow::isTimeToReport()
+inline bool MainWindow::timeToProcEvents()
 {
     const auto elapsed = _reportTimer.elapsed();
     if ((elapsed - _prevElapsed) >= 200) {
@@ -1057,7 +879,7 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
   {
     auto fileNameItem = new TableWidgetItem;
     auto fileName = finfo.fileName();
-    if (finfo.isSymLink())
+    if (finfo.isSymLink() && !finfo.symLinkTarget().isEmpty())
         fileName += " -> " + finfo.symLinkTarget();
     else if (finfo.isDir())
         fileName += QDir::separator();
@@ -1117,36 +939,75 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
     ownerItem->setData(Qt::ToolTipRole, QVariant("Username of the item's owner."));
 
     if (!_stopped) {
-        const int row = filesTable->rowCount();
-        filesTable->insertRow(row);
-        int col = 0;
+        QVector<QTableWidgetItem*> rowItems;
+        rowItems.reserve(N_COL);
+        rowItems.append(filePathItem);
+        rowItems.append(fileNameItem);
+        rowItems.append(sizeItem);
+        rowItems.append(dateModItem);
+        rowItems.append(fileExtItem);
+        rowItems.append(fsTypeItem);
+        rowItems.append(ownerItem);
 
-        filesTable->setItem(row, col++, filePathItem);
-        filesTable->setItem(row, col++, fileNameItem);
-        filesTable->setItem(row, col++, sizeItem);
-        filesTable->setItem(row, col++, dateModItem);
-        filesTable->setItem(row, col++, fileExtItem);
-        filesTable->setItem(row, col++, fsTypeItem);
-        filesTable->setItem(row, col++, ownerItem);
-
-        filesTable->setRowHeight(row, 45);
-        if (isTimeToReport()) {
-            filesTable->scrollToItem(fileNameItem);
-            filesFoundLabel->setText(tr("Found %1 items so far...").arg(row + 1));
+        itemBuffer.append(rowItems);
+        if (itemBuffer.size() >= BATCH_SIZE) {
+            flushItemBuffer();
+            if (timeToProcEvents()) {
+                filesTable->scrollToBottom();
+                filesFoundLabel->setText(tr("Found %1 items so far...").arg(filesTable->rowCount()));
+                qApp->processEvents();
+            }
         }
     }
-    if (isTimeToReport()) {
+
+    //if (!_stopped) {
+    //    const int row = filesTable->rowCount();
+    //    filesTable->insertRow(row);
+    //    int col = 0;
+    //
+    //    filesTable->setItem(row, col++, filePathItem);
+    //    filesTable->setItem(row, col++, fileNameItem);
+    //    filesTable->setItem(row, col++, sizeItem);
+    //    filesTable->setItem(row, col++, dateModItem);
+    //    filesTable->setItem(row, col++, fileExtItem);
+    //    filesTable->setItem(row, col++, fsTypeItem);
+    //    filesTable->setItem(row, col++, ownerItem);
+    //
+    //    filesTable->setRowHeight(row, 45);
+    //    if (timeToProcEvents()) {
+    //        filesTable->scrollToBottom();
+    //        filesFoundLabel->setText(tr("Found %1 items so far...").arg(row + 1));
+    //    }
+    //}
+    if (timeToProcEvents()) {
         qApp->processEvents();
     }
   }
   catch(...) { Q_ASSERT(false); }
 }
 
+void MainWindow::flushItemBuffer() {
+    if (itemBuffer.isEmpty())
+        return;
+
+    filesTable->setUpdatesEnabled(false);
+    const int startRow = filesTable->rowCount();
+    filesTable->setRowCount(startRow + itemBuffer.size());
+
+    for (int i = 0; i < itemBuffer.size(); ++i) {
+        const auto& rowItems = itemBuffer[i];
+        for (int col = 0; col < rowItems.size(); ++col) {
+            filesTable->setItem(startRow + i, col, rowItems[col]);
+        }
+    }
+    filesTable->setUpdatesEnabled(true);
+    itemBuffer.clear();
+}
+
 void MainWindow::createFilesTable()
 {
   try
   {
-    const int N_COL = 7;
     filesTable = new QTableWidget(0, N_COL, this);
     filesTable->setParent(this);
 
@@ -1417,98 +1278,13 @@ void MainWindow::showHelpDialog() {
     dialog.exec();
 }
 
-void MainWindow::getFileInfos(const QString& currPath, QFileInfoList& fileInfos) const
-{
-    QDir currDir(currPath);
-    currDir.setNameFilters(_fileNameSubfilters);
-    currDir.setFilter(_itemTypeFilter);
-    QDir::Filters filters = QDir::AllEntries | QDir::System | QDir::NoDotAndDotDot;
-    if (!exclHiddenCheck->isChecked())
-        filters |= QDir::Hidden;
-    fileInfos = currDir.entryInfoList(filters);
-}
-
-quint64 MainWindow::combinedSize(const QFileInfoList& items)
-{
-    quint64 csz = 0;
-    for (const auto& item : items) {
-        if (_stopped) return csz;
-        csz += static_cast<quint64>(item.size());
-    }
-    return csz;
-}
-
-void MainWindow::updateTotals(const QString& currPath)
-{
-    const QDir unFilteredDir = QDir(currPath);
-    static constexpr QDir::Filters unfilters = QDir::AllEntries | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot;
-    const QFileInfoList unFilteredItems = unFilteredDir.entryInfoList(unfilters);
-    _totCount += unFilteredItems.count();
-    _totSize += combinedSize(unFilteredItems);
-}
-
-void MainWindow::deepFindFiles(const QString& startPath, int maxDepth)
-{
-    QQueue<QPair<QString, int>> dirQ;
-    dirQ.enqueue({startPath, 0});
-
-    while (!dirQ.empty() && !_stopped) {
-        const auto [currPath, currDepth] = dirQ.dequeue();
-        ++_dirCount;
-        if (isTimeToReport()) {
-            qApp->processEvents();
-            filesFoundLabel->setText(tr("Examined %1 items in %2 folders so far...")
-                .arg(_totCount).arg(_dirCount));
-        }
-        QFileInfoList fileInfos;
-        getFileInfos(currPath, fileInfos);
-        updateTotals(currPath);
-
-        for (const auto& finfo : fileInfos) {
-            if (_stopped)
-                return;
-            if (finfo.isDir() && !finfo.isSymLink() && (currDepth < maxDepth || maxDepth < 0)) {
-                dirQ.enqueue({finfo.absoluteFilePath(), currDepth + 1});
-            }
-            // appendOrExcludeItem(currPath, finfo);
-        }
-    }
-}
-
-std::pair<quint64, quint64> MainWindow::deepDirCountSize(const QString& startPath)
-{
-    QQueue<QString> dirQ;
-    dirQ.enqueue(startPath);
-    quint64 dirCount = 0;
-    quint64 dirSize = 0;
-
-    while (!dirQ.empty() && !_stopped) {
-        if (isTimeToReport())
-            qApp->processEvents();
-        const auto currPath = dirQ.dequeue();
-        QFileInfoList fileInfos;
-        getFileInfos(currPath, fileInfos);
-
-        for (const auto& finfo : fileInfos) {
-            if (_stopped)
-                break;
-            dirCount++;
-            if (finfo.isDir() && !finfo.isSymLink())
-                dirQ.enqueue(finfo.absoluteFilePath());
-            else
-                dirSize += quint64(finfo.size());
-        }
-    }
-    return {dirCount, dirSize};
-}
-
-void MainWindow::scanFolder(const QString& startPath, const int maxDepth)
+void MainWindow::deepScanFolderOnThread(const QString& startPath, const int maxDepth)
 {
     // Create scanner and move it to the thread
     auto scanThread = new QThread(this);
     scanner = new FolderScanner;
 
-    // Will only start the thread if initialization succeeded
+    // Will only start the thread if initialization succeeds
     if (!findFilesPrep(scanner)) {
         delete scanner;
         delete scanThread;
@@ -1528,7 +1304,7 @@ void MainWindow::scanFolder(const QString& startPath, const int maxDepth)
 
     // Connect signals/slots
     connect(scanThread, &QThread::started,
-        [this, startPath, maxDepth]() { this->scanner->doDeepScan(startPath, maxDepth); });
+        [this, startPath, maxDepth]() { this->scanner->deepScan(startPath, maxDepth); });
 
     connect(scanner, &FolderScanner::itemFound, this, &MainWindow::itemFound);
     connect(scanner, &FolderScanner::progressUpdate, this, &MainWindow::progressUpdate);
@@ -1545,6 +1321,7 @@ void MainWindow::scanFolder(const QString& startPath, const int maxDepth)
 
 void MainWindow::scanThreadFinished()
 {
+    flushItemBuffer();
     setFilesFoundLabel(_stopped ? "INTERRUPTED. " : "COMPLETED. ");
     setStopped(true);
     filesTable->sortByColumn(-1, Qt::AscendingOrder);

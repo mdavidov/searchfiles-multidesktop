@@ -9,8 +9,7 @@ namespace Devonline
 struct ScanParams
 {
     QString origDirPath;
-    QString fileNameFilter;
-    QStringList fileNameSubfilters;
+    QStringList nameFilters;
     QDir::Filters itemTypeFilter;
     bool matchCase;
     bool inclFiles;
