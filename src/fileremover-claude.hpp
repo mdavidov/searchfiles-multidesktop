@@ -1,3 +1,7 @@
+#pragma once
+
+#include "get_readable_thread_id.hpp"
+#include "set_thread_name.hpp"
 #include <filesystem>
 #include <thread>
 #include <queue>
@@ -6,7 +10,12 @@
 #include <atomic>
 #include <functional>
 
-class FileRemover {
+namespace fs = std::filesystem;
+
+namespace Claude
+{
+class FileRemover
+{
 public:
     FileRemover() : worker_([this](const std::stop_token& st) { processQueue(st); }) {}
 
@@ -16,7 +25,7 @@ public:
     }
 
     // Add a path to the removal queue
-    void queueForRemoval(const std::filesystem::path& path) {
+    void queueForRemoval(const fs::path& path) {
         {
             std::lock_guard<std::mutex> lock(mutex_);
             removalQueue_.push(path);
@@ -25,40 +34,36 @@ public:
     }
 
     // Set callback for progress updates
-    void setProgressCallback(std::function<void(const std::filesystem::path&, bool)> callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+    void setProgressCallback(std::function<void(const fs::path&, bool)> callback) {
+        //std::lock_guard<std::mutex> lock(mutex_);
         progressCallback_ = std::move(callback);
     }
 
 private:
     void processQueue(const std::stop_token& st) {
-        while (!st.stop_requested()) {
-            std::filesystem::path path;
-
+        set_thread_name("ClaudeFileRemover");
+        const auto tid = std::hash<std::thread::id>{}(std::this_thread::get_id());
+        qDebug() << "processQueue: my thread id:" << get_readable_thread_id() << " hash:" << tid;
+        while (!st.stop_requested() && !removalQueue_.empty()) {
+            fs::path path;
             {
                 std::unique_lock<std::mutex> lock(mutex_);
                 condition_.wait(lock, [this, &st]() {
                     return !removalQueue_.empty() || st.stop_requested();
                     });
-
-                if (st.stop_requested()) {
-                    return;
-                }
-
                 path = removalQueue_.front();
                 removalQueue_.pop();
             }
-
             bool success = false;
             try {
-                if (std::filesystem::is_directory(path)) {
-                    success = std::filesystem::remove_all(path) > 0;
+                if (fs::is_directory(path)) {
+                    success = fs::remove_all(path) > 0;
                 }
                 else {
-                    success = std::filesystem::remove(path);
+                    success = fs::remove(path);
                 }
             }
-            catch (const std::filesystem::filesystem_error& e) {
+            catch (const fs::filesystem_error& e) {
                 success = false;
             }
 
@@ -71,8 +76,9 @@ private:
     }
 
     std::jthread worker_;
-    std::queue<std::filesystem::path> removalQueue_;
+    std::queue<fs::path> removalQueue_;
     std::mutex mutex_;
     std::condition_variable_any condition_;
-    std::function<void(const std::filesystem::path&, bool)> progressCallback_;
+    std::function<void(const fs::path&, bool)> progressCallback_;
 };
+}

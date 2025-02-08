@@ -1,19 +1,10 @@
-/****************************************************************************
-**
-** Copyright (c) 2010 Milivoj (Mike) Davidov
-** All rights reserved.
-**
-** THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
-** EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-** WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
-**
-****************************************************************************/
 #pragma once
 
 #undef QT_NO_CONTEXTMENU
 
 #include "common.h"
 #include "folderscanner.hpp"
+#include <memory>
 #include <QMainWindow>
 #include <QDir>
 #include <QElapsedTimer>
@@ -35,6 +26,13 @@ class QKeyEvent;
 class QLineEdit;
 QT_END_NAMESPACE
 #pragma endregion
+
+namespace AmzQ {
+    class FileRemover;
+}
+namespace Claude {
+    class FileRemover;
+}
 
 namespace Devonline
 {
@@ -93,6 +91,9 @@ private slots:
 
 private:
     FolderScanner* scanner{nullptr};
+    std::unique_ptr<AmzQ::FileRemover> removerAmzQ_;
+    std::unique_ptr<Claude::FileRemover> removerClaude_;
+
     QElapsedTimer eventsTimer;
     inline void processEvents();
 
@@ -106,8 +107,9 @@ private:
     void appendItemToTable(const QString filePath, const QFileInfo & finfo);
 
     void deepScanFolderOnThread(const QString& startPath, const int maxDepth);
-    void deepRemoveFilesOnThread(const QStringList& paths);
     void scanThreadFinished();
+    void deepRemoveFilesOnThread_AmzQ(const QStringList& paths);
+    void deepRemoveFilesOnThread_Claude(const QStringList& pathsToRemove);
 
     void progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
     void flushItemBuffer();

@@ -22,7 +22,8 @@
 #endif
 
 #include "precompiled.h"
-#include "fileremover.hpp"
+#include "fileremover-amzq.hpp"
+#include "fileremover-claude.hpp"
 #include "foldersearch.hpp"
 #include "scanparams.hpp"
 #include "aboutdialog.h"
@@ -418,13 +419,15 @@ void MainWindow::deleteBtnClicked()
         QStringList pathList;
         getSelectedItems(itemList, pathList);
 
-        //removeItems(itemList); // REMOVE ITEMS
-        deepRemoveFilesOnThread(pathList);
+        // REMOVE ITEMS
+        //removeItems(itemList);
+        //deepRemoveFilesOnThread_Claude(pathList);
+        deepRemoveFilesOnThread_AmzQ(pathList);
 
-        emit filesTable->itemSelectionChanged();
-        processEvents();
+        //emit filesTable->itemSelectionChanged();
+        //processEvents();
         //setFilesFoundLabel(_stopped ? "INTERRUPTED. " : "COMPLETED. ");
-        setStopped(true);
+        //setStopped(true);
     }
     catch (...) { Q_ASSERT(false); } // tell the user?
     setStopped(true);
@@ -570,6 +573,7 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
             .arg(foundItemsSizeStr)
             .arg(_totCount)
             .arg(totItemsSizeStr);
+    filesFoundLabel->setText("");
     filesFoundLabel->setText(foundLabelText);
     qDebug() << foundLabelText;
     if (_foundCount != quint64(filesTable->rowCount())) {
@@ -965,6 +969,7 @@ void MainWindow::flushItemBuffer() {
         const auto& rowItems = itemBuffer[i];
         for (int col = 0; col < rowItems.size(); ++col) {
             filesTable->setItem(startRow + i, col, rowItems[col]);
+            filesTable->setRowHeight(startRow + i, 45);
         }
     }
     filesTable->setUpdatesEnabled(true);
@@ -1196,6 +1201,10 @@ void MainWindow::keyReleaseEvent( QKeyEvent* ev) {
             _stopped = true;
             ev->accept();
         }
+        else if (ev->key() == Qt::Key_Delete) {
+            deleteBtnClicked();
+            ev->accept();
+        }
         else
             QMainWindow::keyReleaseEvent(ev);
     }
@@ -1308,25 +1317,43 @@ void MainWindow::progressUpdate(quint64 foundCount, quint64 foundSize, quint64 t
     _totSize = totSize;
 }
 
-void MainWindow::deepRemoveFilesOnThread(const QStringList& pathsToRemove) {
-    auto remover = std::make_unique<FileRemover>(this);
+void MainWindow::deepRemoveFilesOnThread_AmzQ(const QStringList& pathsToRemove) {
+    removerAmzQ_ = std::make_unique<AmzQ::FileRemover>(this);
 
-    remover->removeFilesAndFolders(
+    removerAmzQ_->removeFilesAndFolders02(
         pathsToRemove,
         // Progress callback
         [this](const QString& currentFile) {
-            setFilesFoundLabel("Removing: " + currentFile);
+            filesFoundLabel->setText("Removing: " + currentFile);
         },
         // Completion callback
         [this](bool success) {
             if (success) {
-                setFilesFoundLabel("Removal completed successfully");
+                filesFoundLabel->setText("Removal completed successfully");
             }
             else {
-                setFilesFoundLabel("Some files could not be removed");
+                filesFoundLabel->setText("Some files could not be removed");
             }
         }
     );
 }
 
+void MainWindow::deepRemoveFilesOnThread_Claude(const QStringList & pathsToRemove) {
+    removerClaude_ = std::make_unique<Claude::FileRemover>();
+
+    // Set up progress callback (can update UI)
+    removerClaude_->setProgressCallback([this](const std::filesystem::path& path, bool success) {
+        // Since this callback runs in a different thread, use Qt::QueuedConnection
+        QMetaObject::invokeMethod(this, [this, pathStr = path.string(), success]() {
+            if (success) {
+                filesFoundLabel->setText(QString("Successfully removed: %1")
+                    .arg(QString::fromStdString(pathStr)));
+            }
+            else {
+                filesFoundLabel->setText(QString("Failed to remove: %1")
+                    .arg(QString::fromStdString(pathStr)));
+            }
+            }, Qt::QueuedConnection);
+        });
+}
 } // namespace Devonline

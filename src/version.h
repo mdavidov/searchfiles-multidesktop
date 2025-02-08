@@ -1,3 +1,4 @@
+#pragma once
 // ***************************************************************************
 // **
 // ** Copyright (c) 2012 Milivoj (Mike) Davidov
@@ -8,7 +9,6 @@
 // ** WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 // **
 // ****************************************************************************
-#pragma once
 
 #define OvSk_FsOp_APP_VERSION_STR       "6.9"
 #define OvSk_FsOp_APP_BUILD_NBR_STR     "20250127"

@@ -1,3 +1,4 @@
+#pragma once
 /****************************************************************************
 **
 ** Copyright (c) 2012 Milivoj (Mike) Davidov
@@ -8,7 +9,6 @@
 ** WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 **
 ****************************************************************************/
-#pragma once
 
 #undef QT_NO_CONTEXTMENU
 

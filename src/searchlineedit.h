@@ -1,3 +1,4 @@
+#pragma once
 /****************************************************************************
 **
 ** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
@@ -38,8 +39,6 @@
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
-
-#pragma once
 
 #include "exlineedit.h"
 #include <QtWidgets/QLineEdit>
