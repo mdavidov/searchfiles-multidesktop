@@ -81,6 +81,7 @@ private slots:
     void openRunSlot();
     void openContainingFolderSlot();
     void copyPathSlot();
+    void getSizeSlot();
     void propertiesSlot();
     void showContextMenu(const QPoint & point);
     void unlimSubDirDepthToggled(bool checked);
@@ -174,6 +175,7 @@ private:
     QAction* openRunAct;
     QAction* openContaingFolderAct;
     QAction* copyPathAct;
+    QAction* getSizeAct;
     QAction* propertiesAct;
     QMenu* contextMenu;
 

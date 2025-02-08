@@ -1074,17 +1074,16 @@ void MainWindow::createContextMenu()
         openRunAct = contextMenu->addAction(OvSk_FsOp_OPENRUN_ACT_TXT);
         openContaingFolderAct = contextMenu->addAction(eCod_OPEN_CONT_FOLDER_ACT_TXT);
         copyPathAct = contextMenu->addAction(eCod_COPY_PATH_ACT_TXT);
+        contextMenu->addSeparator();
+        getSizeAct = contextMenu->addAction(eCod_GET_SIZE_ACT_TXT);
         propertiesAct = contextMenu->addAction(eCod_PROPERTIES_ACT_TXT);
 
         // Connect using new syntax
         connect(openRunAct, &QAction::triggered, this, &MainWindow::openRunSlot);
         connect(openContaingFolderAct, &QAction::triggered, this, &MainWindow::openContainingFolderSlot);
         connect(copyPathAct, &QAction::triggered, this, &MainWindow::copyPathSlot);
+        connect(getSizeAct, &QAction::triggered, this, &MainWindow::getSizeSlot);
         connect(propertiesAct, &QAction::triggered, this, &MainWindow::propertiesSlot);
-
-        // Set initial state
-        copyPathAct->setEnabled(false);
-        propertiesAct->setEnabled(false);
     }
     catch (...) { Q_ASSERT(false); }
 }
@@ -1106,9 +1105,11 @@ void MainWindow::showContextMenu(const QPoint& point)
 
         // Enable/disable actions based on selection
         bool hasSelection = !filesTable->selectedItems().empty();
-        copyPathAct->setEnabled(hasSelection);
-        propertiesAct->setEnabled(hasSelection);
         openRunAct->setEnabled(hasSelection);
+        openContaingFolderAct->setEnabled(hasSelection);
+        copyPathAct->setEnabled(hasSelection);
+        getSizeAct->setEnabled(hasSelection);
+        propertiesAct->setEnabled(hasSelection);
 
         // Show the menu at the correct global position
         contextMenu->popup(filesTable->viewport()->mapToGlobal(point));
@@ -1161,6 +1162,27 @@ void MainWindow::copyPathSlot() {
         const auto item = selectedItems.first();
         const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
         clipboard->setText(QDir::toNativeSeparators(finfo.absoluteFilePath()));
+    }
+    catch (...) { Q_ASSERT(false); }
+}
+
+void MainWindow::getSizeSlot() {
+    try {
+        const auto selectedItems = filesTable->selectedItems();
+        if (selectedItems.empty()) {
+            return;
+        }
+        const auto item = selectedItems.first();
+        const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
+        const auto nativePath = QDir::toNativeSeparators(finfo.absoluteFilePath());
+        const auto [count, size] = scanner->deepCountSize(nativePath);
+        QString sizeStr;
+        const auto res = sizeToHumanReadable(size, sizeStr); (void)res;
+        QMessageBox::information(this, OvSk_FsOp_APP_NAME_TXT,
+                                 tr("%1\n\nItem count: %2\nTotal size: %3")
+                                    .arg(finfo.absoluteFilePath())
+                                    .arg(count)
+                                    .arg(sizeStr));
     }
     catch (...) { Q_ASSERT(false); }
 }

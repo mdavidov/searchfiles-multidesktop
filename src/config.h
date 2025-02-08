@@ -166,6 +166,9 @@ QT_END_NAMESPACE
 #define eCod_COPY_PATH_ACT_TXT          tr("Copy path")
 #define eCod_COPY_PATH_STS_TIP          tr("Copy the full, absolute path to the system clipboard.")
 
+#define eCod_GET_SIZE_ACT_TXT           tr("Get size")
+#define eCod_GET_SIZE_STS_TIP           tr("Get the size of the selected file or folder.")
+
 #define eCod_PROPERTIES_ACT_TXT         tr("Properties")
 #define eCod_PROPERTIES_STS_TIP         tr("Show file/folder properties.")
 
