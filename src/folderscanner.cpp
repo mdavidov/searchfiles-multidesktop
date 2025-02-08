@@ -264,14 +264,22 @@ std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPat
     while (!dirQ.empty() && !stopped) {
         processEvents();
         const auto currPath = dirQ.dequeue();
+        QFileInfoList dirInfos;
+        getAllDirs(currPath, dirInfos);
+        for (const auto& dir : dirInfos) {
+            processEvents();
+            if (stopped)
+                return { count, size };
+            dirQ.enqueue(dir.absoluteFilePath());
+        }
+
         QFileInfoList infos;
         getAllItems(currPath, infos);
         for (const auto& info : infos) {
+            processEvents();
             if (stopped)
-                break;
-            count++;
-            if (info.isDir() && !info.isSymLink())
-                dirQ.enqueue(info.absoluteFilePath());
+                return { count, size };
+            ++count;
             size += quint64(info.size());
         }
     }
