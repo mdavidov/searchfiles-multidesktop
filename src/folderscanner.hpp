@@ -28,6 +28,7 @@ public:
 
 signals:
     void itemFound(const QString& path, const QFileInfo& info);
+    void itemRemoved(int row, quint64 count, quint64 size, int nbrDeleted);
     void progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
     void scanComplete();
     void scanCancelled();
@@ -62,8 +63,6 @@ private:
     bool isStopped() const;
 
     QElapsedTimer eventsTimer;
-    qint64 prevElapsed;
-    inline bool timeToProcEvents();
     inline void processEvents();
 
     std::atomic<quint64> dirCount{0};

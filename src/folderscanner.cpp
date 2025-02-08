@@ -9,9 +9,7 @@
 
 namespace Devonline
 {
-FolderScanner::FolderScanner(QObject* parent)
-: QObject(parent), prevElapsed(0)
-{
+FolderScanner::FolderScanner(QObject* parent) : QObject(parent) {
     eventsTimer.start();
 }
 
@@ -41,70 +39,6 @@ inline void FolderScanner::processEvents()
         prev = elapsed;
         qApp->processEvents();
     }
-}
-
-inline bool FolderScanner::timeToProcEvents()
-{
-    const auto elapsed = eventsTimer.elapsed();
-    const auto diff = elapsed - prevElapsed;
-    if (diff >= 200) {  // msec
-        prevElapsed = elapsed;
-        return true;
-    }
-    else
-        return false;
-}
-
-void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
-    stopped = false;
-    foundCount = 0;
-
-    QQueue<QPair<QString, int>> dirQ;
-    dirQ.enqueue({startPath, 0});
-
-    while (!dirQ.empty() && !isStopped()) {
-        processEvents();
-        const auto [currPath, currDepth] = dirQ.dequeue();
-        ++dirCount;
-        QFileInfoList dirInfos;
-        getAllDirs(currPath, dirInfos);
-        for (const auto& dir : dirInfos) {
-            processEvents();
-            if (stopped) {
-                reportProgress();
-                emit scanCancelled();
-                return;
-            }
-            //if (timeToProcEvents()) {
-            //    qApp->processEvents();
-            //}
-            if (maxDepth < 0 || currDepth < maxDepth) {
-                dirQ.enqueue({ dir.absoluteFilePath(), currDepth + 1 });
-            }
-        }
-        updateTotals(currPath);
-
-        QFileInfoList infos;
-        getFileInfos(currPath, infos);
-        int count = 0;
-        for (const auto& info : infos) {
-            processEvents();
-            if (stopped) {
-                reportProgress();
-                emit scanCancelled();
-                return;
-            }
-            //if (timeToProcEvents()) {
-            //    qApp->processEvents();
-            //}
-            if (appendOrExcludeItem(currPath, info)) {
-                ++count;
-                emit itemFound(info.absoluteFilePath(), info);
-            }
-        }
-    }
-    reportProgress();
-    emit scanComplete();
 }
 
 bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo& info)
@@ -271,6 +205,52 @@ bool FolderScanner::fileContainsAnyWordChunked(const QString& filePath, const QS
     return false;
 }
 
+void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
+    stopped = false;
+    foundCount = 0;
+
+    QQueue<QPair<QString, int>> dirQ;
+    dirQ.enqueue({ startPath, 0 });
+
+    while (!dirQ.empty() && !isStopped()) {
+        processEvents();
+        const auto [currPath, currDepth] = dirQ.dequeue();
+        ++dirCount;
+        QFileInfoList dirInfos;
+        getAllDirs(currPath, dirInfos);
+        for (const auto& dir : dirInfos) {
+            processEvents();
+            if (stopped) {
+                reportProgress();
+                emit scanCancelled();
+                return;
+            }
+            if (maxDepth < 0 || currDepth < maxDepth) {
+                dirQ.enqueue({ dir.absoluteFilePath(), currDepth + 1 });
+            }
+        }
+        updateTotals(currPath);
+
+        QFileInfoList infos;
+        getFileInfos(currPath, infos);
+        int count = 0;
+        for (const auto& info : infos) {
+            processEvents();
+            if (stopped) {
+                reportProgress();
+                emit scanCancelled();
+                return;
+            }
+            if (appendOrExcludeItem(currPath, info)) {
+                ++count;
+                emit itemFound(info.absoluteFilePath(), info);
+            }
+        }
+    }
+    reportProgress();
+    emit scanComplete();
+}
+
 std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPath)
 {
     QQueue<QString> dirQ;
@@ -280,8 +260,6 @@ std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPat
 
     while (!dirQ.empty() && !stopped) {
         processEvents();
-        //if (timeToProcEvents())
-        //    qApp->processEvents();
         const auto currPath = dirQ.dequeue();
         QFileInfoList infos;
         getAllItems(currPath, infos);
@@ -299,52 +277,37 @@ std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPat
 
 void FolderScanner::deepRemove(const Uint64StringMap& itemList)
 {
-    qApp->processEvents();
-    int delCnt = 0;
-    for (Uint64StringMap::const_iterator it = itemList.cbegin(); it != itemList.cend(); ++it)
+    int nbrDeleted = 0;
+    for (const auto& item : itemList)
     {
         try {
+            processEvents();
             if (stopped)
                 return;
-            const auto path = it->second;
+            const auto path = item.second;
 
             if (!QFileInfo(path).isDir()) {
-                // RM FILE
+                // RM FILE or SYMLINK
                 QFile file(path);
-                //const auto fsize = quint64(file.size());
+                const auto size = quint64(file.size());
                 const auto rmok = file.remove();
                 if (rmok) {
-                    //filesTable->removeRow(static_cast<int>(it->first));
-                    //_totSize -= fsize;
-                    //_foundSize -= fsize;
-                    //_totCount -= 1;
-                    //_foundCount -= 1;
-                    ++delCnt;
-                    //if ((delCnt % 5) == 0)
-                    //    emit filesTable->itemSelectionChanged();
+                    ++nbrDeleted;
+                    emit itemRemoved(int(item.first), 1, size, nbrDeleted);
                 }
             }
             else {
                 // RM DIR
                 QDir dir(path);
-                const auto [dcount, dsize] = deepCountSize(path);
+                const auto [count, size] = deepCountSize(path);
+                processEvents();
                 const auto rmok = dir.removeRecursively();
+                processEvents();
                 if (rmok) {
-                    //filesTable->removeRow(static_cast<int>(it->first));
-                    //_totSize -= dsize;
-                    //if (_foundSize > dsize)
-                    //    _foundSize -= dsize;
-                    //_totCount -= dcount;
-                    //if (_foundCount > dcount)
-                    //    _foundCount -= dcount;
-                    ++delCnt;
-                    //if ((delCnt % 5) == 0)
-                    //    emit filesTable->itemSelectionChanged();
+                    ++nbrDeleted;
+                    emit itemRemoved(int(item.first), count, size, nbrDeleted);
                 }
             }
-            processEvents();
-            //if (timeToProcEvents())
-            //    qApp->processEvents();
         }
         catch (...) { Q_ASSERT(false); } // tell the user?
     }

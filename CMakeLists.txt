@@ -38,6 +38,7 @@ set(PROJECT_SOURCES
     src/common.h
     src/config.h
     src/config.cpp
+    src/fileremover.hpp
     src/folderscanner.hpp
     src/folderscanner.cpp
     src/foldersearch.hpp
@@ -118,7 +119,7 @@ elseif(UNIX AND NOT APPLE)
         /usr/lib/x86_64-linux-gnu
     )
 elseif(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20 /EHsc /W4 /WX /analyze /permissive- /wd4514 /wd4710 /wd4820 /wd4464 /wd5045")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20 /EHsc /W4 /analyze /permissive- /wd4514 /wd4710 /wd4820 /wd4464 /wd5045")
     set(GUI_TYPE WIN32)
     set(PROJECT_SOURCES ${PROJECT_SOURCES} foldersearch.rc)
     set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -130,6 +131,10 @@ elseif(WIN32)
     )
     include_directories(
         C:/Qt/6.8.1/msvc2022_64/include
+        "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/include"
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/ucrt"
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/um"
+        "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/shared"
         ${CMAKE_SOURCE_DIR}/src
     )
     link_directories(

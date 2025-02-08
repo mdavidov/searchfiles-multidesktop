@@ -88,9 +88,13 @@ private slots:
     void unlimSubDirDepthToggled(bool checked);
     void showAboutDialog();
     void showHelpDialog();
+    void itemFound(const QString& path, const QFileInfo& info);
+    void itemRemoved(int row, quint64 count, quint64 size, int nbrDeleted);
 
 private:
     FolderScanner* scanner{nullptr};
+    QElapsedTimer eventsTimer;
+    inline void processEvents();
 
     bool isHidden(const QFileInfo& finfo) const;
     QString FsItemType(const QFileInfo& finfo) const;
@@ -102,13 +106,13 @@ private:
     void appendItemToTable(const QString filePath, const QFileInfo & finfo);
 
     void deepScanFolderOnThread(const QString& startPath, const int maxDepth);
+    void deepRemoveFilesOnThread(const QStringList& paths);
     void scanThreadFinished();
-    void itemFound(const QString& path, const QFileInfo& info);
+
     void progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
     void flushItemBuffer();
 
     bool findFilesPrep(FolderScanner* scanner);
-    inline bool timeToProcEvents();
     void setStopped(bool stopped);
     void setFilesFoundLabel(const QString& prefix);
 
@@ -125,7 +129,7 @@ private:
     void createMainLayout();
     void createContextMenu();
 
-    void getSelectedItems( Uint64StringMap& itemList);
+    void getSelectedItems( Uint64StringMap& itemList, QStringList& pathList);
 
 private:
     QLineEdit*  namesLineEdit;
@@ -198,8 +202,6 @@ private:
     quint64 _totSize;
     quint64 _foundSize;
     quint64 _foundCount;
-    QElapsedTimer _reportTimer;
-    qint64 _prevElapsed;
     Devonline::Op::Type _opType;
     bool _stopped;
 };
