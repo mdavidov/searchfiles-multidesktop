@@ -9,6 +9,7 @@
 #include <QObject>
 #include <QQueue>
 #include <QTimer>
+#include <QElapsedTimer>
 
 namespace Devonline
 {

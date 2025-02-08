@@ -1,6 +1,7 @@
 #include "folderscanner.hpp"
 #include "scanparams.hpp"
 #include <shared_mutex>
+#include <QApplication>
 #include <QObject>
 #include <QDir>
 #include <QFileInfo>

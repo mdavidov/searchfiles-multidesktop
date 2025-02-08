@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 project(foldersearch VERSION 3.0.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -77,7 +77,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 # Set target properties
 if(APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -fexperimental-library -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
     set(GUI_TYPE MACOSX_BUNDLE)
     set_source_files_properties(src/macutils.mm PROPERTIES COMPILE_FLAGS "-x objective-c++")
     set_source_files_properties(${CMAKE_SOURCE_DIR}/images/foldersearch.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
@@ -97,7 +97,7 @@ if(APPLE)
         /opt/Qt/6.8.1/macos/lib
     )
 elseif(UNIX AND NOT APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused -Wdouble-promotion -Wundef -Wcast-align" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused -Wdouble-promotion -Wundef -Wcast-align" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
     set(GUI_TYPE "")
     # Install desktop file
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/foldersearch.desktop.in
