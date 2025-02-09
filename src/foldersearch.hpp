@@ -88,7 +88,7 @@ private slots:
     void showAboutDialog();
     void showHelpDialog();
     void itemFound(const QString& path, const QFileInfo& info);
-    void itemRemoved(int row, quint64 count, quint64 size, int nbrDeleted);
+    void itemRemoved(int row, quint64 count, quint64 size);
 
 private:
     FolderScanner* scanner{nullptr};
@@ -110,7 +110,7 @@ private:
     void deepScanFolderOnThread(const QString& startPath, const int maxDepth);
     void scanThreadFinished();
     void deepRemoveFilesOnThread_AmzQ(const QStringList& paths);
-    void deepRemoveFilesOnThread_Claude(const QStringList& pathsToRemove);
+    void deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap);
 
     void progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
     void flushItemBuffer();
@@ -132,7 +132,7 @@ private:
     void createMainLayout();
     void createContextMenu();
 
-    void getSelectedItems( Uint64StringMap& itemList, QStringList& pathList);
+    void getSelectedItems( IntQStringMap& itemList);
 
 private:
     QLineEdit*  namesLineEdit;

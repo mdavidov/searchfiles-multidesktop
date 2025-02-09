@@ -22,6 +22,7 @@
 #endif
 
 #include "precompiled.h"
+#include <filesystem>
 #include "fileremover-amzq.hpp"
 #include "fileremover-claude.hpp"
 #include "foldersearch.hpp"
@@ -38,6 +39,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QIODevice>
+#include <QString>
 #include <QThread>
 #include <QProcess>
 #include <QDesktopServices>
@@ -415,13 +417,12 @@ void MainWindow::deleteBtnClicked()
         }
         setStopped(false);
         processEvents();
-        Uint64StringMap itemList;
-        QStringList pathList;
-        getSelectedItems(itemList, pathList);
+        IntQStringMap itemList;
+        getSelectedItems(itemList);
 
         // REMOVE ITEMS
         //removeItems(itemList);
-        deepRemoveFilesOnThread_Claude(pathList);
+        deepRemoveFilesOnThread_Claude(itemList);
         // deepRemoveFilesOnThread_AmzQ(pathList);
 
         //emit filesTable->itemSelectionChanged();
@@ -433,7 +434,7 @@ void MainWindow::deleteBtnClicked()
     setStopped(true);
 }
 
-void MainWindow::getSelectedItems(Uint64StringMap& itemList, QStringList& pathList)
+void MainWindow::getSelectedItems(IntQStringMap& itemList)
 {
     const QList<QTableWidgetItem *>  selectedItems = filesTable->selectedItems();
     foreach (const QTableWidgetItem * item, selectedItems)
@@ -442,12 +443,11 @@ void MainWindow::getSelectedItems(Uint64StringMap& itemList, QStringList& pathLi
         {
             if (_stopped)
                 break;
-            const QString path = item->data(Qt::UserRole).toString(); //item->text();
-            const auto row = static_cast<quint64>(filesTable->row(item));
+            const QString path = item->data(Qt::UserRole).toString();
+            const auto row = filesTable->row(item);
             Q_ASSERT(itemList.find(row) == itemList.end());
             if (itemList.find(row) == itemList.end()) {
-                itemList.insert(std::pair<int, QString>(row, path));
-                pathList.append(path);
+                itemList.insert(std::make_pair(row, path));
             }
             processEvents();
         }
@@ -618,6 +618,7 @@ bool MainWindow::findFilesPrep(FolderScanner* scanner_)
         #else
             qDebug() << "Select a folder to search please.";
 	    #endif
+        setStopped(true);
         return false;
     }
     _origDirPath = QDir::toNativeSeparators(dirComboCurrent);
@@ -637,6 +638,7 @@ bool MainWindow::findFilesPrep(FolderScanner* scanner_)
         #else
             qDebug() << msg;
 	    #endif
+        setStopped(true);
         return false;
     }
     while (_origDirPath.length() > eCod_MIN_PATH_LEN && _origDirPath.endsWith( QDir::separator())) {
@@ -1320,16 +1322,13 @@ void MainWindow::itemFound(const QString& path, const QFileInfo& info) {
         appendItemToTable(path, info);
 }
 
-void MainWindow::itemRemoved(int row, quint64 count, quint64 size, int nbrDeleted) {
-    if (!_stopped) {
-        filesTable->removeRow(row);
-        _foundCount -= count;
-        _foundSize -= size;
-        _totCount -= count;
-        _totSize -= size;
-        (void)nbrDeleted; //if ((nbrDeleted % 5) == 0)
-        emit filesTable->itemSelectionChanged();
-    }
+void MainWindow::itemRemoved(int row, quint64 count, quint64 size) {
+    filesTable->removeRow(row);
+    _foundCount -= count;
+    _foundSize -= size;
+    _totCount -= count;
+    _totSize -= size;
+    emit filesTable->itemSelectionChanged();
 }
 
 void MainWindow::progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize) {
@@ -1360,26 +1359,24 @@ void MainWindow::deepRemoveFilesOnThread_AmzQ(const QStringList& pathsToRemove) 
     );
 }
 
-void MainWindow::deepRemoveFilesOnThread_Claude(const QStringList & pathsToRemove) {
+void MainWindow::deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap) {
     removerClaude_ = std::make_unique<Claude::FileRemover>();
 
     // Set up progress callback (can update UI)
-    removerClaude_->setProgressCallback([this](const std::filesystem::path& path, bool success) {
+    removerClaude_->setProgressCallback([this](int row, const QString& path, bool success) {
         // Since this callback runs in a different thread, use Qt::QueuedConnection
-        QMetaObject::invokeMethod(this, [this, pathStr = path.string(), success]() {
+        QMetaObject::invokeMethod(this, [this, row, path, success]() {
+            const QString resWord = success ? "Successfully removed: " : "Failed to remove: ";
+            filesFoundLabel->setText(QString("%1: %2").arg(resWord).arg(path));
             if (success) {
-                filesFoundLabel->setText(QString("Successfully removed: %1")
-                    .arg(QString::fromStdString(pathStr)));
-            }
-            else {
-                filesFoundLabel->setText(QString("Failed to remove: %1")
-                    .arg(QString::fromStdString(pathStr)));
+                itemRemoved(row, 1, 0);
             }
             }, Qt::QueuedConnection);
         });
 
-    for (const auto& path : pathsToRemove) {
-        removerClaude_->queueForRemoval(path.toStdString());
+    for (const auto& rowPath : rowPathMap) {
+        removerClaude_->queueForRemoval(
+            std::make_pair(rowPath.first, rowPath.second.toStdString()));
     }
 }
 } // namespace Devonline

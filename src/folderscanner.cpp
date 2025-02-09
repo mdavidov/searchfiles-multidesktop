@@ -288,17 +288,17 @@ std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPat
     return { count, size };
 }
 
-void FolderScanner::deepRemove(const Uint64StringMap& itemList)
+void FolderScanner::deepRemove(const IntQStringMap& rowPathMap)
 {
     stopped = false;
     int nbrDeleted = 0;
-    for (const auto& item : itemList)
+    for (const auto& rowPath : rowPathMap)
     {
         try {
             processEvents();
             if (stopped)
                 return;
-            const auto path = item.second;
+            const auto path = rowPath.second;
 
             if (!QFileInfo(path).isDir()) {
                 // RM FILE or SYMLINK
@@ -307,7 +307,7 @@ void FolderScanner::deepRemove(const Uint64StringMap& itemList)
                 const auto rmok = file.remove();
                 if (rmok) {
                     ++nbrDeleted;
-                    emit itemRemoved(int(item.first), 1, size, nbrDeleted);
+                    emit itemRemoved(rowPath.first, 1, size, nbrDeleted);
                 }
             }
             else {
@@ -319,7 +319,7 @@ void FolderScanner::deepRemove(const Uint64StringMap& itemList)
                 processEvents();
                 if (rmok) {
                     ++nbrDeleted;
-                    emit itemRemoved(int(item.first), count, size, nbrDeleted);
+                    emit itemRemoved(rowPath.first, count, size, nbrDeleted);
                 }
             }
         }

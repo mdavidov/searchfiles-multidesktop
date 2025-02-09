@@ -45,22 +45,22 @@ namespace AmzQ
                         if (stoken.stop_requested()) {
                             break;
                         }
-                        std::filesystem::path fsPath = path.toStdString();
+                        fs::path fsPath = path.toStdString();
                         try {
                             QMetaObject::invokeMethod(m_uiObject, [this, path]() {
                                 m_progressCb(path);
                                 }, Qt::QueuedConnection);
                         
-                            if (std::filesystem::exists(fsPath)) {
-                                if (std::filesystem::is_directory(fsPath)) {
-                                    std::filesystem::remove_all(fsPath);
+                            if (fs::exists(fsPath)) {
+                                if (fs::is_directory(fsPath)) {
+                                    fs::remove_all(fsPath);
                                 }
                                 else {
-                                    std::filesystem::remove(fsPath);
+                                    fs::remove(fsPath);
                                 }
                             }
                         }
-                        catch (const std::filesystem::filesystem_error& e) {
+                        catch (const fs::filesystem_error& e) {
                             success = false;
                             // Handle error by notifying UI
                             QString errorMsg = QString("Error removing %1: %2")
@@ -94,23 +94,23 @@ namespace AmzQ
                         if (stoken.stop_requested()) {
                             break;
                         }
-                        std::filesystem::path fsPath = path.toStdString();
+                        fs::path fsPath = path.toStdString();
                         try {
                             // Update UI with current file being processed
                             QMetaObject::invokeMethod(m_uiObject, [progressCb, path]() {
                                 progressCb(path);
                                 }, Qt::QueuedConnection);
 
-                            if (std::filesystem::exists(fsPath)) {
-                                if (std::filesystem::is_directory(fsPath)) {
-                                    std::filesystem::remove_all(fsPath);
+                            if (fs::exists(fsPath)) {
+                                if (fs::is_directory(fsPath)) {
+                                    fs::remove_all(fsPath);
                                 }
                                 else {
-                                    std::filesystem::remove(fsPath);
+                                    fs::remove(fsPath);
                                 }
                             }
                         }
-                        catch (const std::filesystem::filesystem_error& e) {
+                        catch (const fs::filesystem_error& e) {
                             success = false;
                             // Handle error by notifying UI
                             QString errorMsg = QString("Error removing %1: %2")
