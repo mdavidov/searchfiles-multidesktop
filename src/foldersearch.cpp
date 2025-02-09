@@ -421,8 +421,8 @@ void MainWindow::deleteBtnClicked()
 
         // REMOVE ITEMS
         //removeItems(itemList);
-        //deepRemoveFilesOnThread_Claude(pathList);
-        deepRemoveFilesOnThread_AmzQ(pathList);
+        deepRemoveFilesOnThread_Claude(pathList);
+        // deepRemoveFilesOnThread_AmzQ(pathList);
 
         //emit filesTable->itemSelectionChanged();
         //processEvents();
@@ -963,7 +963,7 @@ void MainWindow::flushItemBuffer() {
 
     filesTable->setUpdatesEnabled(false);
     const int startRow = filesTable->rowCount();
-    filesTable->setRowCount(startRow + itemBuffer.size());
+    filesTable->setRowCount(startRow + int(itemBuffer.size()));
 
     for (int i = 0; i < itemBuffer.size(); ++i) {
         const auto& rowItems = itemBuffer[i];
@@ -1377,5 +1377,9 @@ void MainWindow::deepRemoveFilesOnThread_Claude(const QStringList & pathsToRemov
             }
             }, Qt::QueuedConnection);
         });
+
+    for (const auto& path : pathsToRemove) {
+        removerClaude_->queueForRemoval(path.toStdString());
+    }
 }
 } // namespace Devonline

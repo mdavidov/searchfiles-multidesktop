@@ -44,7 +44,7 @@ private:
         set_thread_name("ClaudeFileRemover");
         const auto tid = std::hash<std::thread::id>{}(std::this_thread::get_id());
         qDebug() << "processQueue: my thread id:" << get_readable_thread_id() << " hash:" << tid;
-        while (!st.stop_requested() && !removalQueue_.empty()) {
+        while (!st.stop_requested()) {
             fs::path path;
             {
                 std::unique_lock<std::mutex> lock(mutex_);
@@ -71,6 +71,7 @@ private:
             std::lock_guard<std::mutex> lock(mutex_);
             if (progressCallback_) {
                 progressCallback_(path, success);
+                qDebug() << "removal  path:" << path << " success:" << success;
             }
         }
     }
