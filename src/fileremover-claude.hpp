@@ -69,13 +69,15 @@ private:
                 success = false;
                 qDebug() << "remove error:" << e.what() << "path:" << pair.second;
             }
-
             // Report progress
             const auto pathQstr = FsPathToQStr(pair.second);
+            const QFileInfo info(pathQstr);
+            const QString kind = info.isDir() ? "FOLDER" : "file";
+            // const QString kind = fs::is_directory(pair.second) ? "FOLDER" : "file";
             std::lock_guard<std::mutex> lock(mutex_);
             if (progressCallback_) {
                 progressCallback_(pair.first, pathQstr, success);
-                qDebug() << "remove success:" << success << "path:" << pathQstr;
+                qDebug() << "remove success:" << success << kind << pathQstr;
             }
         }
     }

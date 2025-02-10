@@ -1361,7 +1361,7 @@ void MainWindow::deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap)
     removerClaude_->setProgressCallback([this](int row, const QString& path, bool success) {
         // Since this callback runs in a different thread, use Qt::QueuedConnection
         QMetaObject::invokeMethod(this, [this, row, path, success]() {
-            const QString resWord = success ? "Successfully removed: " : "Failed to remove: ";
+            const QString resWord = success ? "Successfully removed" : "Failed to remove";
             filesFoundLabel->setText(QString("%1: %2").arg(resWord).arg(path));
             if (success) {
                 itemRemoved(row, 1, 0);
