@@ -961,7 +961,7 @@ void MainWindow::flushItemBuffer() {
         const auto& rowItems = itemBuffer[i];
         for (int col = 0; col < rowItems.size(); ++col) {
             filesTable->setItem(startRow + i, col, rowItems[col]);
-            filesTable->setRowHeight(startRow + i, 45);
+            filesTable->setRowHeight(startRow + i, 50);
         }
     }
     filesTable->setUpdatesEnabled(true);
@@ -1318,6 +1318,7 @@ void MainWindow::itemFound(const QString& path, const QFileInfo& info) {
 
 void MainWindow::itemRemoved(int row, quint64 count, quint64 size) {
     filesTable->removeRow(row);
+    filesTable->update();
     _foundCount -= count;
     _foundSize -= size;
     _totCount -= count;

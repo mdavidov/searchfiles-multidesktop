@@ -67,7 +67,7 @@ private:
             }
             catch (const fs::filesystem_error& e) {
                 success = false;
-                qDebug() << "remove path:" << pair.second << " error:" << e.what();
+                qDebug() << "remove error:" << e.what() << "path:" << pair.second;
             }
 
             // Report progress
@@ -75,7 +75,7 @@ private:
             std::lock_guard<std::mutex> lock(mutex_);
             if (progressCallback_) {
                 progressCallback_(pair.first, pathQstr, success);
-                qDebug() << "remove path:" << pathQstr << " success:" << success;
+                qDebug() << "remove success:" << success << "path:" << pathQstr;
             }
         }
     }
