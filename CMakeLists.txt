@@ -124,7 +124,7 @@ elseif(UNIX AND NOT APPLE)
         /usr/lib/x86_64-linux-gnu
     )
 elseif(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20 /EHsc /W4 /analyze /permissive- /wd4514 /wd4710 /wd4820 /wd4464 /wd5045")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20 /EHsc /W4 /analyze /permissive- /wd28020")
     set(GUI_TYPE WIN32)
     set(PROJECT_SOURCES ${PROJECT_SOURCES} foldersearch.rc)
     set_target_properties(${PROJECT_NAME} PROPERTIES

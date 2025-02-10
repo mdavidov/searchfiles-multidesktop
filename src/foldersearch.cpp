@@ -125,16 +125,6 @@ MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
     findButton->setDefault(true);
     findButton->setFocus();
     setStopped(true);
-
-    auto filter = new KeyPressEventFilter(this);
-    this->installEventFilter(filter);
-    connect(filter, &KeyPressEventFilter::enterKeyPressed,
-            this,   &MainWindow::onEnterKeyPressed);
-}
-
-void MainWindow::onEnterKeyPressed()
-{
-    findBtnClicked();
 }
 
 void MainWindow::createSubDirLayout()
@@ -1218,15 +1208,19 @@ void MainWindow::propertiesSlot() {
     catch (...) { Q_ASSERT(false); }
 }
 
-void MainWindow::keyReleaseEvent( QKeyEvent* ev) {
+void MainWindow::keyReleaseEvent(QKeyEvent* ev) {
     try
     {
-        if (ev->key() == Qt::Key_Escape) {
-            _stopped = true;
+        if (ev->key() == Qt::Key_Delete) {
+            deleteBtnClicked();
             ev->accept();
         }
-        else if (ev->key() == Qt::Key_Delete) {
-            deleteBtnClicked();
+        else if (ev->key() == Qt::Key_Enter || ev->key() == Qt::Key_Return) {
+            findBtnClicked();
+            ev->accept();
+        }
+        else if (ev->key() == Qt::Key_Escape) {
+            cancelBtnClicked();
             ev->accept();
         }
         else

@@ -18,7 +18,7 @@
 #include <QtCore/QString>
 
 using IntFsPathPair = std::pair<int, std::filesystem::path>;
-using IntQStringMap = std::map<int, QString>;
+using IntQStringMap = std::map<int, QString, std::greater<int>>;
 
 inline QString FsPathToQStr(const std::filesystem::path& path)
 {

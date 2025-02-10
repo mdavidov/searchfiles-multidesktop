@@ -62,10 +62,9 @@ public:
     void Clear();
 
 protected:
-    virtual void keyReleaseEvent( QKeyEvent* ev);
+    virtual void keyReleaseEvent(QKeyEvent* ev) override;
 
 private slots:
-    void onEnterKeyPressed();
     void scopeCheckClicked(int newCheckState);
     void goUpBtnClicked();
     void browseBtnClicked();
