@@ -1358,13 +1358,13 @@ void MainWindow::deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap)
     removerClaude_ = std::make_unique<Claude::FileRemover>();
 
     // Set up progress callback (can update UI)
-    removerClaude_->setProgressCallback([this](int row, const QString& path, bool success) {
+    removerClaude_->setProgressCallback([this](int row, const QString& path, uint64_t size, bool success) {
         // Since this callback runs in a different thread, use Qt::QueuedConnection
-        QMetaObject::invokeMethod(this, [this, row, path, success]() {
+        QMetaObject::invokeMethod(this, [this, row, path, size, success]() {
             const QString resWord = success ? "Successfully removed" : "Failed to remove";
             filesFoundLabel->setText(QString("%1: %2").arg(resWord).arg(path));
             if (success) {
-                itemRemoved(row, 1, 0);
+                itemRemoved(row, 1, size);
             }
             }, Qt::QueuedConnection);
         });

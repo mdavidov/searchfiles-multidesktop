@@ -36,7 +36,7 @@ public:
     }
 
     // Set callback for progress updates
-    void setProgressCallback(std::function<void(int, const QString&, bool)> callback) {
+    void setProgressCallback(std::function<void(int, const QString&, uint64_t, bool)> callback) {
         std::lock_guard<std::mutex> lock(mutex_);
         progressCallback_ = std::move(callback);
     }
@@ -57,6 +57,8 @@ private:
                 removalQueue_.pop();
             }
             bool success = false;
+            const auto isDir = fs::is_directory(pair.second);
+            const auto size = isDir ? 0 : fs::file_size(pair.second);
             try {
                 if (fs::is_directory(pair.second)) {
                     success = fs::remove_all(pair.second) > 0;
@@ -71,13 +73,11 @@ private:
             }
             // Report progress
             const auto pathQstr = FsPathToQStr(pair.second);
-            const QFileInfo info(pathQstr);
-            const QString kind = info.isDir() ? "FOLDER" : "file";
-            // const QString kind = fs::is_directory(pair.second) ? "FOLDER" : "file";
+            const QString kind = isDir ? "FOLDER" : "file";
             std::lock_guard<std::mutex> lock(mutex_);
             if (progressCallback_) {
-                progressCallback_(pair.first, pathQstr, success);
-                qDebug() << "remove success:" << success << kind << pathQstr;
+                progressCallback_(pair.first, pathQstr, size, success);
+                qDebug() << "success:" << success << "removed:" << kind << pathQstr;
             }
         }
     }
@@ -86,6 +86,6 @@ private:
     std::queue<IntFsPathPair> removalQueue_;
     std::mutex mutex_;
     std::condition_variable_any condition_;
-    std::function<void(int, const QString&, bool)> progressCallback_;
+    std::function<void(int, const QString&, uint64_t, bool)> progressCallback_;
 };
 }
