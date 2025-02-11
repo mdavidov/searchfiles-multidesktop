@@ -1,6 +1,8 @@
 #include "folderscanner.hpp"
 #include "scanparams.hpp"
 #include <mutex>
+#include <chrono>
+#include <thread>
 #include <shared_mutex>
 #include <QApplication>
 #include <QObject>
@@ -36,10 +38,10 @@ inline void FolderScanner::processEvents()
     // first time the function is called.
     static qint64 prev = elapsed;
     const auto diff = elapsed - prev;
-    if (diff >= 200) {  // msec
+    if (diff >= 500) {  // msec
         // Static var prev keeps its value for the next call of this function.
         prev = elapsed;
-        qApp->processEvents();
+        qApp->processEvents(QEventLoop::AllEvents, 200);
     }
 }
 
@@ -63,9 +65,9 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
         }
         bool toAppend = false;
         if (params.searchWords.empty()) {
-            if (info.isSymLink())
+            if ((info.isSymLink() || info.isSymbolicLink() || info.isShortcut()) && !info.isDir())
                 toAppend = params.inclSymlinks;
-            else if (info.isDir())
+            else if (info.isDir() && !info.isSymLink() && !info.isSymbolicLink() && !info.isShortcut())
                 toAppend = params.inclFolders;
         }
         if (info.isFile() && params.inclFiles) {
@@ -246,6 +248,8 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
             if (appendOrExcludeItem(currPath, info)) {
                 ++count;
                 emit itemFound(info.absoluteFilePath(), info);
+                std::this_thread::yield();
+                //std::this_thread::sleep_for(std::chrono::nanoseconds(5));
             }
         }
     }
@@ -282,6 +286,7 @@ std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPat
                 return { count, size };
             ++count;
             size += quint64(info.size());
+            //emit itemSized(info.absoluteFilePath(), info);
         }
     }
     stopped = true;

@@ -21,9 +21,12 @@ class FolderScanner : public QObject {
     Q_OBJECT
 public:
     explicit FolderScanner(QObject* parent=nullptr);
+    bool isStopped() const;
+    ScanParams params{};
 
 signals:
     void itemFound(const QString& path, const QFileInfo& info);
+    void itemSized(const QString& path, const QFileInfo& info);
     void itemRemoved(int row, quint64 count, quint64 size, int nbrDeleted);
     void progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
     void scanComplete();
@@ -50,13 +53,9 @@ private:
     bool fileContainsAllWordsChunked(const QString& path, const QStringList& words);
     bool fileContainsAnyWordChunked(const QString& path, const QStringList& words);
 
-public:
-    ScanParams params{};
-
 private:
     mutable std::shared_mutex mutex;  // mutable allows modification in const methods
     bool stopped{ false };
-    bool isStopped() const;
 
     QElapsedTimer eventsTimer;
     inline void processEvents();

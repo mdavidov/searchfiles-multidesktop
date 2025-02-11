@@ -60,7 +60,7 @@ const QString stopText( "S&top");
 const int N_COL = 7;
 const int RELPATH_COL_IDX = 0;
 
-static int BATCH_SIZE = 100;
+static int BATCH_SIZE = 500;
 QVector<QVector<QTableWidgetItem*>> itemBuffer;
 
 #if defined(Q_OS_WIN)
@@ -413,21 +413,16 @@ void MainWindow::deleteBtnClicked()
         // REMOVE ITEMS
         //removeItems(itemList);
         deepRemoveFilesOnThread_Claude(itemList);
-        // deepRemoveFilesOnThread_AmzQ(pathList);
-
-        //emit filesTable->itemSelectionChanged();
-        //processEvents();
-        //setFilesFoundLabel(_stopped ? "INTERRUPTED. " : "COMPLETED. ");
-        //setStopped(true);
+         //deepRemoveFilesOnThread_AmzQ(itemList);
     }
     catch (...) { Q_ASSERT(false); } // tell the user?
-    setStopped(true);
 }
 
 void MainWindow::getSelectedItems(IntQStringMap& itemList)
 {
-    const QList<QTableWidgetItem *>  selectedItems = filesTable->selectedItems();
-    foreach (const QTableWidgetItem * item, selectedItems)
+    const QList<QTableWidgetItem*> selectedItems = filesTable->selectedItems();
+    auto nbrSelected = 0;
+    for (const auto item : selectedItems)
     {
         if (filesTable->column( item) == RELPATH_COL_IDX)
         {
@@ -438,10 +433,12 @@ void MainWindow::getSelectedItems(IntQStringMap& itemList)
             Q_ASSERT(itemList.find(row) == itemList.end());
             if (itemList.find(row) == itemList.end()) {
                 itemList.insert(std::make_pair(row, path));
+                ++nbrSelected;
             }
             processEvents();
         }
     }
+    qDebug() << "NBR SELECTED" << nbrSelected;
 }
 
 void MainWindow::shredBtnClicked()
@@ -449,7 +446,6 @@ void MainWindow::shredBtnClicked()
     try
     {
         _opType = Devonline::Op::shredPerm;
-        setStopped(true);
         if (filesTable->selectedItems().empty()) {
             #if !defined(Q_OS_MAC)
                 QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
@@ -458,6 +454,7 @@ void MainWindow::shredBtnClicked()
             #endif
             // return;
         }
+        setStopped(false);
 
         // TODO: IMPLEMENT Shredding
 
@@ -468,9 +465,13 @@ void MainWindow::shredBtnClicked()
 
 void MainWindow::cancelBtnClicked()
 {
+    if (scanner)
+        scanner->stop();
+    if (removerAmzQ_)
+        removerAmzQ_->stop();
+    if (removerClaude_)
+        removerClaude_->stop();
     setStopped(true);
-    scanner->stop();
-    //reject();
 }
 
 void MainWindow::SetDirPath( const QString& dirPath)
@@ -502,7 +503,6 @@ void MainWindow::Clear()
         _totSize = 0;
         _foundCount = 0;
         _foundSize = 0;
-        setStopped(true);
         processEvents();
         eventsTimer.start();
     }
@@ -514,6 +514,13 @@ void MainWindow::setStopped(bool stopped)
   try
   {
     _stopped = stopped;
+
+    if (_stopped) {
+        itemBuffer.clear();
+        rowsToRemove_.clear();
+        filesTable->update();
+        filesTable->setSortingEnabled(true);
+    }
 
     findButton->setEnabled(     _stopped);
     deleteButton->setEnabled(   _stopped && filesTable->selectedItems().count() > 0);
@@ -572,10 +579,8 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
     }
 }
 
-bool MainWindow::findFilesPrep(FolderScanner* scanner_)
+bool MainWindow::findFilesPrep()
 {
-    scanner = scanner_;
-
     // SET QDir FILTERS
     _fileNameFilter = namesLineEdit->text();
     scanner->params.nameFilters = namesLineEdit->text().split(" ", Qt::SkipEmptyParts);
@@ -592,8 +597,8 @@ bool MainWindow::findFilesPrep(FolderScanner* scanner_)
         _itemTypeFilter |= QDir::Hidden;
     scanner->params.itemTypeFilter = _itemTypeFilter;
 
-    scanner->params.inclFiles = filesCheck->isChecked() || symlinksCheck->isChecked();
-    scanner->params.inclFolders = foldersCheck->isChecked() || symlinksCheck->isChecked();
+    scanner->params.inclFiles = filesCheck->isChecked();
+    scanner->params.inclFolders = foldersCheck->isChecked();
     scanner->params.inclSymlinks = symlinksCheck->isChecked();
     scanner->params.exclHidden = exclHiddenCheck->isChecked();
 
@@ -648,7 +653,7 @@ bool MainWindow::findFilesPrep(FolderScanner* scanner_)
     scanner->params.exclFilePatterns = _exclFilePatterns;
     scanner->params.exclFolderPatterns = _exclFolderPatterns;
 
-    BATCH_SIZE = (_searchWords.isEmpty() && _exclusionWords.isEmpty()) ? 300 : 1;
+    BATCH_SIZE = (_searchWords.isEmpty() && _exclusionWords.isEmpty()) ? 500 : 1;
 
     bool maxValid = false;
     _maxSubDirDepth =  maxSubDirDepthEdt->text().toInt(&maxValid);
@@ -663,9 +668,15 @@ void MainWindow::findBtnClicked()
   try
   {
     if (!_stopped) {
-        scanner->stop();
+        if (scanner)
+            scanner->stop();
+        if (removerAmzQ_)
+            removerAmzQ_->stop();
+        if (removerClaude_)
+            removerClaude_->stop();
+        flushItemBuffer();
+        setFilesFoundLabel(tr("STOPPED. "));
         setStopped(true);
-        setFilesFoundLabel(tr("INTERRUPTED. "));
         filesTable->sortByColumn(-1, Qt::AscendingOrder);
         filesTable->setSortingEnabled(true);
         return;
@@ -694,10 +705,10 @@ inline void MainWindow::processEvents()
     // first time the function is called.
     static qint64 prev = elapsed;
     const auto diff = elapsed - prev;
-    if (diff >= 200) {  // msec
+    if (diff >= 500) {  // msec
         // Static var prev keeps its value for the next call of this function.
         prev = elapsed;
-        qApp->processEvents();
+        qApp->processEvents(QEventLoop::AllEvents, 200);
     }
 }
 
@@ -939,7 +950,7 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
         itemBuffer.append(rowItems);
         if (itemBuffer.size() >= BATCH_SIZE) {
             flushItemBuffer();
-            filesTable->scrollToBottom();
+            //filesTable->scrollToBottom();
             filesFoundLabel->setText(tr("Found %1 items so far...").arg(filesTable->rowCount()));
             processEvents();
         }
@@ -953,10 +964,11 @@ void MainWindow::flushItemBuffer() {
     if (itemBuffer.isEmpty())
         return;
 
-    filesTable->setUpdatesEnabled(false);
+    UpdateBlocker ub(filesTable);
     const int startRow = filesTable->rowCount();
-    filesTable->setRowCount(startRow + int(itemBuffer.size()));
+    //filesTable->setRowCount(startRow + int(itemBuffer.size()));
 
+    filesTable->model()->insertRows(startRow, itemBuffer.size());
     for (int i = 0; i < itemBuffer.size(); ++i) {
         const auto& rowItems = itemBuffer[i];
         for (int col = 0; col < rowItems.size(); ++col) {
@@ -964,7 +976,6 @@ void MainWindow::flushItemBuffer() {
             filesTable->setRowHeight(startRow + i, 50);
         }
     }
-    filesTable->setUpdatesEnabled(true);
     itemBuffer.clear();
 }
 
@@ -1263,37 +1274,38 @@ void MainWindow::showHelpDialog() {
 void MainWindow::deepScanFolderOnThread(const QString& startPath, const int maxDepth)
 {
     // Create scanner and move it to the thread
-    auto scanThread = new QThread(this);
-    scanner = new FolderScanner;
+    //auto scanThread = new QThread(this);
+    //scanner = new FolderScanner;
+    scanThread = std::make_unique<QThread>(this);
+    scanner = std::make_unique<FolderScanner>();
 
-    // Will only start the thread if initialization succeeds
-    if (!findFilesPrep(scanner)) {
-        delete scanner;
-        delete scanThread;
+    // Will only start the thread if preparation succeeds
+    if (!findFilesPrep()) {
         return;
     }
 
     // Moving worker object pointer to thread (scanner below)
     // only sets which thread (scanThread) will execute worker's slots.
-    scanner->moveToThread(scanThread);
+    scanner->moveToThread(scanThread.get());
 
     // First: Connect your function to handle thread completion
-    connect(scanThread, &QThread::finished, this, &MainWindow::scanThreadFinished);
+    connect(scanThread.get(), &QThread::finished, this, &MainWindow::scanThreadFinished);
 
     // Then: Connect the cleanup connections after your handler
-    connect(scanThread, &QThread::finished, scanner, &QObject::deleteLater);
-    connect(scanThread, &QThread::finished, scanThread, &QObject::deleteLater);
+    //connect(scanThread, &QThread::finished, scanner, &QObject::deleteLater);
+    //connect(scanThread, &QThread::finished, scanThread, &QObject::deleteLater);
 
     // Connect signals/slots
-    connect(scanThread, &QThread::started,
-        [this, startPath, maxDepth]() { this->scanner->deepScan(startPath, maxDepth); });
+    connect(scanThread.get(), &QThread::started, [this, startPath, maxDepth]() { this->scanner->deepScan(startPath, maxDepth); });
+    //connect(scanThread.get(), &QThread::started, [this, startPath]() { this->scanner->deepCountSize(startPath); });
 
-    connect(scanner, &FolderScanner::itemFound, this, &MainWindow::itemFound);
-    connect(scanner, &FolderScanner::itemRemoved, this, &MainWindow::itemRemoved);
-    connect(scanner, &FolderScanner::progressUpdate, this, &MainWindow::progressUpdate);
+    connect(scanner.get(), &FolderScanner::itemFound, this, &MainWindow::itemFound);
+    connect(scanner.get(), &FolderScanner::itemSized, this, &MainWindow::itemSized);
+    connect(scanner.get(), &FolderScanner::itemRemoved, this, &MainWindow::itemRemoved);
+    connect(scanner.get(), &FolderScanner::progressUpdate, this, &MainWindow::progressUpdate);
 
-    connect(scanner, &FolderScanner::scanComplete, scanThread, &QThread::quit);
-    connect(scanner, &FolderScanner::scanCancelled, scanThread, &QThread::quit);
+    connect(scanner.get(), &FolderScanner::scanComplete, scanThread.get(), &QThread::quit);
+    connect(scanner.get(), &FolderScanner::scanCancelled, scanThread.get(), &QThread::quit);
 
     // Connect cancel button
     //connect(cancelButton, &QPushButton::clicked, scanner, &FolderScanner::stop);
@@ -1316,14 +1328,20 @@ void MainWindow::itemFound(const QString& path, const QFileInfo& info) {
         appendItemToTable(path, info);
 }
 
+void MainWindow::itemSized(const QString& path, const QFileInfo& info) {
+    if (!_stopped) {
+        filesFoundLabel->setText("");
+        filesFoundLabel->setText(path + " " + QString::number(info.size()));
+    }
+}
+
 void MainWindow::itemRemoved(int row, quint64 count, quint64 size) {
     filesTable->removeRow(row);
-    filesTable->update();
+    // Too expensive for performance to filesTable->update() on each removal.
     _foundCount -= count;
     _foundSize -= size;
     _totCount -= count;
     _totSize -= size;
-    emit filesTable->itemSelectionChanged();
 }
 
 void MainWindow::progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize) {
@@ -1333,45 +1351,91 @@ void MainWindow::progressUpdate(quint64 foundCount, quint64 foundSize, quint64 t
     _totSize = totSize;
 }
 
-void MainWindow::deepRemoveFilesOnThread_AmzQ(const QStringList& pathsToRemove) {
+void MainWindow::removeRows()
+{
+    UpdateBlocker ub({ filesTable });
+    for (const auto pair : rowsToRemove_) {
+        if (pair.second)
+            filesTable->removeRow(pair.first);
+    }
+    rowsToRemove_.clear();
+    filesTable->update();
+}
+
+void MainWindow::deepRemoveFilesOnThread_AmzQ(const IntQStringMap& pathsToRemove)
+{
     removerAmzQ_ = std::make_unique<AmzQ::FileRemover>(this);
+    auto msg = "Removing files and folders. AmzQ";
+    filesFoundLabel->setText(msg);
+    qDebug() << msg;
 
     removerAmzQ_->removeFilesAndFolders02(
         pathsToRemove,
         // Progress callback
-        [this](const QString& currentFile) {
-            filesFoundLabel->setText("Removing: " + currentFile);
+        [this](int row, const QString& currentFile, uint64_t size, bool success) {
+            //filesFoundLabel->setText("");
+            //filesFoundLabel->setText("Removing: " + currentFile);
+            if (success) {
+                itemRemoved(row, 1, size);
+                //qDebug() << "Removed: " << currentFile;
+            }
+            else {
+                qDebug() << "FAILED to remove: " << currentFile;
+            }
         },
         // Completion callback
         [this](bool success) {
             if (success) {
                 filesFoundLabel->setText("Removal completed successfully");
+                //filesTable->itemSelectionChanged();
+                filesTable->update();
             }
             else {
                 filesFoundLabel->setText("Some files could not be removed");
             }
         }
     );
+    msg = "REMOVING by AmzQ";
+    filesFoundLabel->setText(msg);
+    qDebug() << msg;
 }
 
-void MainWindow::deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap) {
+void MainWindow::deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap)
+{
     removerClaude_ = std::make_unique<Claude::FileRemover>();
+    auto msg = "Removing files and folders. Claude";
+    filesFoundLabel->setText(msg);
+    qDebug() << msg;
 
     // Set up progress callback (can update UI)
-    removerClaude_->setProgressCallback([this](int row, const QString& path, uint64_t size, bool success) {
+    removerClaude_->setProgressCallback([this](int row, const QString& path, uint64_t size, bool rmOk)
+    {
         // Since this callback runs in a different thread, use Qt::QueuedConnection
-        QMetaObject::invokeMethod(this, [this, row, path, size, success]() {
-            const QString resWord = success ? "Successfully removed" : "Failed to remove";
-            filesFoundLabel->setText(QString("%1: %2").arg(resWord).arg(path));
-            if (success) {
-                itemRemoved(row, 1, size);
+        QMetaObject::invokeMethod(this, [this, row, path, size, rmOk]() {
+            //const QString resWord = success ? "Successfully removed" : "Failed to remove";
+            //filesFoundLabel->setText("");
+            //filesFoundLabel->setText(QString("%1: %2").arg(resWord).arg(path));
+            if (rmOk) {
+                //itemRemoved(row, 1, size);
+                rowsToRemove_.insert({ row, rmOk });
             }
-            }, Qt::QueuedConnection);
-        });
+        }, Qt::QueuedConnection);
+    });
+    removerClaude_->setCompletionCallback([this](bool success)
+    {
+        // Since this callback runs in a different thread, use Qt::QueuedConnection
+        QMetaObject::invokeMethod(this, [this, success]() {
+            if (success) {
+                filesFoundLabel->setText("Removal completed successfully");
+                removeRows();
+            }
+            else {
+                filesFoundLabel->setText("Some files could not be removed");
+            }
+        }, Qt::QueuedConnection);
+    });
 
-    for (const auto& rowPath : rowPathMap) {
-        removerClaude_->queueForRemoval(
-            std::make_pair(rowPath.first, rowPath.second.toStdString()));
-    }
+    // DO IT NOW
+    removerClaude_->removeFiles(rowPathMap);
 }
 } // namespace Devonline

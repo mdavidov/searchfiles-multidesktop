@@ -38,6 +38,29 @@ namespace Devonline
 {
 class FolderScanner;
 
+class UpdateBlocker {
+public:
+    explicit UpdateBlocker(QTableWidget* table) : _table(table) {
+        setAllUpdatesEnabled(_table, false);
+    }
+    ~UpdateBlocker() {
+        setAllUpdatesEnabled(_table, true);
+    }
+    void setAllUpdatesEnabled(QTableWidget* table, bool enabled)
+    {
+        table->setSortingEnabled(false);
+        table->setUpdatesEnabled(enabled);
+        enabled ?
+            table->setSelectionMode(QAbstractItemView::MultiSelection) :
+            table->setSelectionMode(QAbstractItemView::NoSelection);
+        table->viewport()->setUpdatesEnabled(enabled);
+        table->blockSignals(!enabled);
+        //table->update();
+    }
+private:
+    QTableWidget* _table;
+};
+
 class TableWidgetItem : public QTableWidgetItem
 {
 public:
@@ -60,6 +83,11 @@ public:
     void SetDirPath( const QString & dirPath);
     Devonline::Op::Type GetOp() const { return _opType; }
     void Clear();
+
+public slots:
+    void itemFound(const QString& path, const QFileInfo& info);
+    void itemSized(const QString& path, const QFileInfo& info);
+    void itemRemoved(int row, quint64 count, quint64 size);
 
 protected:
     virtual void keyReleaseEvent(QKeyEvent* ev) override;
@@ -86,13 +114,18 @@ private slots:
     void unlimSubDirDepthToggled(bool checked);
     void showAboutDialog();
     void showHelpDialog();
-    void itemFound(const QString& path, const QFileInfo& info);
-    void itemRemoved(int row, quint64 count, quint64 size);
 
 private:
-    FolderScanner* scanner{nullptr};
+    std::unique_ptr<QThread> scanThread;
+    std::unique_ptr<FolderScanner> scanner;
     std::unique_ptr<AmzQ::FileRemover> removerAmzQ_;
     std::unique_ptr<Claude::FileRemover> removerClaude_;
+
+    // We need to remove rows in decreasing order of row indices,
+    // so we use a map sorted in descending order.
+    // Boolean value is the result of file/folder removal.
+    std::map<int, bool, std::greater<int>> rowsToRemove_;
+    void removeRows();
 
     QElapsedTimer eventsTimer;
     inline void processEvents();
@@ -108,13 +141,13 @@ private:
 
     void deepScanFolderOnThread(const QString& startPath, const int maxDepth);
     void scanThreadFinished();
-    void deepRemoveFilesOnThread_AmzQ(const QStringList& paths);
+    void deepRemoveFilesOnThread_AmzQ(const IntQStringMap& paths);
     void deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap);
 
     void progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
     void flushItemBuffer();
 
-    bool findFilesPrep(FolderScanner* scanner);
+    bool findFilesPrep();
     void setStopped(bool stopped);
     void setFilesFoundLabel(const QString& prefix);
 
