@@ -248,8 +248,6 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
             if (appendOrExcludeItem(currPath, info)) {
                 ++count;
                 emit itemFound(info.absoluteFilePath(), info);
-                std::this_thread::yield();
-                //std::this_thread::sleep_for(std::chrono::nanoseconds(5));
             }
         }
     }

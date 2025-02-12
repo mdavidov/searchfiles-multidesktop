@@ -69,14 +69,39 @@ QVector<QVector<QTableWidgetItem*>> itemBuffer;
     #define eCod_MIN_PATH_LEN 1
 #endif
 
+//void QTableWidget::keyReleaseEvent(QKeyEvent* ev) {
+//    try
+//    {
+//        auto mwd = qobject_cast<MainWindow*>(parent());
+//        Q_ASSERT(mwd);
+//        if (!mwd) {
+//            TableWidget::keyReleaseEvent(ev);
+//            return;
+//        }
+//        if (ev->key() == Qt::Key_Delete) {
+//            mwd->deleteBtnClicked();
+//            ev->accept();
+//        }
+//        else if (ev->key() == Qt::Key_Enter || ev->key() == Qt::Key_Return) {
+//            mwd->findBtnClicked();
+//            ev->accept();
+//        }
+//        else if (ev->key() == Qt::Key_Escape) {
+//            mwd->cancelBtnClicked();
+//            ev->accept();
+//        }
+//        else
+//            TableWidget::keyReleaseEvent(ev);
+//    }
+//    catch (...) { Q_ASSERT(false); }
+//}
+
 bool MainWindow ::isHidden(const QFileInfo& finfo) const {
     return  finfo.isHidden() || finfo.fileName().startsWith('.');
 }
 
 MainWindow::~MainWindow()
 {
-    // This will also delete the actions that were added to the context menu
-    delete contextMenu;
 }
 
 MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
@@ -985,6 +1010,7 @@ void MainWindow::createFilesTable()
   {
     filesTable = new QTableWidget(0, N_COL, this);
     filesTable->setParent(this);
+    filesTable->setColumnCount(N_COL);
 
     filesTable->setWordWrap(true);
     filesTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -1222,11 +1248,7 @@ void MainWindow::propertiesSlot() {
 void MainWindow::keyReleaseEvent(QKeyEvent* ev) {
     try
     {
-        if (ev->key() == Qt::Key_Delete) {
-            deleteBtnClicked();
-            ev->accept();
-        }
-        else if (ev->key() == Qt::Key_Enter || ev->key() == Qt::Key_Return) {
+        if (ev->key() == Qt::Key_Enter || ev->key() == Qt::Key_Return) {
             findBtnClicked();
             ev->accept();
         }
@@ -1359,45 +1381,55 @@ void MainWindow::removeRows()
             filesTable->removeRow(pair.first);
     }
     rowsToRemove_.clear();
+    filesTable->clearSelection();
     filesTable->update();
 }
 
-void MainWindow::deepRemoveFilesOnThread_AmzQ(const IntQStringMap& pathsToRemove)
+void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/, bool rmOk) {
+    const QString resWord = rmOk ? "Removed" : "Failed to remove";
+    filesFoundLabel->setText(QString("%1: %2").arg(resWord).arg(path));
+    if (rmOk) {
+        //itemRemoved(row, 1, size);
+        rowsToRemove_.insert({ row, rmOk });
+    }
+    else {
+        qDebug() << "FAILED to remove:" << path;
+    }
+}
+void MainWindow::removalComplete(bool success) {
+    removeRows(); // files that failed to delete will not be removed
+    const QString prefix = _stopped ? "INTERRUPTED. " : "COMPLETED. ";
+    if (success) {
+        filesFoundLabel->setText(prefix + "Removal successful");
+    }
+    else {
+        filesFoundLabel->setText(prefix + "Some files could not be removed");
+    }
+    setStopped(true);
+}
+
+void MainWindow::deepRemoveFilesOnThread_AmzQ(const IntQStringMap& rowPathMap)
 {
     removerAmzQ_ = std::make_unique<AmzQ::FileRemover>(this);
-    auto msg = "Removing files and folders. AmzQ";
+    auto msg = "Removing files and folders...";
     filesFoundLabel->setText(msg);
     qDebug() << msg;
 
+    // NOTE: QMetaObject::invokeMethod with Qt::QueuedConnection
+    //  is done in AmzQ::FileRemover::removeFilesAndFolders02()
+
+    // DO IT NOW
     removerAmzQ_->removeFilesAndFolders02(
-        pathsToRemove,
+        rowPathMap,
         // Progress callback
-        [this](int row, const QString& currentFile, uint64_t size, bool success) {
-            //filesFoundLabel->setText("");
-            //filesFoundLabel->setText("Removing: " + currentFile);
-            if (success) {
-                itemRemoved(row, 1, size);
-                //qDebug() << "Removed: " << currentFile;
-            }
-            else {
-                qDebug() << "FAILED to remove: " << currentFile;
-            }
+        [this](int row, const QString& path, uint64_t size, bool rmOk) {
+            removalProgress(row, path, size, rmOk);
         },
         // Completion callback
         [this](bool success) {
-            if (success) {
-                filesFoundLabel->setText("Removal completed successfully");
-                //filesTable->itemSelectionChanged();
-                filesTable->update();
-            }
-            else {
-                filesFoundLabel->setText("Some files could not be removed");
-            }
+            removalComplete(success);
         }
     );
-    msg = "REMOVING by AmzQ";
-    filesFoundLabel->setText(msg);
-    qDebug() << msg;
 }
 
 void MainWindow::deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap)
@@ -1412,30 +1444,18 @@ void MainWindow::deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap)
     {
         // Since this callback runs in a different thread, use Qt::QueuedConnection
         QMetaObject::invokeMethod(this, [this, row, path, size, rmOk]() {
-            //const QString resWord = success ? "Successfully removed" : "Failed to remove";
-            //filesFoundLabel->setText("");
-            //filesFoundLabel->setText(QString("%1: %2").arg(resWord).arg(path));
-            if (rmOk) {
-                //itemRemoved(row, 1, size);
-                rowsToRemove_.insert({ row, rmOk });
-            }
+            removalProgress(row, path, size, rmOk);
         }, Qt::QueuedConnection);
     });
     removerClaude_->setCompletionCallback([this](bool success)
     {
-        // Since this callback runs in a different thread, use Qt::QueuedConnection
+        // Same as above: different thread, Qt::QueuedConnection
         QMetaObject::invokeMethod(this, [this, success]() {
-            if (success) {
-                filesFoundLabel->setText("Removal completed successfully");
-                removeRows();
-            }
-            else {
-                filesFoundLabel->setText("Some files could not be removed");
-            }
+            removalComplete(success);
         }, Qt::QueuedConnection);
     });
 
     // DO IT NOW
     removerClaude_->removeFiles(rowPathMap);
 }
-} // namespace Devonline
+}

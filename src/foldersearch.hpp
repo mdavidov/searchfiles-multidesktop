@@ -36,7 +36,19 @@ namespace Claude {
 
 namespace Devonline
 {
+class MainWindow;
 class FolderScanner;
+
+
+//class TableWidget : public QTableWidget
+//{
+//    Q_OBJECT
+//public:
+//    explicit TableWidget(int rows, int columns, QWidget* parent=nullptr) : QTableWidget(parent) {}
+//protected:
+//    virtual void keyReleaseEvent(QKeyEvent* ev) override;
+//};
+
 
 class UpdateBlocker {
 public:
@@ -51,7 +63,7 @@ public:
         table->setSortingEnabled(false);
         table->setUpdatesEnabled(enabled);
         enabled ?
-            table->setSelectionMode(QAbstractItemView::MultiSelection) :
+            table->setSelectionMode(QAbstractItemView::ExtendedSelection) :
             table->setSelectionMode(QAbstractItemView::NoSelection);
         table->viewport()->setUpdatesEnabled(enabled);
         table->blockSignals(!enabled);
@@ -60,6 +72,7 @@ public:
 private:
     QTableWidget* _table;
 };
+
 
 class TableWidgetItem : public QTableWidgetItem
 {
@@ -71,6 +84,7 @@ private:
         return text().toLower() < other.text().toLower(); // performance problem?
     }
 };
+
 
 class MainWindow : public QMainWindow
 {
@@ -88,6 +102,10 @@ public slots:
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
     void itemRemoved(int row, quint64 count, quint64 size);
+    void findBtnClicked();
+    void deleteBtnClicked();
+    void shredBtnClicked();
+    void cancelBtnClicked();
 
 protected:
     virtual void keyReleaseEvent(QKeyEvent* ev) override;
@@ -97,10 +115,6 @@ private slots:
     void goUpBtnClicked();
     void browseBtnClicked();
     void toggleExclClicked();
-    void findBtnClicked();
-    void deleteBtnClicked();
-    void shredBtnClicked();
-    void cancelBtnClicked();
     void openFileOfItem(int row, int column);
     void itemSelectionChanged();
     void dirPathEditTextChanged(const QString & text);
@@ -126,6 +140,8 @@ private:
     // Boolean value is the result of file/folder removal.
     std::map<int, bool, std::greater<int>> rowsToRemove_;
     void removeRows();
+    void removalProgress(int row, const QString& path, uint64_t size, bool rmOk);
+    void removalComplete(bool success);
 
     QElapsedTimer eventsTimer;
     inline void processEvents();

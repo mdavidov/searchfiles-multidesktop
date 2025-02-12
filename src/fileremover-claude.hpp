@@ -83,7 +83,7 @@ private:
             }
             catch (const fs::filesystem_error& e) {
                 rmOk = false;
-                qDebug() << "Claude: remove error:" << e.what() << "pathStd:" << pathStd;
+                qDebug() << "Remove ERROR:" << e.what();
             }
             if (!rmOk)
                 success = false;
@@ -95,8 +95,6 @@ private:
             if (progressCallback_) {
                 progressCallback_(row, path, size, rmOk);
                 //qDebug() << "rmOk:" << rmOk << "removed:" << kind << pathQstr;
-                //std::this_thread::yield();
-                std::this_thread::sleep_for(std::chrono::nanoseconds(5));
             }
         }
         if (completionCallback_) {
