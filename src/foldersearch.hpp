@@ -99,6 +99,7 @@ public:
     void Clear();
 
 public slots:
+    void searchInProgress(const QString& path, quint64 totCount);
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
     void itemRemoved(int row, quint64 count, quint64 size);
@@ -108,7 +109,8 @@ public slots:
     void cancelBtnClicked();
 
 protected:
-    virtual void keyReleaseEvent(QKeyEvent* ev) override;
+    void keyReleaseEvent(QKeyEvent* ev) override;
+    void closeEvent(QCloseEvent* ev) override;
 
 private slots:
     void scopeCheckClicked(int newCheckState);
@@ -142,6 +144,7 @@ private:
     void removeRows();
     void removalProgress(int row, const QString& path, uint64_t size, bool rmOk);
     void removalComplete(bool success);
+    QElapsedTimer removalTimer;
 
     QElapsedTimer eventsTimer;
     inline void processEvents();

@@ -21,11 +21,11 @@ QT_END_NAMESPACE
 namespace Devonline
 {
     /// @brief Formats the string (@p humanReadable) with human readable value of @p size in B, KB, MB, GB, or TB.
-    bool sizeToHumanReadable( quint64 size, QString & humanReadable);
+    QString sizeToHumanReadable(quint64 size);
 
     ///
-    QString elapsedTimeToStr( qint64 elapsedMilSec);
+    QString elapsedTimeToStr(qint64 elapsedMilSec);
 
     ///
-    void indicateErrorDbg( const QString & text);
+    void indicateErrorDbg(const QString & text);
 }

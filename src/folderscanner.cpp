@@ -14,7 +14,7 @@
 namespace Devonline
 {
 FolderScanner::FolderScanner(QObject* parent)
-: QObject(parent), dirCount(0), foundCount(0), foundSize(0), totCount(0), totSize(0), stopped(false)
+: QObject(parent), foundCount(0), foundSize(0), totCount(0), totSize(0), stopped(false)
 {
     eventsTimer.start();
 }
@@ -40,10 +40,13 @@ inline void FolderScanner::processEvents()
     // first time the function is called.
     static qint64 prev = elapsed;
     const auto diff = elapsed - prev;
+    if (diff >= 100) {  // msec
+        reportProgress();
+    }
     if (diff >= 500) {  // msec
         // Static var prev keeps its value for the next call of this function.
         prev = elapsed;
-        qApp->processEvents(QEventLoop::AllEvents, 200);
+        qApp->processEvents(QEventLoop::AllEvents, 250);
     }
 }
 
@@ -78,8 +81,7 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
         }
         if (toAppend) {
             foundCount++;
-            if (info.isFile() && info.size() > 0)
-                foundSize += quint64(info.size());
+            foundSize += getItemSize(info);
         }
         return toAppend;
     }
@@ -118,6 +120,14 @@ void FolderScanner::getAllItems(const QString& path, QFileInfoList& infos) const
     infos = dir.entryInfoList(filters);
 }
 
+quint64 FolderScanner::getItemSize(const QFileInfo& info) const
+{
+    static constexpr qint64 DIR_SYMLINK_SIZE = 4 * 1024;
+    return (info.isSymLink() || info.isSymbolicLink() || info.isShortcut()) ?
+        DIR_SYMLINK_SIZE :
+        quint64(info.size());
+}
+
 quint64 FolderScanner::combinedSize(const QFileInfoList& infos)
 {
     quint64 size = 0;
@@ -125,8 +135,7 @@ quint64 FolderScanner::combinedSize(const QFileInfoList& infos)
         processEvents();
         if (stopped)
             return 0;
-        if (info.isFile() && info.size() > 0)
-            size += quint64(info.size());
+        size += getItemSize(info);
     }
     return size;
 }
@@ -223,36 +232,36 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
     while (!dirQ.empty() && !isStopped()) {
         processEvents();
         const auto [currPath, currDepth] = dirQ.dequeue();
-        ++dirCount;
         QFileInfoList dirInfos;
         getAllDirs(currPath, dirInfos);
         for (const auto& dir : dirInfos) {
             processEvents();
             if (stopped) {
-                reportProgress();
                 emit scanCancelled();
                 return;
             }
             if (maxDepth < 0 || currDepth < maxDepth) {
                 dirQ.enqueue({ dir.absoluteFilePath(), currDepth + 1 });
             }
+            reportProgress();
         }
         updateTotals(currPath);
 
         QFileInfoList infos;
         getFileInfos(currPath, infos);
-        int count = 0;
         for (const auto& info : infos) {
             processEvents();
             if (stopped) {
-                reportProgress();
                 emit scanCancelled();
                 return;
             }
             if (appendOrExcludeItem(currPath, info)) {
-                ++count;
                 emit itemFound(info.absoluteFilePath(), info);
             }
+            else {
+                emit searchInProgress(info.absoluteFilePath(), foundCount);
+            }
+            reportProgress();
         }
     }
     reportProgress();
@@ -287,7 +296,7 @@ std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPat
             if (stopped)
                 return { count, size };
             ++count;
-            size += quint64(info.size());
+            size += getItemSize(info);
             //emit itemSized(info.absoluteFilePath(), info);
         }
     }
@@ -306,11 +315,12 @@ void FolderScanner::deepRemove(const IntQStringMap& rowPathMap)
             if (stopped)
                 return;
             const auto path = rowPath.second;
+            const auto info = QFileInfo(path);
 
-            if (!QFileInfo(path).isDir()) {
+            if (!info.isDir()) {
                 // RM FILE or SYMLINK
                 QFile file(path);
-                const auto size = quint64(file.size());
+                const auto size = getItemSize(info);
                 const auto rmok = file.remove();
                 if (rmok) {
                     ++nbrDeleted;

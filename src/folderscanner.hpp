@@ -23,8 +23,11 @@ public:
     explicit FolderScanner(QObject* parent=nullptr);
     bool isStopped() const;
     ScanParams params{};
+    quint64 getItemSize(const QFileInfo& info) const;
+    quint64 combinedSize(const QFileInfoList& items);
 
 signals:
+    void searchInProgress(const QString& path, quint64 foundCount);
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
     void itemRemoved(int row, quint64 count, quint64 size, int nbrDeleted);
@@ -46,7 +49,6 @@ private:
     void getAllDirs(const QString& path, QFileInfoList& infos) const;
     void getFileInfos(const QString& path, QFileInfoList& infos) /*const*/;
     void getAllItems(const QString& path, QFileInfoList& infos) const;
-    quint64 combinedSize(const QFileInfoList& items);
     void updateTotals(const QString& path);
     bool stringContainsAllWords(const QString& str, const QStringList& words);
     bool stringContainsAnyWord(const QString& str, const QStringList& words);
@@ -60,7 +62,6 @@ private:
     QElapsedTimer eventsTimer;
     inline void processEvents();
 
-    quint64 dirCount{0};
     quint64 foundCount{0};
     quint64 foundSize{0};
     quint64 totCount{0};
