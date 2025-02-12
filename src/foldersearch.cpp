@@ -522,6 +522,8 @@ void MainWindow::Clear()
         filesTable->setRowCount(0);
         filesTable->hide();
         filesTable->show();
+        itemBuffer.clear();
+        rowsToRemove_.clear();
         filesFoundLabel->setText("");
         _dirCount = 0;
         _totCount = 0;
@@ -541,8 +543,6 @@ void MainWindow::setStopped(bool stopped)
     _stopped = stopped;
 
     if (_stopped) {
-        itemBuffer.clear();
-        rowsToRemove_.clear();
         filesTable->update();
         filesTable->setSortingEnabled(true);
     }
@@ -693,17 +693,6 @@ void MainWindow::findBtnClicked()
   try
   {
     if (!_stopped) {
-        if (scanner)
-            scanner->stop();
-        if (removerAmzQ_)
-            removerAmzQ_->stop();
-        if (removerClaude_)
-            removerClaude_->stop();
-        flushItemBuffer();
-        setFilesFoundLabel(tr("STOPPED. "));
-        setStopped(true);
-        filesTable->sortByColumn(-1, Qt::AscendingOrder);
-        filesTable->setSortingEnabled(true);
         return;
     }
     if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
@@ -714,7 +703,7 @@ void MainWindow::findBtnClicked()
 	    #endif
         // return;
     }
-    filesTable->setSortingEnabled( false);
+    filesTable->setSortingEnabled(false);
     Clear();
     setStopped(false);
 
@@ -1299,6 +1288,7 @@ void MainWindow::deepScanFolderOnThread(const QString& startPath, const int maxD
     //auto scanThread = new QThread(this);
     //scanner = new FolderScanner;
     scanThread = std::make_unique<QThread>(this);
+    scanThread->setObjectName("FolderScannerThread");
     scanner = std::make_unique<FolderScanner>();
 
     // Will only start the thread if preparation succeeds

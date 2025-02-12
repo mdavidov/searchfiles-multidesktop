@@ -13,7 +13,9 @@
 
 namespace Devonline
 {
-FolderScanner::FolderScanner(QObject* parent) : QObject(parent) {
+FolderScanner::FolderScanner(QObject* parent)
+: QObject(parent), dirCount(0), foundCount(0), foundSize(0), totCount(0), totSize(0), stopped(false)
+{
     eventsTimer.start();
 }
 
@@ -76,7 +78,8 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
         }
         if (toAppend) {
             foundCount++;
-            foundSize += quint64(info.size());
+            if (info.isFile() && info.size() > 0)
+                foundSize += quint64(info.size());
         }
         return toAppend;
     }
@@ -115,16 +118,17 @@ void FolderScanner::getAllItems(const QString& path, QFileInfoList& infos) const
     infos = dir.entryInfoList(filters);
 }
 
-quint64 FolderScanner::combinedSize(const QFileInfoList& items)
+quint64 FolderScanner::combinedSize(const QFileInfoList& infos)
 {
-    quint64 csz = 0;
-    for (const auto& item : items) {
+    quint64 size = 0;
+    for (const auto& info : infos) {
         processEvents();
         if (stopped)
             return 0;
-        csz += quint64(item.size());
+        if (info.isFile() && info.size() > 0)
+            size += quint64(info.size());
     }
-    return csz;
+    return size;
 }
 
 void FolderScanner::updateTotals(const QString& path)

@@ -60,11 +60,11 @@ private:
     QElapsedTimer eventsTimer;
     inline void processEvents();
 
-    std::atomic<quint64> dirCount{0};
-    std::atomic<quint64> totCount{0};
-    std::atomic<quint64> totSize{0};
-    std::atomic<quint64> foundSize{0};
-    std::atomic<quint64> foundCount{0};
+    quint64 dirCount{0};
+    quint64 foundCount{0};
+    quint64 foundSize{0};
+    quint64 totCount{0};
+    quint64 totSize{0};
 };
 
 }
