@@ -23,10 +23,10 @@ namespace AmzQ
         using CompletionCallback = std::function<void(bool)>;
 
         FileRemover(QObject* uiObject) : m_uiObject(uiObject) {
-            qDebug() << "AmzQ::FileRemover CTOR: main thread is NOT BLOCKED until dtor is called";
+            qDebug() << "AmzQ::FileRemover CTOR";
         }
         ~FileRemover() {
-            qDebug() << "AmzQ::FileRemover DTOR: JOIN is called, main thread is BLOCKED waiting for worker thread to finish";
+            qDebug() << "AmzQ::FileRemover DTOR";
         }
 
         void removeFilesAndFolders02(

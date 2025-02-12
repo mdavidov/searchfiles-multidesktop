@@ -24,11 +24,11 @@ class FileRemover
 {
 public:
     FileRemover() {
-        qDebug() << "Claude::FileRemover CTOR: main thread is NOT BLOCKED until dtor is called";
+        qDebug() << "Claude::FileRemover CTOR";
     }
 
     ~FileRemover() {
-        qDebug() << "Claude::FileRemover DTOR: JOIN is called, main thread is BLOCKED until thread FUNCTION finishes, which should have happened already";
+        qDebug() << "Claude::FileRemover DTOR";
         worker_.request_stop();
         //condition_.notify_one();
     }

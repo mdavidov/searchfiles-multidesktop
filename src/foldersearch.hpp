@@ -67,7 +67,6 @@ public:
             table->setSelectionMode(QAbstractItemView::NoSelection);
         table->viewport()->setUpdatesEnabled(enabled);
         table->blockSignals(!enabled);
-        //table->update();
     }
 private:
     QTableWidget* _table;

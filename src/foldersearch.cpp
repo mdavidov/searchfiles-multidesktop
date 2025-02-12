@@ -496,13 +496,10 @@ void MainWindow::getSelectedItems(IntQStringMap& itemList)
         {
             if (_stopped)
                 break;
-            const QString path = item->data(Qt::UserRole).toString();
+            const auto path = item->data(Qt::UserRole).toString();
             const auto row = filesTable->row(item);
-            Q_ASSERT(itemList.find(row) == itemList.end());
-            if (itemList.find(row) == itemList.end()) {
-                itemList.insert(std::make_pair(row, path));
-                ++nbrSelected;
-            }
+            itemList.insert(std::make_pair(row, path));
+            ++nbrSelected;
             processEvents();
         }
     }
@@ -1418,11 +1415,18 @@ void MainWindow::progressUpdate(quint64 foundCount, quint64 foundSize, quint64 t
 
 void MainWindow::removeRows()
 {
-    UpdateBlocker ub({ filesTable });
-    for (const auto pair : rowsToRemove_) {
-        if (pair.second)
-            filesTable->removeRow(pair.first);
-    }
+    {
+        UpdateBlocker ub({ filesTable });
+        if (rowsToRemove_.size() == filesTable->rowCount()) {
+            filesTable->clearContents();
+        }
+        else {
+            for (const auto pair : rowsToRemove_) {
+                if (pair.second)
+                    filesTable->removeRow(pair.first);
+            }
+        }
+    }  // ub goes out of scope here, table updates and signals are enabled
     rowsToRemove_.clear();
     filesTable->clearSelection();
     filesTable->update();
