@@ -99,14 +99,6 @@ QVector<QVector<QTableWidgetItem*>> itemBuffer;
 //    catch (...) { Q_ASSERT(false); }
 //}
 
-bool MainWindow ::isHidden(const QFileInfo& finfo) const {
-    return  finfo.isHidden() || finfo.fileName().startsWith('.');
-}
-
-MainWindow::~MainWindow()
-{
-}
-
 void MainWindow::closeEvent(QCloseEvent* event) {
     const auto shouldAllowClose = true; // TODO: review
     if (shouldAllowClose) {
@@ -152,7 +144,6 @@ MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
     , _maxSubDirDepth(0)
     , _unlimSubDirDepth(true)
     , _stopped(true)
-    , scanner(std::make_unique<FolderScanner>())
 {
     setWindowTitle(QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR);  // + " " + OvSk_FsOp_APP_BUILD_NBR_STR);
     const auto savedPath = Cfg::St().value(Cfg::origDirPathKey).toString();
@@ -192,6 +183,10 @@ MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
     findButton->setDefault(true);
     findButton->setFocus();
     setStopped(true);
+}
+
+MainWindow::~MainWindow()
+{
 }
 
 void MainWindow::createSubDirLayout()
@@ -643,6 +638,15 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
 
 bool MainWindow::findFilesPrep()
 {
+    // Create scan thread (QThread) and FolderScanner
+    scanThread = std::make_unique<QThread>(this);
+    scanThread->setObjectName("FolderScannerThread");
+    scanner = std::make_unique<FolderScanner>();
+
+    // Moving worker object pointer to thread (scanner below)
+    // only sets which thread (scanThread) will execute worker's slots.
+    scanner->moveToThread(scanThread.get());
+
     // SET QDir FILTERS
     _fileNameFilter = namesLineEdit->text();
     scanner->params.nameFilters = namesLineEdit->text().split(" ", Qt::SkipEmptyParts);
@@ -741,6 +745,11 @@ void MainWindow::findBtnClicked()
             // return;
         }
         Cfg::St().setValue(Cfg::origDirPathKey, QDir::toNativeSeparators(dirComboBox->currentText()));
+
+        // Will only start the thread if preparation succeeds
+        if (!findFilesPrep()) {
+            return;
+        }
         filesTable->setSortingEnabled(false);
         Clear();
         setStopped(false);
@@ -1315,29 +1324,18 @@ void MainWindow::showAboutDialog() {
     AboutDialog dialog(this);
     dialog.exec();
 }
+
 void MainWindow::showHelpDialog() {
     HelpDialog dialog(this);
     dialog.exec();
 }
 
+bool MainWindow::isHidden(const QFileInfo& finfo) const {
+    return  finfo.isHidden() || finfo.fileName().startsWith('.');
+}
+
 void MainWindow::deepScanFolderOnThread(const QString& startPath, const int maxDepth)
 {
-    // Create scanner and move it to the thread
-    //auto scanThread = new QThread(this);
-    //scanner = new FolderScanner;
-    scanThread = std::make_unique<QThread>(this);
-    scanThread->setObjectName("FolderScannerThread");
-    scanner = std::make_unique<FolderScanner>();
-
-    // Will only start the thread if preparation succeeds
-    if (!findFilesPrep()) {
-        return;
-    }
-
-    // Moving worker object pointer to thread (scanner below)
-    // only sets which thread (scanThread) will execute worker's slots.
-    scanner->moveToThread(scanThread.get());
-
     // First: Connect your function to handle thread completion
     connect(scanThread.get(), &QThread::finished, this, &MainWindow::scanThreadFinished);
 
@@ -1361,7 +1359,7 @@ void MainWindow::deepScanFolderOnThread(const QString& startPath, const int maxD
     // Connect cancel button
     //connect(cancelButton, &QPushButton::clicked, scanner, &FolderScanner::stop);
 
-    // DO IT
+    // DO IT NOW
     scanThread->start();
 }
 
