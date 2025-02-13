@@ -27,11 +27,11 @@ public:
     quint64 combinedSize(const QFileInfoList& items);
 
 signals:
-    void searchInProgress(const QString& path, quint64 foundCount);
+    //void searchInProgress(const QString& path, quint64 foundCount);
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
     void itemRemoved(int row, quint64 count, quint64 size, int nbrDeleted);
-    void progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
+    void progressUpdate(const QString& path, quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
     void scanComplete();
     void scanCancelled();
 
@@ -41,10 +41,11 @@ public slots:
     std::pair<quint64, quint64> deepCountSize(const QString& startPath);
     void deepRemove(const IntQStringMap& itemList);
 
-private slots:
-    void reportProgress();
-
 private:
+    void zeroCounters();
+    void reportProgress(const QString& path, bool doit = false);
+    QElapsedTimer progressTimer;
+
     bool appendOrExcludeItem(const QString& dirPath, const QFileInfo& info);
     void getAllDirs(const QString& path, QFileInfoList& infos) const;
     void getFileInfos(const QString& path, QFileInfoList& infos) /*const*/;

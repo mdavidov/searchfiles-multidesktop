@@ -72,33 +72,6 @@ QVector<QVector<QTableWidgetItem*>> itemBuffer;
     #define eCod_MIN_PATH_LEN 1
 #endif
 
-//void QTableWidget::keyReleaseEvent(QKeyEvent* ev) {
-//    try
-//    {
-//        auto mwd = qobject_cast<MainWindow*>(parent());
-//        Q_ASSERT(mwd);
-//        if (!mwd) {
-//            TableWidget::keyReleaseEvent(ev);
-//            return;
-//        }
-//        if (ev->key() == Qt::Key_Delete) {
-//            mwd->deleteBtnClicked();
-//            ev->accept();
-//        }
-//        else if (ev->key() == Qt::Key_Enter || ev->key() == Qt::Key_Return) {
-//            mwd->findBtnClicked();
-//            ev->accept();
-//        }
-//        else if (ev->key() == Qt::Key_Escape) {
-//            mwd->cancelBtnClicked();
-//            ev->accept();
-//        }
-//        else
-//            TableWidget::keyReleaseEvent(ev);
-//    }
-//    catch (...) { Q_ASSERT(false); }
-//}
-
 void MainWindow::closeEvent(QCloseEvent* event) {
     const auto shouldAllowClose = true; // TODO: review
     if (shouldAllowClose) {
@@ -471,7 +444,7 @@ void MainWindow::deleteBtnClicked()
         processEvents();
         IntQStringMap itemList;
         getSelectedItems(itemList);
-        removalTimer.start();
+        progressTimer.start();
 
         // REMOVE ITEMS
         //removeItems(itemList);
@@ -753,6 +726,7 @@ void MainWindow::findBtnClicked()
         filesTable->setSortingEnabled(false);
         Clear();
         setStopped(false);
+        progressTimer.start();
 
         deepScanFolderOnThread(_origDirPath, _unlimSubDirDepth ? -1 : _maxSubDirDepth);
     }
@@ -766,10 +740,10 @@ inline void MainWindow::processEvents()
     // first time the function is called.
     static qint64 prev = elapsed;
     const auto diff = elapsed - prev;
-    if (diff >= 500) {  // msec
+    if (diff >= 1'000) {  // msec
         // Static var prev keeps its value for the next call of this function.
         prev = elapsed;
-        qApp->processEvents(QEventLoop::AllEvents, 200);
+        qApp->processEvents(QEventLoop::AllEvents, 400);
     }
 }
 
@@ -1235,18 +1209,23 @@ void MainWindow::copyPathSlot() {
 void MainWindow::getSizeSlot() {
     try {
         const auto selectedItems = filesTable->selectedItems();
-        if (selectedItems.empty()) {
+        if (!_stopped || selectedItems.empty()) {
             return;
         }
+        setStopped(false);
+        progressTimer.start();
         const auto item = selectedItems.first();
-        const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
-        const auto nativePath = QDir::toNativeSeparators(finfo.absoluteFilePath());
-        const auto [count, size] = scanner->deepCountSize(nativePath);
-        const auto sizeStr = sizeToHumanReadable(size);
+        const auto info = QFileInfo(item->data(Qt::UserRole).toString());
+        const auto nativePath = QDir::toNativeSeparators(info.absoluteFilePath());
+        const auto countSize = (info.isDir() && !info.isSymLink()) ?
+            scanner->deepCountSize(nativePath) :
+            std::pair<quint64, quint64>(1, scanner->getItemSize(info));
+        setStopped(true);
+        const auto sizeStr = sizeToHumanReadable(countSize.second);
         QMessageBox::information(this, OvSk_FsOp_APP_NAME_TXT,
                                  tr("%1\n\nItem count: %2\nTotal size: %3")
-                                    .arg(finfo.absoluteFilePath())
-                                    .arg(count)
+                                    .arg(info.absoluteFilePath())
+                                    .arg(countSize.first)
                                     .arg(sizeStr));
     }
     catch (...) { Q_ASSERT(false); }
@@ -1347,7 +1326,7 @@ void MainWindow::deepScanFolderOnThread(const QString& startPath, const int maxD
     connect(scanThread.get(), &QThread::started, [this, startPath, maxDepth]() { this->scanner->deepScan(startPath, maxDepth); });
     //connect(scanThread.get(), &QThread::started, [this, startPath]() { this->scanner->deepCountSize(startPath); });
 
-    connect(scanner.get(), &FolderScanner::searchInProgress, this, &MainWindow::searchInProgress);
+    //connect(scanner.get(), &FolderScanner::searchInProgress, this, &MainWindow::searchInProgress);
     connect(scanner.get(), &FolderScanner::itemFound, this, &MainWindow::itemFound);
     connect(scanner.get(), &FolderScanner::itemSized, this, &MainWindow::itemSized);
     connect(scanner.get(), &FolderScanner::itemRemoved, this, &MainWindow::itemRemoved);
@@ -1372,16 +1351,16 @@ void MainWindow::scanThreadFinished()
     filesTable->setSortingEnabled(true);
 }
 
-void MainWindow::searchInProgress(const QString& path, quint64 foundCount)
-{
-    if (!_stopped) {
-        const auto itemsText = foundCount == 1 ? "item" : "items";
-        filesFoundLabel->setText(QString("Found %1 matching %2 so far...  Searching through %3")
-            .arg(foundCount)
-            .arg(itemsText)
-            .arg(path));
-    }
-}
+//void MainWindow::searchInProgress(const QString& path, quint64 foundCount)
+//{
+//    if (!_stopped) {
+//        const auto itemsText = foundCount == 1 ? "item" : "items";
+//        filesFoundLabel->setText(QString("Found %1 matching %2 so far...  Searching through %3")
+//            .arg(foundCount)
+//            .arg(itemsText)
+//            .arg(path));
+//    }
+//}
 
 void MainWindow::itemFound(const QString& path, const QFileInfo& info) {
     if (!_stopped) {
@@ -1404,11 +1383,18 @@ void MainWindow::itemRemoved(int row, quint64 count, quint64 size) {
     _totSize -= size;
 }
 
-void MainWindow::progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize) {
+void MainWindow::progressUpdate(const QString& path, quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize) {
+    //if (_stopped)
+    //    return;
     _foundCount = foundCount;
     _foundSize = foundSize;
     _totCount = totCount;
     _totSize = totSize;
+    const auto itemsText = foundCount == 1 ? "item" : "items";
+    filesFoundLabel->setText(QString("Found %1 matching %2 so far...  Searching through %3")
+        .arg(foundCount)
+        .arg(itemsText)
+        .arg(path));
 }
 
 void MainWindow::removeRows()
@@ -1431,10 +1417,10 @@ void MainWindow::removeRows()
 }
 
 void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/, bool rmOk) {
-    const auto elapsed = removalTimer.elapsed();
+    const auto elapsed = progressTimer.elapsed();
     static qint64 prev = elapsed;  // initialised only once coz it's static
     const auto diff = elapsed - prev;
-    if (diff >= 100) {  // msec
+    if (diff >= 200) {  // msec
         prev = elapsed;  // static prev keeps its value for the next call
         const QString resWord = rmOk ? "Removed" : "Failed to remove";
         filesFoundLabel->setText(QString("%1: %2").arg(resWord).arg(path));
@@ -1450,7 +1436,7 @@ void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/
 void MainWindow::removalComplete(bool success) {
     removeRows(); // files that failed to delete will not be removed
     const QString prefix = _stopped ? "INTERRUPTED | " : "COMPLETED | ";
-    const QString suffix = (success && !_stopped) ? "Removal successful" : "Removal partial";
+    const QString suffix = (success && !_stopped) ? "Removal successful" : "Some files were not removed";
     filesFoundLabel->setText(prefix + suffix);
     setStopped(true);
 }

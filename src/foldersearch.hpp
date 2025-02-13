@@ -46,7 +46,34 @@ class FolderScanner;
 //public:
 //    explicit TableWidget(int rows, int columns, QWidget* parent=nullptr) : QTableWidget(parent) {}
 //protected:
-//    virtual void keyReleaseEvent(QKeyEvent* ev) override;
+//    void keyReleaseEvent(QKeyEvent* ev) override
+//    {
+//        // Move the implementation to the cpp file.
+//        try
+//        {
+//            auto mwd = qobject_cast<MainWindow*>(parent());
+//            Q_ASSERT(mwd);
+//            if (!mwd) {
+//                TableWidget::keyReleaseEvent(ev);
+//                return;
+//            }
+//            if (ev->key() == Qt::Key_Delete) {
+//                mwd->deleteBtnClicked();
+//                ev->accept();
+//            }
+//            else if (ev->key() == Qt::Key_Enter || ev->key() == Qt::Key_Return) {
+//                mwd->findBtnClicked();
+//                ev->accept();
+//            }
+//            else if (ev->key() == Qt::Key_Escape) {
+//                mwd->cancelBtnClicked();
+//                ev->accept();
+//            }
+//            else
+//                TableWidget::keyReleaseEvent(ev);
+//        }
+//        catch (...) { Q_ASSERT(false); }
+//    }
 //};
 
 
@@ -98,10 +125,12 @@ public:
     void Clear();
 
 public slots:
-    void searchInProgress(const QString& path, quint64 totCount);
+    //void searchInProgress(const QString& path, quint64 totCount);
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
     void itemRemoved(int row, quint64 count, quint64 size);
+    void progressUpdate(const QString& path, quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
+
     void findBtnClicked();
     void deleteBtnClicked();
     void shredBtnClicked();
@@ -143,7 +172,7 @@ private:
     void removeRows();
     void removalProgress(int row, const QString& path, uint64_t size, bool rmOk);
     void removalComplete(bool success);
-    QElapsedTimer removalTimer;
+    QElapsedTimer progressTimer;
 
     QElapsedTimer eventsTimer;
     inline void processEvents();
@@ -162,7 +191,6 @@ private:
     void deepRemoveFilesOnThread_AmzQ(const IntQStringMap& paths);
     void deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap);
 
-    void progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
     void flushItemBuffer();
 
     bool findFilesPrep();
