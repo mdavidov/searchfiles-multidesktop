@@ -5,7 +5,7 @@
 #include "common.h"
 #include "folderscanner.hpp"
 #include <memory>
-#include <QMainWindow>
+#include <QtWidgets/QMainWindow>
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFileInfoList>
@@ -125,7 +125,6 @@ public:
     void Clear();
 
 public slots:
-    //void searchInProgress(const QString& path, quint64 totCount);
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
     void itemRemoved(int row, quint64 count, quint64 size);
@@ -139,6 +138,7 @@ public slots:
 protected:
     void keyReleaseEvent(QKeyEvent* ev) override;
     void closeEvent(QCloseEvent* ev) override;
+    void stopThreads();
 
 private slots:
     void scopeCheckClicked(int newCheckState);
@@ -266,7 +266,6 @@ private:
 
     QString _origDirPath;
     QString _fileNameFilter;
-    QStringList _nameFilters;
     QDir::Filters _itemTypeFilter;
     bool _matchCase;
 

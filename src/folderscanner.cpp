@@ -16,17 +16,29 @@ namespace Devonline
 FolderScanner::FolderScanner(QObject* parent)
 : QObject(parent), foundCount(0), foundSize(0), totCount(0), totSize(0), stopped(false)
 {
+    prevEvents = 0;
     eventsTimer.start();
+    prevProgress = 0;
+    progressTimer.start();
 }
 
 void FolderScanner::reportProgress(const QString& path, bool doit /*= false*/) {
     const auto elapsed = progressTimer.elapsed();
-    static qint64 prev = elapsed;  // initialised only once coz it's static
-    const auto diff = elapsed - prev;
+    const auto diff = elapsed - prevProgress;
     if (doit || diff >= 200) {  // msec
-        prev = elapsed;  // static var keeps its value for the next call
+        prevProgress = elapsed;
         if (!stopped)
             emit progressUpdate(path, foundCount, foundSize, totCount, totSize);
+    }
+}
+
+void FolderScanner::processEvents()
+{
+    const auto elapsed = eventsTimer.elapsed();
+    const auto diff = elapsed - prevEvents;
+    if (diff >= 500) {  // msec
+        prevEvents = elapsed;
+        qApp->processEvents(QEventLoop::AllEvents, 450);
     }
 }
 
@@ -38,20 +50,6 @@ void FolderScanner::stop() {
 bool FolderScanner::isStopped() const {
     std::shared_lock<std::shared_mutex> lock(mutex);
     return stopped;
-}
-
-inline void FolderScanner::processEvents()
-{
-    const auto elapsed = eventsTimer.elapsed();
-    // Like all static vars, local function statics are initialised only once,
-    // first time the function is called.
-    static qint64 prev = elapsed;
-    const auto diff = elapsed - prev;
-    if (diff >= 1'000) {  // msec
-        // Static var prev keeps its value for the next call of this function.
-        prev = elapsed;
-        qApp->processEvents(QEventLoop::AllEvents, 400);
-    }
 }
 
 bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo& info)
@@ -106,6 +104,8 @@ void FolderScanner::getAllDirs(const QString& currPath, QFileInfoList& infos) co
 
 void FolderScanner::getFileInfos(const QString& currPath, QFileInfoList& infos) /*const*/
 {
+    if (stopped)
+        return;
     QDir currDir(currPath);
     if (!params.nameFilters.empty()) {
         currDir.setNameFilters(params.nameFilters);
@@ -119,6 +119,8 @@ void FolderScanner::getFileInfos(const QString& currPath, QFileInfoList& infos) 
 
 void FolderScanner::getAllItems(const QString& path, QFileInfoList& infos) const
 {
+    if (stopped)
+        return;
     const QDir dir = QDir(path);
     const auto filters = QDir::AllEntries | QDir::AllDirs | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot;
     infos = dir.entryInfoList(filters);
@@ -228,14 +230,13 @@ bool FolderScanner::fileContainsAnyWordChunked(const QString& filePath, const QS
 
 void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
     stopped = false;
-    progressTimer.start();
     zeroCounters();
     QString lastPath;
 
     QQueue<QPair<QString, int>> dirQ;
     dirQ.enqueue({ startPath, 0 });
 
-    while (!dirQ.empty() && !isStopped()) {
+    while (!dirQ.empty() && !stopped) {
         processEvents();
         const auto [currPath, currDepth] = dirQ.dequeue();
         QFileInfoList dirInfos;
@@ -244,8 +245,7 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
             lastPath = currPath;
             //processEvents();
             if (stopped) {
-                reportProgress(currPath, true);
-                emit scanCancelled();
+                //emit scanCancelled();
                 return;
             }
             if (maxDepth < 0 || currDepth < maxDepth) {
@@ -260,8 +260,7 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
         for (const auto& info : infos) {
             processEvents();
             if (stopped) {
-                reportProgress(currPath, true);
-                emit scanCancelled();
+                //emit scanCancelled();
                 return;
             }
             if (appendOrExcludeItem(currPath, info)) {
@@ -271,16 +270,18 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
                 reportProgress(currPath);
             }
         }
+        reportProgress(currPath);
     }
-    reportProgress(lastPath, true);
-    emit scanComplete();
+    if (!stopped) {
+        reportProgress(lastPath, true);
+        emit scanComplete();
+    }
     stopped = true;
 }
 
 std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPath)
 {
     stopped = false;
-    progressTimer.start();
     QQueue<QString> dirQ;
     dirQ.enqueue(startPath);
     zeroCounters();
@@ -323,7 +324,6 @@ std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPat
 void FolderScanner::deepRemove(const IntQStringMap& rowPathMap)
 {
     stopped = false;
-    progressTimer.start();
     zeroCounters();
     int nbrDeleted = 0;
     for (const auto& rowPath : rowPathMap)

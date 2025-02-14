@@ -101,7 +101,7 @@ if(APPLE)
     link_directories(
         /opt/Qt/6.8.1/macos/lib
     )
-elseif(UNIX AND NOT APPLE)
+elseif(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused -Wdouble-promotion -Wundef -Wcast-align" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
     set(GUI_TYPE "")
     # Install desktop file
@@ -135,7 +135,7 @@ elseif(WIN32)
         src/precompiled.h
     )
     include_directories(
-        C:/Qt/6.8.1/msvc2022_64/include
+        "C:/Qt/6.8.1/msvc2022_64/include"
         "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/include"
         "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/ucrt"
         "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/um"
@@ -143,7 +143,7 @@ elseif(WIN32)
         ${CMAKE_SOURCE_DIR}/src
     )
     link_directories(
-        C:/Qt/6.8.1/msvc2022_64/lib
+        "C:/Qt/6.8.1/msvc2022_64/lib"
     )
 endif()
 message(STATUS "CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}")
