@@ -14,7 +14,7 @@
 namespace Devonline
 {
 FolderScanner::FolderScanner(QObject* parent)
-: QObject(parent), foundCount(0), foundSize(0), totCount(0), totSize(0), stopped(false)
+: QObject(parent), stopped(false), foundCount(0), foundSize(0), totCount(0), totSize(0)
 {
     prevEvents = 0;
     eventsTimer.start();
