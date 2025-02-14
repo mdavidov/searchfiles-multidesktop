@@ -270,6 +270,7 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
                 reportProgress(currPath);
             }
         }
+        lastPath = currPath;
         reportProgress(currPath);
     }
     if (!stopped) {
@@ -285,12 +286,14 @@ std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPat
     QQueue<QString> dirQ;
     dirQ.enqueue(startPath);
     zeroCounters();
+    QString lastPath;
     quint64 count = 0;
     quint64 size = 0;
 
     while (!dirQ.empty() && !stopped) {
         processEvents();
         const auto currPath = dirQ.dequeue();
+        lastPath = currPath;
         QFileInfoList dirInfos;
         getAllDirs(currPath, dirInfos);
         for (const auto& dir : dirInfos) {
@@ -316,6 +319,11 @@ std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPat
             reportProgress(info.absoluteFilePath());
             //emit itemSized(info.absoluteFilePath(), info);
         }
+        lastPath = currPath;
+        reportProgress(currPath);
+    }
+    if (!stopped) {
+        reportProgress(lastPath, true);
     }
     stopped = true;
     return { count, size };
