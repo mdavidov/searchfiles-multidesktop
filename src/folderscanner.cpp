@@ -150,7 +150,7 @@ void FolderScanner::updateTotals(const QString& path)
 {
     QFileInfoList infos;
     getAllItems(path, infos);
-    totCount += infos.count();
+    totCount += quint64(infos.count());
     totSize += combinedSize(infos);
 }
 
