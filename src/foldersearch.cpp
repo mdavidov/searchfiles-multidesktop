@@ -470,7 +470,8 @@ void MainWindow::getSelectedItems(IntQStringMap& itemList)
         {
             if (_stopped)
                 break;
-            const auto path = item->data(Qt::UserRole).toString();
+            const auto info = QFileInfo(item->data(Qt::UserRole).toString());
+            const auto path = QDir::toNativeSeparators(info.absoluteFilePath());
             const auto row = filesTable->row(item);
             itemList.insert(std::make_pair(row, path));
             ++nbrSelected;
@@ -596,11 +597,11 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
 {
     const auto totItemsSizeStr = sizeToHumanReadable(_totSize);
     const auto foundItemsSizeStr = sizeToHumanReadable(_foundSize);
-    const auto itemsText = _foundCount == 1 ? "item" : "items";
+    const auto itemsText = filesTable->rowCount() == 1 ? "item" : "items";
     const auto foundLabelText =
         prefix
         + tr("Found %1 matching %2, %3 (searched total %4 items, %5). ")
-            .arg(_foundCount)
+            .arg(filesTable->rowCount())
             .arg(itemsText)
             .arg(foundItemsSizeStr)
             .arg(_totCount)
@@ -996,11 +997,17 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
     if (itemBuffer.size() >= BATCH_SIZE) {
         flushItemBuffer();
         //filesTable->scrollToBottom();
-        const auto itemsText = _foundCount == 1 ? "item" : "items";
-        filesFoundLabel->setText(tr("Found %1 matching %2 so far...  Searching through %3")
-            .arg(filesTable->rowCount())
-            .arg(itemsText)
-            .arg(filePath));
+        const auto itemsText = filesTable->rowCount() == 1 ? "item" : "items";
+        // Some item-found signals arrive after the search thread has stopped
+        if (!_stopped) {
+            filesFoundLabel->setText(tr("Found %1 matching %2 so far...  Searching through %3")
+                .arg(filesTable->rowCount())
+                .arg(itemsText)
+                .arg(filePath));
+        }
+        else {
+            setFilesFoundLabel("FINISHED | ");
+        }
     }
   }
   catch(...) { Q_ASSERT(false); }
@@ -1224,17 +1231,31 @@ void MainWindow::getSizeSlot() {
             return;
         }
         setStopped(false);
-        const auto item = selectedItems.first();
-        const auto info = QFileInfo(item->data(Qt::UserRole).toString());
-        const auto nativePath = QDir::toNativeSeparators(info.absoluteFilePath());
-        const auto countSize = (info.isDir() && !info.isSymLink()) ?
-            scanner->deepCountSize(nativePath) :
-            std::pair<quint64, quint64>(1, scanner->getItemSize(info));
+        auto scnr = std::make_unique<FolderScanner>();
+        IntQStringMap itemList;
+        getSelectedItems(itemList);
+        std::pair<quint64, quint64> countSize;
+        QString filePath;
+        for (const auto& item : itemList) {
+            filePath = item.second;
+            const auto info = QFileInfo(filePath);
+            if (info.isDir() && !info.isSymLink()) {
+                const auto [count, dirSize] = scnr->deepCountSize(filePath);
+                countSize.first += count;
+                countSize.second += dirSize;
+            }
+            else {
+                countSize.first++;
+                countSize.second += scnr->getItemSize(info);
+            }
+        }
+        if (itemList.size() > 1)
+            filePath = "Multiple files/folders";
         setStopped(true);
         const auto sizeStr = sizeToHumanReadable(countSize.second);
         QMessageBox::information(this, OvSk_FsOp_APP_NAME_TXT,
                                  tr("%1\n\nItem count: %2\nTotal size: %3")
-                                    .arg(info.absoluteFilePath())
+                                    .arg(filePath)
                                     .arg(countSize.first)
                                     .arg(sizeStr));
     }
@@ -1379,17 +1400,21 @@ void MainWindow::itemRemoved(int row, quint64 count, quint64 size) {
 }
 
 void MainWindow::progressUpdate(const QString& path, quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize) {
-    if (_stopped)
-        return;
     _foundCount = foundCount;
     _foundSize = foundSize;
     _totCount = totCount;
     _totSize = totSize;
-    const auto itemsText = foundCount == 1 ? "item" : "items";
-    filesFoundLabel->setText(QString("Found %1 matching %2 so far...  Searching through %3")
-        .arg(filesTable->rowCount())
-        .arg(itemsText)
-        .arg(path));
+    const auto itemsText = filesTable->rowCount() == 1 ? "item" : "items";
+    // Some progress update signals arrive after the search thread has stopped
+    if (!_stopped) {
+        filesFoundLabel->setText(QString("Found %1 matching %2 so far...  Searching through %3")
+            .arg(filesTable->rowCount())
+            .arg(itemsText)
+            .arg(path));
+    }
+    else {
+        setFilesFoundLabel("FINISHED | ");
+    }
 }
 
 void MainWindow::removeRows()
