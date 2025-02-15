@@ -73,7 +73,7 @@ QVector<QVector<QTableWidgetItem*>> itemBuffer;
 #endif
 
 
-void MainWindow::stopThreads() {
+void MainWindow::stopAllThreads() {
     static long long constexpr sleepLen = 80;
     if (scanner) {
         scanner->blockSignals(true);
@@ -109,7 +109,7 @@ void MainWindow::stopThreads() {
 void MainWindow::closeEvent(QCloseEvent* event) {
     const auto shouldAllowClose = true; // TODO: review
     if (shouldAllowClose) {
-        stopThreads();
+        stopAllThreads();
         event->accept();
     }
     else {
@@ -296,6 +296,13 @@ void MainWindow::createMainLayout()
     filesFoundLabel = new QLabel;
     modifyFont(filesFoundLabel, +0.0, true, false, false);
 
+    QScrollArea* filesFoundScroll = new QScrollArea();
+    filesFoundScroll->setWidget(filesFoundLabel);
+    filesFoundScroll->setWidgetResizable(true);
+    filesFoundScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    filesFoundScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    filesFoundScroll->setMaximumHeight(40);
+
     auto sfLabel = new QLabel("Search folder {SF}:");
     sfLabel->setToolTip("Folder to deeply search, a.k.a. {SF}");
     modifyFont(sfLabel, +0.0, true, false, false);
@@ -316,42 +323,30 @@ void MainWindow::createMainLayout()
 
     int gridRowIdx = 0;
     QGridLayout *mainLayout = new QGridLayout;
-
     mainLayout->addLayout(navigLout,        gridRowIdx, 0);
     ++gridRowIdx;
-
     mainLayout->addLayout(dirComboLayout,   gridRowIdx, 0, 1, 3);
     ++gridRowIdx;
-
     mainLayout->addLayout(wordsLout,        gridRowIdx, 0, 1, 3);
     ++gridRowIdx;
-
     mainLayout->addWidget(namesLineEdit,    gridRowIdx, 0, 1, 3);
     ++gridRowIdx;
-
     mainLayout->addLayout(itmTypeCheckLout, gridRowIdx, 0);
     ++gridRowIdx;
-
     mainLayout->addWidget(toggleExclBtn,    gridRowIdx, 0);
     ++gridRowIdx;
-
     mainLayout->addWidget(exclFilesByTextCombo, gridRowIdx, 0, 1, 3);
     ++gridRowIdx;
-
     mainLayout->addWidget(exclByFileNameCombo,  gridRowIdx, 0, 1, 3);
     ++gridRowIdx;
-
     mainLayout->addWidget(exclByFolderNameCombo,gridRowIdx, 0, 1, 3);
     ++gridRowIdx;
-
     mainLayout->addWidget(exclHiddenCheck,      gridRowIdx, 0);
     ++gridRowIdx;
-
     mainLayout->addWidget(filesTable,           gridRowIdx, 0, 1, 4);
     ++gridRowIdx;
-    mainLayout->addWidget(filesFoundLabel,      gridRowIdx, 0, 1, 4);
+    mainLayout->addWidget(filesFoundScroll,     gridRowIdx, 0, 1, 4);
     ++gridRowIdx;
-
     mainLayout->addLayout(buttonsLayout,        gridRowIdx, 0, 1, 4);
     ++gridRowIdx;
 
@@ -505,7 +500,7 @@ void MainWindow::shredBtnClicked()
 
 void MainWindow::cancelBtnClicked()
 {
-    stopThreads();
+    stopAllThreads();
     flushItemBuffer();
     setFilesFoundLabel("INTERRUPTED | ");
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
@@ -616,7 +611,7 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
 
 bool MainWindow::findFilesPrep()
 {
-    stopThreads();
+    stopAllThreads();
 
     // Create scan thread (QThread) and FolderScanner
     scanThread = std::make_unique<QThread>(this);
@@ -1376,7 +1371,7 @@ void MainWindow::scanThreadFinished()
 {
     flushItemBuffer();
     setFilesFoundLabel(_stopped ? "INTERRUPTED | " : "COMPLETED | ");
-    stopThreads();
+    stopAllThreads();
     setStopped(true);
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(true);
@@ -1459,7 +1454,7 @@ void MainWindow::removalComplete(bool success) {
     const QString prefix = _stopped ? "INTERRUPTED | " : "COMPLETED | ";
     const QString suffix = (success && !_stopped) ? "Removal successful" : "Some files were not removed";
     filesFoundLabel->setText(prefix + suffix);
-    stopThreads();
+    stopAllThreads();
     setStopped(true);
 }
 

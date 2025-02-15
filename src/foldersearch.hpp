@@ -138,7 +138,7 @@ public slots:
 protected:
     void keyReleaseEvent(QKeyEvent* ev) override;
     void closeEvent(QCloseEvent* ev) override;
-    void stopThreads();
+    void stopAllThreads();
 
 private slots:
     void scopeCheckClicked(int newCheckState);
