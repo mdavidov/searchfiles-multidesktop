@@ -982,27 +982,25 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
     _totCount++;
     _totSize += fsize;
 
-    if (!_stopped) {
-        QVector<QTableWidgetItem*> rowItems;
-        rowItems.reserve(N_COL);
-        rowItems.append(filePathItem);
-        rowItems.append(fileNameItem);
-        rowItems.append(sizeItem);
-        rowItems.append(dateModItem);
-        rowItems.append(fileExtItem);
-        rowItems.append(fsTypeItem);
-        rowItems.append(ownerItem);
+    QVector<QTableWidgetItem*> rowItems;
+    rowItems.reserve(N_COL);
+    rowItems.append(filePathItem);
+    rowItems.append(fileNameItem);
+    rowItems.append(sizeItem);
+    rowItems.append(dateModItem);
+    rowItems.append(fileExtItem);
+    rowItems.append(fsTypeItem);
+    rowItems.append(ownerItem);
 
-        itemBuffer.append(rowItems);
-        if (itemBuffer.size() >= BATCH_SIZE) {
-            flushItemBuffer();
-            //filesTable->scrollToBottom();
-            const auto itemsText = _foundCount == 1 ? "item" : "items";
-            filesFoundLabel->setText(tr("Found %1 matching %2 so far...  Searching through %3")
-                .arg(filesTable->rowCount())
-                .arg(itemsText)
-                .arg(filePath));
-        }
+    itemBuffer.append(rowItems);
+    if (itemBuffer.size() >= BATCH_SIZE) {
+        flushItemBuffer();
+        //filesTable->scrollToBottom();
+        const auto itemsText = _foundCount == 1 ? "item" : "items";
+        filesFoundLabel->setText(tr("Found %1 matching %2 so far...  Searching through %3")
+            .arg(filesTable->rowCount())
+            .arg(itemsText)
+            .arg(filePath));
     }
   }
   catch(...) { Q_ASSERT(false); }
@@ -1013,8 +1011,8 @@ void MainWindow::flushItemBuffer() {
         return;
 
     UpdateBlocker ub(filesTable);
-    const int startRow = filesTable->rowCount();
-    //filesTable->setRowCount(startRow + int(itemBuffer.size()));
+    const auto startRow = filesTable->rowCount();
+    // filesTable->setRowCount(startRow + int(itemBuffer.size()));
 
     filesTable->model()->insertRows(startRow, int(itemBuffer.size()));  // Qt row index is int
     for (int i = 0; i < itemBuffer.size(); ++i) {
@@ -1364,15 +1362,11 @@ void MainWindow::scanThreadFinished()
 }
 
 void MainWindow::itemFound(const QString& path, const QFileInfo& info) {
-    if (!_stopped) {
-        appendItemToTable(path, info);
-    }
+    appendItemToTable(path, info);
 }
 
 void MainWindow::itemSized(const QString& path, const QFileInfo& info) {
-    if (!_stopped) {
-        filesFoundLabel->setText(path + " " + sizeToHumanReadable(scanner->getItemSize(info)));
-    }
+    filesFoundLabel->setText(path + " " + sizeToHumanReadable(scanner->getItemSize(info)));
 }
 
 void MainWindow::itemRemoved(int row, quint64 count, quint64 size) {
