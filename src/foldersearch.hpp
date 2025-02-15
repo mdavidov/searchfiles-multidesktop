@@ -278,8 +278,8 @@ private:
     QStringList _exclFolderPatterns;
 
     QFileInfoList _outFileInfos;
-    qint64 _dirCount;
-    qint64 _totCount;
+    quint64 _dirCount;
+    quint64 _totCount;
     quint64 _totSize;
     quint64 _foundSize;
     quint64 _foundCount;

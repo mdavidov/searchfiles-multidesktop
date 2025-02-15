@@ -504,12 +504,10 @@ void MainWindow::shredBtnClicked()
 
 void MainWindow::cancelBtnClicked()
 {
-    if (scanner)
-        scanner->stop();
-    if (removerAmzQ_)
-        removerAmzQ_->stop();
-    if (removerClaude_)
-        removerClaude_->stop();
+    stopThreads();
+    setFilesFoundLabel("INTERRUPTED | ");
+    filesTable->sortByColumn(-1, Qt::AscendingOrder);
+    filesTable->setSortingEnabled(true);
     setStopped(true);
 }
 
@@ -1021,7 +1019,7 @@ void MainWindow::flushItemBuffer() {
     const int startRow = filesTable->rowCount();
     //filesTable->setRowCount(startRow + int(itemBuffer.size()));
 
-    filesTable->model()->insertRows(startRow, itemBuffer.size());
+    filesTable->model()->insertRows(startRow, int(itemBuffer.size()));  // Qt row index is int
     for (int i = 0; i < itemBuffer.size(); ++i) {
         const auto& rowItems = itemBuffer[i];
         for (int col = 0; col < rowItems.size(); ++col) {
@@ -1362,6 +1360,7 @@ void MainWindow::scanThreadFinished()
 {
     flushItemBuffer();
     setFilesFoundLabel(_stopped ? "INTERRUPTED | " : "COMPLETED | ");
+    stopThreads();
     setStopped(true);
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(true);
@@ -1409,8 +1408,8 @@ void MainWindow::progressUpdate(const QString& path, quint64 foundCount, quint64
 void MainWindow::removeRows()
 {
     {
-        UpdateBlocker ub({ filesTable });
-        if (rowsToRemove_.size() == filesTable->rowCount()) {
+        UpdateBlocker ub{ filesTable };
+        if (rowsToRemove_.size() == size_t(filesTable->rowCount())) {  // Qt row count is int
             filesTable->clearContents();
         }
         else {
@@ -1442,11 +1441,13 @@ void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/
         qDebug() << "FAILED to remove:" << path;
     }
 }
+
 void MainWindow::removalComplete(bool success) {
     removeRows(); // files that failed to delete will not be removed
     const QString prefix = _stopped ? "INTERRUPTED | " : "COMPLETED | ";
     const QString suffix = (success && !_stopped) ? "Removal successful" : "Some files were not removed";
     filesFoundLabel->setText(prefix + suffix);
+    stopThreads();
     setStopped(true);
 }
 
