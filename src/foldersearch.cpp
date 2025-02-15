@@ -505,6 +505,7 @@ void MainWindow::shredBtnClicked()
 void MainWindow::cancelBtnClicked()
 {
     stopThreads();
+    flushItemBuffer();
     setFilesFoundLabel("INTERRUPTED | ");
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(true);
@@ -1001,10 +1002,6 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
                 .arg(filesTable->rowCount())
                 .arg(itemsText)
                 .arg(filePath));
-            if (_foundCount != quint64(filesTable->rowCount())) {
-                qDebug() << "WARNING: _foundCount" << _foundCount
-                    << "!= filesTable->rowCount()" << filesTable->rowCount();
-            }
         }
     }
   }
@@ -1399,10 +1396,6 @@ void MainWindow::progressUpdate(const QString& path, quint64 foundCount, quint64
         .arg(filesTable->rowCount())
         .arg(itemsText)
         .arg(path));
-    if (_foundCount != quint64(filesTable->rowCount())) {
-        qDebug() << "WARNING: _foundCount" << _foundCount
-            << "!= filesTable->rowCount()" << filesTable->rowCount();
-    }
 }
 
 void MainWindow::removeRows()
