@@ -14,6 +14,8 @@
 #include <QTimer>
 #include <QElapsedTimer>
 
+using uint64pair = std::pair<uint64_t, uint64_t>;
+
 namespace Devonline
 {
 
@@ -37,7 +39,7 @@ signals:
 public slots:
     void stop();
     void deepScan(const QString& startPath, const int maxDepth);
-    std::pair<quint64, quint64> deepCountSize(const QString& startPath);
+    uint64pair deepCountSize(const QString& startPath);
     void deepRemove(const IntQStringMap& itemList);
 
 private:

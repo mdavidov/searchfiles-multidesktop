@@ -1,3 +1,4 @@
+#include "precompiled.h"
 #include "folderscanner.hpp"
 #include "scanparams.hpp"
 #include <mutex>
@@ -280,7 +281,7 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
     stopped = true;
 }
 
-std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPath)
+uint64pair FolderScanner::deepCountSize(const QString& startPath)
 {
     stopped = false;
     QQueue<QString> dirQ;
@@ -299,7 +300,7 @@ std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPat
         for (const auto& dir : dirInfos) {
             //processEvents();
             if (stopped) {
-                return { count, size };
+                return{ count, size };
             }
             dirQ.enqueue(dir.absoluteFilePath());
             reportProgress(dir.absoluteFilePath());
@@ -310,7 +311,7 @@ std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPat
         for (const auto& info : infos) {
             processEvents();
             if (stopped) {
-                return { count, size };
+                return{ count, size };
             }
             ++count;
             size += getItemSize(info);
@@ -326,7 +327,7 @@ std::pair<quint64, quint64> FolderScanner::deepCountSize(const QString& startPat
         reportProgress(lastPath, true);
     }
     stopped = true;
-    return { count, size };
+    return{ count, size };
 }
 
 void FolderScanner::deepRemove(const IntQStringMap& rowPathMap)
@@ -356,13 +357,12 @@ void FolderScanner::deepRemove(const IntQStringMap& rowPathMap)
             else {
                 // RM DIR
                 QDir dir(path);
-                const auto [count, size] = deepCountSize(path);
-                //processEvents();
+                // Getting dir size (deepCountSize(path)) could be way too time consuming
                 const auto rmok = dir.removeRecursively();
                 processEvents();
                 if (rmok) {
                     ++nbrDeleted;
-                    emit itemRemoved(rowPath.first, count, size, nbrDeleted);
+                    emit itemRemoved(rowPath.first, 1, 0, nbrDeleted);
                 }
             }
         }

@@ -458,22 +458,20 @@ void MainWindow::deleteBtnClicked()
 void MainWindow::getSelectedItems(IntQStringMap& itemList)
 {
     const QList<QTableWidgetItem*> selectedItems = filesTable->selectedItems();
-    auto nbrSelected = 0;
     for (const auto item : selectedItems)
     {
         if (filesTable->column( item) == RELPATH_COL_IDX)
         {
             if (_stopped)
-                break;
+                return;
             const auto info = QFileInfo(item->data(Qt::UserRole).toString());
             const auto path = QDir::toNativeSeparators(info.absoluteFilePath());
             const auto row = filesTable->row(item);
             itemList.insert(std::make_pair(row, path));
-            ++nbrSelected;
             processEvents();
         }
     }
-    qDebug() << "NBR SELECTED" << nbrSelected;
+    qDebug() << "NBR SELECTED" << itemList.size();
 }
 
 void MainWindow::shredBtnClicked()
@@ -1226,35 +1224,46 @@ void MainWindow::getSizeSlot() {
             return;
         }
         setStopped(false);
-        auto scnr = std::make_unique<FolderScanner>();
         IntQStringMap itemList;
         getSelectedItems(itemList);
-        std::pair<quint64, quint64> countSize;
+        getSizeWithAsync(itemList);
+    }
+    catch (...) { Q_ASSERT(false); }
+}
+
+void MainWindow::getSizeWithAsync(const IntQStringMap& itemList) {
+    std::async(std::launch::async, [this, itemList]() {
+        uint64pair countNsize;
+        const auto nbrItems = itemList.size();
         QString filePath;
+        auto scnr = std::make_unique<FolderScanner>();
         for (const auto& item : itemList) {
             filePath = item.second;
             const auto info = QFileInfo(filePath);
             if (info.isDir() && !info.isSymLink()) {
                 const auto [count, dirSize] = scnr->deepCountSize(filePath);
-                countSize.first += count;
-                countSize.second += dirSize;
+                countNsize.first += count;
+                countNsize.second += dirSize;
             }
             else {
-                countSize.first++;
-                countSize.second += scnr->getItemSize(info);
+                countNsize.first++;
+                countNsize.second += scnr->getItemSize(info);
             }
         }
-        if (itemList.size() > 1)
-            filePath = "Multiple files/folders";
-        setStopped(true);
-        const auto sizeStr = sizeToHumanReadable(countSize.second);
-        QMessageBox::information(this, OvSk_FsOp_APP_NAME_TXT,
-                                 tr("%1\n\nItem count: %2\nTotal size: %3")
-                                    .arg(filePath)
-                                    .arg(countSize.first)
-                                    .arg(sizeStr));
-    }
-    catch (...) { Q_ASSERT(false); }
+
+        // Use QMetaObject::invokeMethod to safely update UI from background thread
+        QMetaObject::invokeMethod(this, [this, nbrItems, filePath, countNsize]() {
+            // Update UI here
+            const QString text = (nbrItems > 1) ? "Multiple files/folders" : filePath;
+            setStopped(true);
+            const auto sizeStr = sizeToHumanReadable(countNsize.second);
+            QMessageBox::information(this, OvSk_FsOp_APP_NAME_TXT,
+                tr("%1\n\nItem count: %2\nTotal size: %3")
+                .arg(text)
+                .arg(countNsize.first)
+                .arg(sizeStr));
+        }, Qt::QueuedConnection);
+    });
 }
 
 void MainWindow::propertiesSlot() {

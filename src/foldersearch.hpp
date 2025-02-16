@@ -190,6 +190,7 @@ private:
     void scanThreadFinished();
     void deepRemoveFilesOnThread_AmzQ(const IntQStringMap& paths);
     void deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap);
+    void getSizeWithAsync(const IntQStringMap& itemList);
 
     void flushItemBuffer();
 
