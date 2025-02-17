@@ -77,9 +77,9 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
         }
         bool toAppend = false;
         if (params.searchWords.empty()) {
-            if (isSymbolic(info) && !info.isDir())
+            if (isSymbolic(info))
                 toAppend = params.inclSymlinks;
-            else if (info.isDir() && !isSymbolic(info))
+            else if (info.isDir())
                 toAppend = params.inclFolders;
         }
         if (info.isFile() && !isSymbolic(info) && params.inclFiles) {

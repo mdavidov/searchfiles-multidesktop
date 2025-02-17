@@ -498,6 +498,8 @@ void MainWindow::shredBtnClicked()
 
 void MainWindow::cancelBtnClicked()
 {
+    if (_stopped)
+        return;
     stopAllThreads();
     flushItemBuffer();
     setFilesFoundLabel("INTERRUPTED | ");
@@ -883,10 +885,14 @@ QComboBox* MainWindow::createComboBoxText()
     return comboBox;
 }
 
+bool isSymbolic(const QFileInfo& info) {
+    return info.isSymLink() || info.isSymbolicLink() || info.isShortcut();
+}
+
 QString MainWindow::FsItemType(const QFileInfo & finfo) const
 {
     QString fsType;
-    if (finfo.isSymLink()) {
+    if (isSymbolic(finfo)) {
         if (finfo.isDir())
             fsType = OvSk_FsOp_SYMLINK_TXT " to folder";
         else if (finfo.isFile())
@@ -914,7 +920,7 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
     processEvents();
     auto fileNameItem = new TableWidgetItem;
     auto fileName = finfo.fileName();
-    if (finfo.isSymLink() && !finfo.symLinkTarget().isEmpty())
+    if (isSymbolic(finfo) && !finfo.symLinkTarget().isEmpty())
         fileName += " -> " + finfo.symLinkTarget();
     else if (finfo.isDir())
         fileName += QDir::separator();
@@ -1233,7 +1239,8 @@ void MainWindow::getSizeWithAsync(const IntQStringMap& itemList)
         for (const auto& item : itemList) {
             filePath = item.second;
             const auto info = QFileInfo(filePath);
-            if (info.isDir() && !info.isSymLink()) {
+            // Do not follow symlinks
+            if (info.isDir() && !isSymbolic(info)) {
                 const auto [count, dirSize] = scnr->deepCountSize(filePath);
                 countNsize.first += count;
                 countNsize.second += dirSize;
