@@ -15,7 +15,7 @@
 namespace Devonline
 {
 FolderScanner::FolderScanner(QObject* parent)
-: QObject(parent), stopped(false), foundCount(0), foundSize(0), totCount(0), totSize(0)
+: QObject(parent), stopped(false), dirCount(0), foundCount(0), foundSize(0), symlinkCount(0), totCount(0), totSize(0)
 {
     prevEvents = 0;
     eventsTimer.start();
@@ -29,7 +29,7 @@ void FolderScanner::reportProgress(const QString& path, bool doit /*= false*/) {
     if (doit || diff >= 200) {  // msec
         prevProgress = elapsed;
         if (!stopped)
-            emit progressUpdate(path, foundCount, foundSize, totCount, totSize);
+            emit progressUpdate(path, dirCount, foundCount, foundSize, symlinkCount, totCount, totSize);
     }
 }
 
@@ -53,6 +53,10 @@ bool FolderScanner::isStopped() const {
     return stopped;
 }
 
+bool FolderScanner::isSymbolic(const QFileInfo& info) const {
+    return info.isSymLink() || info.isSymbolicLink() || info.isShortcut();
+}
+
 bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo& info)
 {
     try {
@@ -61,7 +65,7 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
                 stringContainsAnyWord(dirPath, params.exclFolderPatterns)) {
             return false;
         }
-        if (info.isFile()) {
+        if (info.isFile() && !isSymbolic(info)) {
             if (!params.exclFilePatterns.empty() &&
                     stringContainsAnyWord(info.fileName(), params.exclFilePatterns)) {
                 return false;
@@ -73,17 +77,22 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
         }
         bool toAppend = false;
         if (params.searchWords.empty()) {
-            if ((info.isSymLink() || info.isSymbolicLink() || info.isShortcut()) && !info.isDir())
+            if (isSymbolic(info) && !info.isDir())
                 toAppend = params.inclSymlinks;
-            else if (info.isDir() && !info.isSymLink() && !info.isSymbolicLink() && !info.isShortcut())
+            else if (info.isDir() && !isSymbolic(info))
                 toAppend = params.inclFolders;
         }
-        if (info.isFile() && params.inclFiles) {
+        if (info.isFile() && !isSymbolic(info) && params.inclFiles) {
             toAppend = params.searchWords.empty() ||
                 fileContainsAllWordsChunked(filePath, params.searchWords);
         }
         if (toAppend) {
-            foundCount++;
+            if (isSymbolic(info))
+                symlinkCount++;
+            else if (info.isDir())
+                dirCount++;
+            else
+                foundCount++;
             foundSize += getItemSize(info);
         }
         return toAppend;
@@ -91,7 +100,7 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
     catch (...) { Q_ASSERT(false); return false; } // tell the user?
 }
 
-void FolderScanner::getAllDirs(const QString& currPath, QFileInfoList& infos) const
+void FolderScanner::getAllDirs(const QString& currPath, QFileInfoList& infos)
 {
     // Don't need files and not following symlinks
     // QDir::AllDirs means "don't apply name filters to directories"
@@ -130,9 +139,7 @@ void FolderScanner::getAllItems(const QString& path, QFileInfoList& infos) const
 quint64 FolderScanner::getItemSize(const QFileInfo& info) const
 {
     static constexpr qint64 DIR_SYMLINK_SIZE = 4 * 1024;
-    return (info.isSymLink() || info.isSymbolicLink() || info.isShortcut()) ?
-        DIR_SYMLINK_SIZE :
-        quint64(info.size());
+    return isSymbolic(info) ? DIR_SYMLINK_SIZE : quint64(info.size());
 }
 
 quint64 FolderScanner::combinedSize(const QFileInfoList& infos)
@@ -373,17 +380,11 @@ void FolderScanner::deepRemove(const IntQStringMap& rowPathMap)
 
 void FolderScanner::zeroCounters()
 {
+    dirCount = 0;
     foundCount = 0;
     foundSize = 0;
     totCount = 0;
     totSize = 0;
 }
 
-//void FolderScanner::incrCounters(quint64 fsize /*= 0*/)
-//{
-//    foundCount++;
-//    foundSize += fsize;
-//    totCount++;
-//    totSize += fsize;
-//}
 }

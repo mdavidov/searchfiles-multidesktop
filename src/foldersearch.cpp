@@ -533,10 +533,11 @@ void MainWindow::Clear()
         rowsToRemove_.clear();
         filesFoundLabel->setText("");
         _dirCount = 0;
-        _totCount = 0;
-        _totSize = 0;
         _foundCount = 0;
         _foundSize = 0;
+        _symlinkCount = 0;
+        _totCount = 0;
+        _totSize = 0;
         processEvents();
     }
     catch (...) { Q_ASSERT(false); }
@@ -590,13 +591,14 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
 {
     const auto totItemsSizeStr = sizeToHumanReadable(_totSize);
     const auto foundItemsSizeStr = sizeToHumanReadable(_foundSize);
-    const auto itemsText = filesTable->rowCount() == 1 ? "item" : "items";
     const auto foundLabelText =
         prefix
-        + tr("Found %1 matching %2, %3 (searched total %4 items, %5). ")
-            .arg(filesTable->rowCount())
-            .arg(itemsText)
+        + tr("%1 matching files (%2), %3 folders, %4 %5 (searched total %6 items, %7). ")
+            .arg(_foundCount)
             .arg(foundItemsSizeStr)
+            .arg(_dirCount)
+            .arg(_symlinkCount)
+            .arg(OvSk_FsOp_SYMLINKS_TXT)
             .arg(_totCount)
             .arg(totItemsSizeStr);
     filesFoundLabel->setText(foundLabelText);
@@ -971,11 +973,6 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
     ownerItem->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
     ownerItem->setData(Qt::ToolTipRole, QVariant("Username of the item's owner."));
 
-    _foundCount++;
-    _foundSize += fsize;
-    _totCount++;
-    _totSize += fsize;
-
     QVector<QTableWidgetItem*> rowItems;
     rowItems.reserve(N_COL);
     rowItems.append(filePathItem);
@@ -990,15 +987,9 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
     if (itemBuffer.size() >= BATCH_SIZE) {
         flushItemBuffer();
         //filesTable->scrollToBottom();
-        const auto itemsText = filesTable->rowCount() == 1 ? "item" : "items";
+ 
         // Some item-found signals arrive after the search thread has stopped
-        if (!_stopped) {
-            filesFoundLabel->setText(tr("Found %1 matching %2 so far...  Searching through %3")
-                .arg(filesTable->rowCount())
-                .arg(itemsText)
-                .arg(filePath));
-        }
-        else {
+        if (_stopped) {
             setFilesFoundLabel("FINISHED | ");
         }
     }
@@ -1231,8 +1222,10 @@ void MainWindow::getSizeSlot() {
     catch (...) { Q_ASSERT(false); }
 }
 
-void MainWindow::getSizeWithAsync(const IntQStringMap& itemList) {
-    std::async(std::launch::async, [this, itemList]() {
+void MainWindow::getSizeWithAsync(const IntQStringMap& itemList)
+{
+    auto ft = std::async(std::launch::async, [this, itemList]()
+    {
         uint64pair countNsize;
         const auto nbrItems = itemList.size();
         QString filePath;
@@ -1403,17 +1396,21 @@ void MainWindow::itemRemoved(int row, quint64 count, quint64 size) {
     _totSize -= size;
 }
 
-void MainWindow::progressUpdate(const QString& path, quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize) {
+void MainWindow::progressUpdate(const QString& path, quint64 dirCount, quint64 foundCount, quint64 foundSize, quint64 symlinkCount, quint64 totCount, quint64 totSize) {
+    _dirCount = dirCount;
     _foundCount = foundCount;
     _foundSize = foundSize;
+    _symlinkCount = symlinkCount;
     _totCount = totCount;
     _totSize = totSize;
-    const auto itemsText = filesTable->rowCount() == 1 ? "item" : "items";
+    //const auto itemsText = filesTable->rowCount() == 1 ? "item" : "items";
     // Some progress update signals arrive after the search thread has stopped
     if (!_stopped) {
-        filesFoundLabel->setText(QString("Found %1 matching %2 so far...  Searching through %3")
-            .arg(filesTable->rowCount())
-            .arg(itemsText)
+        filesFoundLabel->setText(QString("%1 matching files, %2 folders, %3 %4...  Searching through %5")
+            .arg(_foundCount)
+            .arg(_dirCount)
+            .arg(symlinkCount)
+            .arg(OvSk_FsOp_SYMLINKS_TXT)
             .arg(path));
     }
     else {

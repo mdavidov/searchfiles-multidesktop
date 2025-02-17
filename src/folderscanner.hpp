@@ -27,12 +27,13 @@ public:
     ScanParams params{};
     quint64 getItemSize(const QFileInfo& info) const;
     quint64 combinedSize(const QFileInfoList& items);
+    bool isSymbolic(const QFileInfo& info) const;
 
 signals:
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
     void itemRemoved(int row, quint64 count, quint64 size, int nbrDeleted);
-    void progressUpdate(const QString& path, quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
+    void progressUpdate(const QString& path, quint64 dirCount, quint64 foundCount, quint64 foundSize, quint64 symlinkCount, quint64 totCount, quint64 totSize);
     void scanComplete();
     void scanCancelled();
 
@@ -45,7 +46,7 @@ public slots:
 private:
     void zeroCounters();
     bool appendOrExcludeItem(const QString& dirPath, const QFileInfo& info);
-    void getAllDirs(const QString& path, QFileInfoList& infos) const;
+    void getAllDirs(const QString& path, QFileInfoList& infos);
     void getFileInfos(const QString& path, QFileInfoList& infos) /*const*/;
     void getAllItems(const QString& path, QFileInfoList& infos) const;
     void updateTotals(const QString& path);
@@ -66,8 +67,10 @@ private:
     QElapsedTimer progressTimer;
     void reportProgress(const QString& path, bool doit = false);
 
+    quint64 dirCount{0};
     quint64 foundCount{0};
     quint64 foundSize{0};
+    quint64 symlinkCount;
     quint64 totCount{0};
     quint64 totSize{0};
 };

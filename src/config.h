@@ -123,24 +123,24 @@ QT_END_NAMESPACE
 #define OvSk_CONFIRM_DEL2TRASH1_TXT     tr("Are you sure you want to move the selected item to Trash?\n%1")
 #define OvSk_CONFIRM_DEL2TRASH_TXT      tr("Are you sure you want to move selected items to Trash?")
 #define OvSk_FsOp_NBR_SYMLINKS_TXT      tr("Symbolic links: %1")
-#define OvSk_FsOp_SYMLINK_TXT           "Symbolic link"
-#define OvSk_FsOp_SYMLINKS_TXT          "Symbolic links"
+#define OvSk_FsOp_SYMLINK_TXT           "symlink"
+#define OvSk_FsOp_SYMLINKS_TXT          "symlinks"
 #elif defined(Q_OS_WIN)
 #define OvSk_DEL2TRASH_ACT_TXT          tr("&Recycle")
 #define OvSk_DEL2TRASH_STS_TIP          tr("Move selected items to the Recycle Bin.")
 #define OvSk_CONFIRM_DEL2TRASH1_TXT     tr("Are you sure you want to move the selected item to the Recycle Bin?\n%1")
 #define OvSk_CONFIRM_DEL2TRASH_TXT      tr("Are you sure you want to move selected items to the Recycle Bin?")
 #define OvSk_FsOp_NBR_SYMLINKS_TXT      tr("Shortcuts: %1")
-#define OvSk_FsOp_SYMLINK_TXT           "Shortcut"
-#define OvSk_FsOp_SYMLINKS_TXT          "Shortcuts"
+#define OvSk_FsOp_SYMLINK_TXT           "shortcut"
+#define OvSk_FsOp_SYMLINKS_TXT          "shortcuts"
 #else
 #define OvSk_DEL2TRASH_ACT_TXT          tr("&Trash")
 #define OvSk_DEL2TRASH_STS_TIP          tr("Move selected file system items to Trash.")
 #define OvSk_CONFIRM_DEL2TRASH1_TXT     tr("Are you sure you want to move the selected item to Trash?\n%1")
 #define OvSk_CONFIRM_DEL2TRASH_TXT      tr("Are you sure you want to move selected items to Trash?")
 #define OvSk_FsOp_NBR_SYMLINKS_TXT      tr("Symbolic links: %1")
-#define OvSk_FsOp_SYMLINK_TXT           "Symbolic link"
-#define OvSk_FsOp_SYMLINKS_TXT          "Symbolic links"
+#define OvSk_FsOp_SYMLINK_TXT           "symlink"
+#define OvSk_FsOp_SYMLINKS_TXT          "symlinks"
 #endif
 
 #define OvSk_FsOp_DELETEPERM_ACT_TXT    tr("&Delete selected items")

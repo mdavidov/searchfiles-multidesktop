@@ -128,7 +128,7 @@ public slots:
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
     void itemRemoved(int row, quint64 count, quint64 size);
-    void progressUpdate(const QString& path, quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
+    void progressUpdate(const QString& path, quint64 dirCount, quint64 foundCount, quint64 foundSize, quint64 symlinkCount, quint64 totCount, quint64 totSize);
 
     void findBtnClicked();
     void deleteBtnClicked();
@@ -211,7 +211,7 @@ private:
     void createMainLayout();
     void createContextMenu();
 
-    void getSelectedItems( IntQStringMap& itemList);
+    void getSelectedItems(IntQStringMap& itemList);
 
 private:
     QLineEdit*  namesLineEdit;
@@ -279,11 +279,14 @@ private:
     QStringList _exclFolderPatterns;
 
     QFileInfoList _outFileInfos;
+
     quint64 _dirCount;
+    quint64 _foundCount;
+    quint64 _foundSize;
+    quint64 _symlinkCount;
     quint64 _totCount;
     quint64 _totSize;
-    quint64 _foundSize;
-    quint64 _foundCount;
+
     Devonline::Op::Type _opType;
     bool _stopped;
 };
