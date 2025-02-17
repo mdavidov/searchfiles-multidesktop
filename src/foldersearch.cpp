@@ -605,8 +605,8 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
             .arg(totItemsSizeStr);
     filesFoundLabel->setText(foundLabelText);
     qDebug() << foundLabelText;
-    if (_foundCount != quint64(filesTable->rowCount())) {
-        qDebug() << "WARNING: _foundCount" << _foundCount
+    if ((_foundCount + _dirCount + _symlinkCount) != quint64(filesTable->rowCount())) {
+        qDebug() << "WARNING: Items count" << (_foundCount + _dirCount + _symlinkCount)
                  << "!= filesTable->rowCount()" << filesTable->rowCount();
     }
 }
