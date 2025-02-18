@@ -2,7 +2,7 @@
 
 #include "common.h"
 #include "scanparams.hpp"
-#include "windows_symlink.h"
+#include "windows_symlink.hpp"
 #include <atomic>
 #include <map>
 #include <shared_mutex>

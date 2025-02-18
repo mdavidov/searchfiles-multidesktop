@@ -1,5 +1,5 @@
 #pragma once
-#include "windows_symlink.h"
+#include "windows_symlink.hpp"
 
 #ifdef Q_OS_WIN
 
