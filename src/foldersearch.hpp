@@ -289,7 +289,6 @@ private:
 
     Devonline::Op::Type _opType;
     bool _stopped{ true };
-    bool _wasInterrupted{ false };
 };
 
 }
