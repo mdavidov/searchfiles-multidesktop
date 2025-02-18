@@ -11,7 +11,7 @@
 
 #undef QT_NO_CONTEXTMENU
 
-#if defined(Q_OS_WIN)
+#ifdef Q_OS_WIN
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -606,8 +606,8 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
     filesFoundLabel->setText(foundLabelText);
     qDebug() << foundLabelText;
     if ((_foundCount + _dirCount + _symlinkCount) != quint64(filesTable->rowCount())) {
-        qDebug() << "WARNING: Items count" << (_foundCount + _dirCount + _symlinkCount)
-                 << "!= filesTable->rowCount()" << filesTable->rowCount();
+        qDebug() << "WARNING: Counts" << (_foundCount + _dirCount + _symlinkCount)
+                 << "DIFF table count" << filesTable->rowCount();
     }
 }
 
@@ -885,14 +885,19 @@ QComboBox* MainWindow::createComboBoxText()
     return comboBox;
 }
 
-bool isSymbolic(const QFileInfo& info) {
-    return info.isSymLink() || info.isSymbolicLink() || info.isShortcut();
-}
-
 QString MainWindow::FsItemType(const QFileInfo & finfo) const
 {
     QString fsType;
-    if (isSymbolic(finfo)) {
+    if (finfo.isAlias()) {
+        fsType = "Alias";
+    }
+    else if (isAppExecutionAlias(finfo.absoluteFilePath())) {
+        fsType = "App execution alias";
+    }
+    else if (isWindowsSymlink(finfo.absoluteFilePath())) {
+        fsType = "Windows symlink";
+    }
+    else if (isSymbolic(finfo)) {
         if (finfo.isDir())
             fsType = OvSk_FsOp_SYMLINK_TXT " to folder";
         else if (finfo.isFile())
@@ -905,7 +910,7 @@ QString MainWindow::FsItemType(const QFileInfo & finfo) const
     else if (finfo.isFile())
         fsType = "File";
     else
-        fsType = "";
+        fsType = "Unknown";
 
     if (isHidden(finfo))
         fsType += " - hidden";
@@ -918,10 +923,13 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
   try
   {
     processEvents();
+    const auto symlinkTarget = !finfo.symLinkTarget().isEmpty() ?
+        finfo.symLinkTarget() :
+        getWindowsSymlinkTarget(filePath);
     auto fileNameItem = new TableWidgetItem;
     auto fileName = finfo.fileName();
-    if (isSymbolic(finfo) && !finfo.symLinkTarget().isEmpty())
-        fileName += " -> " + finfo.symLinkTarget();
+    if (isSymbolic(finfo) && !symlinkTarget.isEmpty())
+        fileName += " -> " + symlinkTarget;
     else if (finfo.isDir())
         fileName += QDir::separator();
     fileNameItem->setData(Qt::DisplayRole, QDir::toNativeSeparators(fileName));

@@ -14,6 +14,17 @@
 
 namespace Devonline
 {
+bool isSymbolic(const QFileInfo& info)
+{
+#ifdef Q_OS_WIN
+    return isAppExecutionAlias(info.absoluteFilePath()) ||
+           isWindowsSymlink(info.absoluteFilePath()) ||
+           info.isJunction() ||info.isShortcut() || info.isSymbolicLink();
+#else
+    return info.isAlias() || info.isSymLink() || info.isSymbolicLink();
+#endif
+}
+
 FolderScanner::FolderScanner(QObject* parent)
 : QObject(parent), stopped(false), dirCount(0), foundCount(0), foundSize(0), symlinkCount(0), totCount(0), totSize(0)
 {
@@ -51,10 +62,6 @@ void FolderScanner::stop() {
 bool FolderScanner::isStopped() const {
     std::shared_lock<std::shared_mutex> lock(mutex);
     return stopped;
-}
-
-bool FolderScanner::isSymbolic(const QFileInfo& info) const {
-    return info.isSymLink() || info.isSymbolicLink() || info.isShortcut();
 }
 
 bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo& info)

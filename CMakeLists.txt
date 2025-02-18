@@ -58,6 +58,8 @@ set(PROJECT_SOURCES
     src/util.h
     src/util.cpp
     src/version.h
+    src/windows_symlink.h
+    src/windows_symlink.cpp
     foldersearch.qrc
 )
 

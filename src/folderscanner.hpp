@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "scanparams.hpp"
+#include "windows_symlink.h"
 #include <atomic>
 #include <map>
 #include <shared_mutex>
@@ -19,6 +20,9 @@ using uint64pair = std::pair<uint64_t, uint64_t>;
 namespace Devonline
 {
 
+bool isSymbolic(const QFileInfo& info);
+
+
 class FolderScanner : public QObject {
     Q_OBJECT
 public:
@@ -27,7 +31,6 @@ public:
     ScanParams params{};
     quint64 getItemSize(const QFileInfo& info) const;
     quint64 combinedSize(const QFileInfoList& items);
-    bool isSymbolic(const QFileInfo& info) const;
 
 signals:
     void itemFound(const QString& path, const QFileInfo& info);
