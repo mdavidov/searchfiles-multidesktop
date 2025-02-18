@@ -43,7 +43,9 @@ typedef struct _REPARSE_DATA_BUFFER {
 #define REPARSE_DATA_BUFFER_HEADER_SIZE FIELD_OFFSET(REPARSE_DATA_BUFFER, GenericReparseBuffer)
 
 }
-#endif Q_OS_WIN
+#endif
+
+#include <QString>
 
 namespace Devonline
 {

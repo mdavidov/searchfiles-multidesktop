@@ -600,7 +600,7 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
             .arg(foundItemsSizeStr)
             .arg(_dirCount)
             .arg(_symlinkCount)
-            .arg(OvSk_FsOp_SYMLINKS_TXT)
+            .arg(OvSk_FsOp_SYMLINKS_LOW)
             .arg(_totCount)
             .arg(totItemsSizeStr);
     filesFoundLabel->setText(foundLabelText);
@@ -1425,7 +1425,7 @@ void MainWindow::progressUpdate(const QString& path, quint64 dirCount, quint64 f
             .arg(_foundCount)
             .arg(_dirCount)
             .arg(symlinkCount)
-            .arg(OvSk_FsOp_SYMLINKS_TXT)
+            .arg(OvSk_FsOp_SYMLINKS_LOW)
             .arg(path));
     }
     else {

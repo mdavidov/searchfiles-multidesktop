@@ -1,4 +1,3 @@
-#pragma once
 #include "windows_symlink.hpp"
 
 #ifdef Q_OS_WIN
@@ -134,6 +133,7 @@ bool isWindowsSymlink(const QString& path) {
 #ifdef Q_OS_WIN
     return _isWindowsSymlink(path);
 #else
+    (void)path;
     return false;
 #endif
 }
@@ -142,6 +142,7 @@ bool isAppExecutionAlias(const QString& path) {
 #ifdef Q_OS_WIN
     return _isAppExecutionAlias(path);
 #else
+    (void)path;
     return false;
 #endif
 }
@@ -157,6 +158,7 @@ QString getWindowsSymlinkTarget(const QString& path) {
     }
     return QString();
 #else
+    (void)path;
     return QString();
 #endif
 }
