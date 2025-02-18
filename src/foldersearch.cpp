@@ -547,24 +547,17 @@ void MainWindow::Clear()
 
 void MainWindow::setStopped(bool stopped)
 {
-  try
-  {
     _stopped = stopped;
-
     if (_stopped) {
-        filesTable->update();
         filesTable->setSortingEnabled(true);
+        filesTable->update();
     }
-
     findButton->setEnabled(     _stopped);
     deleteButton->setEnabled(   _stopped && filesTable->selectedItems().count() > 0);
     shredButton->setEnabled(    _stopped && filesTable->selectedItems().count() > 0);
     cancelButton->setEnabled(  !_stopped);
-
     namesLineEdit->setEnabled(  _stopped);
-
     dirComboBox->setEnabled(    _stopped);
-
     itmTypeLbl->setEnabled(     _stopped);
     filesCheck->setEnabled(     _stopped);
     foldersCheck->setEnabled(   _stopped);
@@ -574,19 +567,14 @@ void MainWindow::setStopped(bool stopped)
     maxSubDirDepthEdt->setEnabled(  _stopped && limSubDirDepthBtn->isChecked());
     goUpButton->setEnabled(     _stopped);
     browseButton->setEnabled(   _stopped);
-
     wordsLineEdit->setEnabled(  _stopped && filesCheck->isChecked());
     matchCaseCheck->setEnabled( _stopped && filesCheck->isChecked());
-
     exclByFolderNameCombo->setEnabled(_stopped);
     exclByFileNameCombo->setEnabled(_stopped);
     exclFilesByTextCombo->setEnabled(_stopped);
     exclHiddenCheck->setEnabled(_stopped);
-
-    filesTable->horizontalHeader()->setEnabled( _stopped);
-    filesTable->verticalHeader()->setEnabled(   _stopped);
-  }
-  catch (...) { Q_ASSERT(false); }
+    // filesTable->horizontalHeader()->setEnabled( _stopped);
+    // filesTable->verticalHeader()->setEnabled(   _stopped);
 }
 
 void MainWindow::setFilesFoundLabel(const QString& prefix)
@@ -1042,6 +1030,9 @@ void MainWindow::createFilesTable()
     filesTable->setWordWrap(true);
     filesTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     filesTable->setAlternatingRowColors(true);
+    // Sorting by relative path (column 0) will take effect later,
+    // when sorting is enabled at the end of a search.
+    filesTable->sortByColumn(0, Qt::AscendingOrder);
     filesTable->setSortingEnabled(false);
     filesTable->setShowGrid(true);
 
