@@ -124,6 +124,7 @@ MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
     , _maxSubDirDepth(0)
     , _unlimSubDirDepth(true)
     , _stopped(true)
+    , _wasInterrupted(false)
 {
     setWindowTitle(QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR);  // + " " + OvSk_FsOp_APP_BUILD_NBR_STR);
     const auto savedPath = Cfg::St().value(Cfg::origDirPathKey).toString();
@@ -433,6 +434,7 @@ static void updateComboBox(QComboBox *comboBox)
 void MainWindow::deleteBtnClicked()
 {
     try {
+        _wasInterrupted = false;
         _opType = Devonline::Op::deletePerm;
         if (filesTable->selectedItems().empty()) {
             #if !defined(Q_OS_MAC)
@@ -478,6 +480,7 @@ void MainWindow::shredBtnClicked()
 {
     try
     {
+        _wasInterrupted = false;
         _opType = Devonline::Op::shredPerm;
         if (filesTable->selectedItems().empty()) {
             #if !defined(Q_OS_MAC)
@@ -502,8 +505,9 @@ void MainWindow::cancelBtnClicked()
         return;
     stopAllThreads();
     flushItemBuffer();
-    setFilesFoundLabel("INTERRUPTED | ");
-    filesTable->sortByColumn(-1, Qt::AscendingOrder);
+    _wasInterrupted = true;
+    setFilesFoundLabel("INTERRUPTED (cancel) | ");
+    itemBuffer.clear();
     filesTable->setSortingEnabled(true);
     setStopped(true);
 }
@@ -591,16 +595,20 @@ void MainWindow::setStopped(bool stopped)
 
 void MainWindow::setFilesFoundLabel(const QString& prefix)
 {
+    if (_foundCount == 0) {
+        _foundSize = 0;
+    }
     const auto totItemsSizeStr = sizeToHumanReadable(_totSize);
     const auto foundItemsSizeStr = sizeToHumanReadable(_foundSize);
     const auto foundLabelText =
         prefix
-        + tr("%1 matching files (%2), %3 folders, %4 %5 (searched total %6 items, %7). ")
+        + tr("%1 matching files (%2), %3 folders, %4 %5, table rows %6 (searched total %7 items, %8). ")
             .arg(_foundCount)
             .arg(foundItemsSizeStr)
             .arg(_dirCount)
             .arg(_symlinkCount)
             .arg(OvSk_FsOp_SYMLINKS_LOW)
+            .arg(filesTable->rowCount())
             .arg(_totCount)
             .arg(totItemsSizeStr);
     filesFoundLabel->setText(foundLabelText);
@@ -715,6 +723,7 @@ void MainWindow::findBtnClicked()
         if (!_stopped) {
             return;
         }
+        _wasInterrupted = false;
         if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
             #if !defined(Q_OS_MAC)
                 QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
@@ -922,6 +931,11 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
 {
   try
   {
+    if (_stopped) {
+        // Some item-found Qt signals arrive after the search thread has stopped
+        // setFilesFoundLabel(_wasInterrupted ? "INTERRUPTED (append) | " : "FINISHED | (append) ");
+        return;
+    }
     processEvents();
     const auto symlinkTarget = !finfo.symLinkTarget().isEmpty() ?
         finfo.symLinkTarget() :
@@ -1001,11 +1015,6 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
     if (itemBuffer.size() >= BATCH_SIZE) {
         flushItemBuffer();
         //filesTable->scrollToBottom();
- 
-        // Some item-found signals arrive after the search thread has stopped
-        if (_stopped) {
-            setFilesFoundLabel("FINISHED | ");
-        }
     }
   }
   catch(...) { Q_ASSERT(false); }
@@ -1042,7 +1051,6 @@ void MainWindow::createFilesTable()
     filesTable->setWordWrap(true);
     filesTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     filesTable->setAlternatingRowColors(true);
-    filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(false);
     filesTable->setShowGrid(true);
 
@@ -1387,10 +1395,9 @@ void MainWindow::deepScanFolderOnThread(const QString& startPath, const int maxD
 void MainWindow::scanThreadFinished()
 {
     flushItemBuffer();
-    setFilesFoundLabel(_stopped ? "INTERRUPTED | " : "COMPLETED | ");
+    setFilesFoundLabel(_stopped ? "INTERRUPTED (thread finished) | " : "COMPLETED | (thread finished) ");
     stopAllThreads();
     setStopped(true);
-    filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(true);
 }
 
@@ -1428,9 +1435,9 @@ void MainWindow::progressUpdate(const QString& path, quint64 dirCount, quint64 f
             .arg(OvSk_FsOp_SYMLINKS_LOW)
             .arg(path));
     }
-    else {
-        setFilesFoundLabel("FINISHED | ");
-    }
+    // else {
+    //     setFilesFoundLabel(_wasInterrupted ? "INTERRUPTED (progress) | " : "FINISHED | (progress) ");
+    // }
 }
 
 void MainWindow::removeRows()
@@ -1472,7 +1479,7 @@ void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/
 
 void MainWindow::removalComplete(bool success) {
     removeRows(); // files that failed to delete will not be removed
-    const QString prefix = _stopped ? "INTERRUPTED | " : "COMPLETED | ";
+    const QString prefix = _stopped ? "INTERRUPTED (removal) | " : "COMPLETED | (removal) ";
     const QString suffix = (success && !_stopped) ? "Removal successful" : "Some files were not removed";
     filesFoundLabel->setText(prefix + suffix);
     stopAllThreads();

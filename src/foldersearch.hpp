@@ -288,7 +288,8 @@ private:
     quint64 _totSize;
 
     Devonline::Op::Type _opType;
-    bool _stopped;
+    bool _stopped{ true };
+    bool _wasInterrupted{ false };
 };
 
 }
