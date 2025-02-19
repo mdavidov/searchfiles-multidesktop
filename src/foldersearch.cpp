@@ -63,7 +63,7 @@ const QString stopText( "S&top");
 const int N_COL = 7;
 const int RELPATH_COL_IDX = 0;
 
-static int BATCH_SIZE = 500;
+static int BATCH_SIZE = 1'000;  // see also MainWindow::findFilesPrep()
 QVector<QVector<QTableWidgetItem*>> itemBuffer;
 
 #if defined(Q_OS_WIN)
@@ -504,6 +504,7 @@ void MainWindow::cancelBtnClicked()
     flushItemBuffer();
     setFilesFoundLabel("INTERRUPTED | ");
     itemBuffer.clear();
+    filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(true);
     setStopped(true);
 }
@@ -549,8 +550,9 @@ void MainWindow::setStopped(bool stopped)
 {
     _stopped = stopped;
     if (_stopped) {
+        filesTable->sortByColumn(-1, Qt::AscendingOrder);
         filesTable->setSortingEnabled(true);
-        filesTable->update();
+        //filesTable->update();
     }
     findButton->setEnabled(     _stopped);
     deleteButton->setEnabled(   _stopped && filesTable->selectedItems().count() > 0);
@@ -690,7 +692,7 @@ bool MainWindow::findFilesPrep()
 
     BATCH_SIZE = (_searchWords.isEmpty() &&
                   _exclusionWords.isEmpty() &&
-                  scanner->params.nameFilters.isEmpty()) ? 500 : 1;
+                  scanner->params.nameFilters.isEmpty()) ? 1'000 : 1;
 
     bool maxValid = false;
     _maxSubDirDepth =  maxSubDirDepthEdt->text().toInt(&maxValid);
@@ -721,6 +723,7 @@ void MainWindow::findBtnClicked()
         if (!findFilesPrep()) {
             return;
         }
+        filesTable->sortByColumn(-1, Qt::AscendingOrder);
         filesTable->setSortingEnabled(false);
         Clear();
         setStopped(false);
@@ -737,10 +740,10 @@ inline void MainWindow::processEvents()
     // first time the function is called.
     static qint64 prev = elapsed;
     const auto diff = elapsed - prev;
-    if (diff >= 1'000) {  // msec
+    if (diff >= 500) {  // msec
         // Static var prev keeps its value for the next call of this function.
         prev = elapsed;
-        qApp->processEvents(QEventLoop::AllEvents, 400);
+        qApp->processEvents(QEventLoop::AllEvents, 200);
     }
 }
 
@@ -880,15 +883,12 @@ QComboBox* MainWindow::createComboBoxText()
 QString MainWindow::FsItemType(const QFileInfo & finfo) const
 {
     QString fsType;
-    if (finfo.isAlias()) {
+    if (finfo.isAlias())
         fsType = "Alias";
-    }
-    else if (isAppExecutionAlias(finfo.absoluteFilePath())) {
-        fsType = "App execution alias";
-    }
-    else if (isWindowsSymlink(finfo.absoluteFilePath())) {
-        fsType = "Windows symlink";
-    }
+    //else if (isAppExecutionAlias(finfo.absoluteFilePath()))
+    //    fsType = "App execution alias";
+    //else if (isWindowsSymlink(finfo.absoluteFilePath()))
+    //    fsType = "Windows symlink";
     else if (isSymbolic(finfo)) {
         if (finfo.isDir())
             fsType = OvSk_FsOp_SYMLINK_TXT " to folder";
@@ -1014,8 +1014,9 @@ void MainWindow::flushItemBuffer() {
         }
     } // ub goes OUT OF SCOPE here, table updates and signals are enabled
     itemBuffer.clear();
-    filesTable->setSortingEnabled(true);
-    filesTable->update();
+    filesTable->sortByColumn(-1, Qt::AscendingOrder);
+    //filesTable->setSortingEnabled(false);
+    //filesTable->update();
     processEvents();
 }
 
@@ -1032,7 +1033,7 @@ void MainWindow::createFilesTable()
     filesTable->setAlternatingRowColors(true);
     // Sorting by relative path (column 0) will take effect later,
     // when sorting is enabled at the end of a search.
-    filesTable->sortByColumn(0, Qt::AscendingOrder);
+    filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(false);
     filesTable->setShowGrid(true);
 
@@ -1380,6 +1381,7 @@ void MainWindow::scanThreadFinished()
     setFilesFoundLabel(_stopped ? "INTERRUPTED | " : "COMPLETED | ");
     stopAllThreads();
     setStopped(true);
+    filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(true);
 }
 
@@ -1439,8 +1441,9 @@ void MainWindow::removeRows()
         }
     } // ub goes OUT OF SCOPE here, table updates and signals are enabled
     rowsToRemove_.clear();
+    filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(true);
-    filesTable->update();
+    //filesTable->update();
     processEvents();
 }
 

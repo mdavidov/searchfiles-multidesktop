@@ -87,13 +87,14 @@ public:
     }
     void setAllUpdatesEnabled(QTableWidget* table, bool enabled)
     {
+        table->sortByColumn(-1, Qt::AscendingOrder);
         table->setSortingEnabled(false);
         table->setUpdatesEnabled(enabled);
         enabled ?
             table->setSelectionMode(QAbstractItemView::ExtendedSelection) :
             table->setSelectionMode(QAbstractItemView::NoSelection);
         table->viewport()->setUpdatesEnabled(enabled);
-        table->blockSignals(!enabled);
+        //table->blockSignals(!enabled);
     }
 private:
     QTableWidget* _table;
@@ -107,7 +108,7 @@ public:
     explicit TableWidgetItem(const QString & itemText) : QTableWidgetItem(itemText) {}
 private:
     bool operator<(const QTableWidgetItem & other) const override {
-        return text().toLower() < other.text().toLower(); // performance problem?
+        return text().compare(other.text(), Qt::CaseInsensitive) < 0; // performance problem? YES, HUGE
     }
 };
 

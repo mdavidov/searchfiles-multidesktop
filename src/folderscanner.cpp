@@ -17,9 +17,9 @@ namespace Devonline
 bool isSymbolic(const QFileInfo& info)
 {
 #ifdef Q_OS_WIN
-    return isAppExecutionAlias(info.absoluteFilePath()) ||
-           isWindowsSymlink(info.absoluteFilePath()) ||
-           info.isJunction() ||info.isShortcut() || info.isSymbolicLink();
+    return //isAppExecutionAlias(info.absoluteFilePath()) ||
+           //isWindowsSymlink(info.absoluteFilePath()) ||
+           info.isShortcut() || info.isSymbolicLink() || info.isJunction();
 #else
     return info.isAlias() || info.isSymLink() || info.isSymbolicLink();
 #endif
@@ -37,7 +37,7 @@ FolderScanner::FolderScanner(QObject* parent)
 void FolderScanner::reportProgress(const QString& path, bool doit /*= false*/) {
     const auto elapsed = progressTimer.elapsed();
     const auto diff = elapsed - prevProgress;
-    if (doit || diff >= 200) {  // msec
+    if (doit || diff >= 500) {  // msec
         prevProgress = elapsed;
         if (!stopped)
             emit progressUpdate(path, dirCount, foundCount, foundSize, symlinkCount, totCount, totSize);
@@ -50,7 +50,7 @@ void FolderScanner::processEvents()
     const auto diff = elapsed - prevEvents;
     if (diff >= 500) {  // msec
         prevEvents = elapsed;
-        qApp->processEvents(QEventLoop::AllEvents, 450);
+        qApp->processEvents(QEventLoop::AllEvents, 200);
     }
 }
 
@@ -68,11 +68,12 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
 {
     try {
         const auto filePath = QDir::fromNativeSeparators(info.absoluteFilePath());
+        const auto isSymlink = isSymbolic(info);
         if (!params.exclFolderPatterns.empty() &&
                 stringContainsAnyWord(dirPath, params.exclFolderPatterns)) {
             return false;
         }
-        if (info.isFile() && !isSymbolic(info)) {
+        if (info.isFile() && !isSymlink) {
             if (!params.exclFilePatterns.empty() &&
                     stringContainsAnyWord(info.fileName(), params.exclFilePatterns)) {
                 return false;
@@ -84,17 +85,17 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
         }
         bool toAppend = false;
         if (params.searchWords.empty()) {
-            if (isSymbolic(info))
+            if (isSymlink)
                 toAppend = params.inclSymlinks;
             else if (info.isDir())
                 toAppend = params.inclFolders;
         }
-        if (info.isFile() && !isSymbolic(info) && params.inclFiles) {
+        if (info.isFile() && !isSymlink && params.inclFiles) {
             toAppend = params.searchWords.empty() ||
                 fileContainsAllWordsChunked(filePath, params.searchWords);
         }
         if (toAppend) {
-            if (isSymbolic(info))
+            if (isSymlink)
                 symlinkCount++;
             else if (info.isDir())
                 dirCount++;
@@ -146,7 +147,7 @@ void FolderScanner::getAllItems(const QString& path, QFileInfoList& infos) const
 quint64 FolderScanner::getItemSize(const QFileInfo& info) const
 {
     static constexpr qint64 DIR_SYMLINK_SIZE = 4 * 1024;
-    return isSymbolic(info) ? DIR_SYMLINK_SIZE : quint64(info.size());
+    return quint64(info.size());  // isSymbolic(info) ? DIR_SYMLINK_SIZE : quint64(info.size());
 }
 
 quint64 FolderScanner::combinedSize(const QFileInfoList& infos)
