@@ -36,7 +36,7 @@ signals:
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
     void itemRemoved(int row, quint64 count, quint64 size, int nbrDeleted);
-    void progressUpdate(const QString& path, quint64 dirCount, quint64 foundCount, quint64 foundSize, quint64 symlinkCount, quint64 totCount, quint64 totSize);
+    void progressUpdate(const QString& path, quint64 totCount, quint64 totSize);
     void scanComplete();
     void scanCancelled();
 

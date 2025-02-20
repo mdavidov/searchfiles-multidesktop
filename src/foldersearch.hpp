@@ -40,43 +40,6 @@ class MainWindow;
 class FolderScanner;
 
 
-//class TableWidget : public QTableWidget
-//{
-//    Q_OBJECT
-//public:
-//    explicit TableWidget(int rows, int columns, QWidget* parent=nullptr) : QTableWidget(parent) {}
-//protected:
-//    void keyReleaseEvent(QKeyEvent* ev) override
-//    {
-//        // Move the implementation to the cpp file.
-//        try
-//        {
-//            auto mwd = qobject_cast<MainWindow*>(parent());
-//            Q_ASSERT(mwd);
-//            if (!mwd) {
-//                TableWidget::keyReleaseEvent(ev);
-//                return;
-//            }
-//            if (ev->key() == Qt::Key_Delete) {
-//                mwd->deleteBtnClicked();
-//                ev->accept();
-//            }
-//            else if (ev->key() == Qt::Key_Enter || ev->key() == Qt::Key_Return) {
-//                mwd->findBtnClicked();
-//                ev->accept();
-//            }
-//            else if (ev->key() == Qt::Key_Escape) {
-//                mwd->cancelBtnClicked();
-//                ev->accept();
-//            }
-//            else
-//                TableWidget::keyReleaseEvent(ev);
-//        }
-//        catch (...) { Q_ASSERT(false); }
-//    }
-//};
-
-
 class UpdateBlocker {
 public:
     explicit UpdateBlocker(QTableWidget* table) : _table(table) {
@@ -87,29 +50,13 @@ public:
     }
     void setAllUpdatesEnabled(QTableWidget* table, bool enabled)
     {
-        table->sortByColumn(-1, Qt::AscendingOrder);
         table->setSortingEnabled(false);
         table->setUpdatesEnabled(enabled);
-        enabled ?
-            table->setSelectionMode(QAbstractItemView::ExtendedSelection) :
-            table->setSelectionMode(QAbstractItemView::NoSelection);
         table->viewport()->setUpdatesEnabled(enabled);
-        //table->blockSignals(!enabled);
+        table->blockSignals(!enabled);
     }
 private:
     QTableWidget* _table;
-};
-
-
-class TableWidgetItem : public QTableWidgetItem
-{
-public:
-    TableWidgetItem() : QTableWidgetItem() {}
-    explicit TableWidgetItem(const QString & itemText) : QTableWidgetItem(itemText) {}
-private:
-    bool operator<(const QTableWidgetItem & other) const override {
-        return text().compare(other.text(), Qt::CaseInsensitive) < 0; // performance problem? YES, HUGE
-    }
 };
 
 
@@ -129,7 +76,7 @@ public slots:
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
     void itemRemoved(int row, quint64 count, quint64 size);
-    void progressUpdate(const QString& path, quint64 dirCount, quint64 foundCount, quint64 foundSize, quint64 symlinkCount, quint64 totCount, quint64 totSize);
+    void progressUpdate(const QString& path, quint64 totCount, quint64 totSize);
 
     void findBtnClicked();
     void deleteBtnClicked();
@@ -173,13 +120,15 @@ private:
     void removeRows();
     void removalProgress(int row, const QString& path, uint64_t size, bool rmOk);
     void removalComplete(bool success);
+    qint64 prevProgress{ 0 };
     QElapsedTimer progressTimer;
 
+    qint64 prevEvents{ 0 };
     QElapsedTimer eventsTimer;
     inline void processEvents();
 
     bool isHidden(const QFileInfo& finfo) const;
-    QString FsItemType(const QFileInfo& finfo) const;
+    QString FsItemType(bool isFile, bool isDir, bool isSymlink, bool isHidden) const;
 
     QPushButton *createButton(const QString &text, const char *member);
     QComboBox * createComboBoxFSys(const QString & text, bool setCompleter = false);

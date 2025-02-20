@@ -40,7 +40,7 @@ void FolderScanner::reportProgress(const QString& path, bool doit /*= false*/) {
     if (doit || diff >= 500) {  // msec
         prevProgress = elapsed;
         if (!stopped)
-            emit progressUpdate(path, dirCount, foundCount, foundSize, symlinkCount, totCount, totSize);
+            emit progressUpdate(path, totCount, totSize);
     }
 }
 
