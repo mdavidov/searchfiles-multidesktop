@@ -69,11 +69,13 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
     try {
         const auto filePath = QDir::fromNativeSeparators(info.absoluteFilePath());
         const auto isSymlink = isSymbolic(info);
+        const auto isDir = info.isDir() && !isSymlink;
+        const auto isFile = info.isFile() && !isSymlink;
         if (!params.exclFolderPatterns.empty() &&
                 stringContainsAnyWord(dirPath, params.exclFolderPatterns)) {
             return false;
         }
-        if (info.isFile() && !isSymlink) {
+        if (isFile) {
             if (!params.exclFilePatterns.empty() &&
                     stringContainsAnyWord(info.fileName(), params.exclFilePatterns)) {
                 return false;
@@ -87,19 +89,19 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
         if (params.searchWords.empty()) {
             if (isSymlink)
                 toAppend = params.inclSymlinks;
-            else if (info.isDir())
+            else if (isDir)
                 toAppend = params.inclFolders;
         }
-        if (info.isFile() && !isSymlink && params.inclFiles) {
+        if (isFile && params.inclFiles) {
             toAppend = params.searchWords.empty() ||
                 fileContainsAllWordsChunked(filePath, params.searchWords);
         }
         if (toAppend) {
             if (isSymlink)
                 symlinkCount++;
-            else if (info.isDir())
+            else if (isDir)
                 dirCount++;
-            else
+            else if (isFile)
                 foundCount++;
             foundSize += getItemSize(info);
         }

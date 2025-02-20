@@ -912,18 +912,18 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
 {
     if (_stopped)
         return;
-    const auto isFile = finfo.isFile();
-    const auto isDir = finfo.isDir();
     const auto isSymLink = isSymbolic(finfo);
+    const auto isDir = finfo.isDir() && !isSymLink;
+    const auto isFile = finfo.isFile() && !isSymLink;
     const auto isHidden = finfo.isHidden();
-    const auto fsize = finfo.size();
+    const auto fsize = (quint64)finfo.size();
     _foundSize += fsize;
-    if (isFile)
-        _foundCount++;
+    if (isSymLink)
+        _symlinkCount++;
     else if (isDir)
         _dirCount++;
-    else if (isSymLink)
-        _symlinkCount++;
+    else if (isFile)
+        _foundCount++;
     processEvents();
     auto fileNameItem = new QTableWidgetItem;
     auto fileName = finfo.fileName();
@@ -1017,16 +1017,16 @@ void MainWindow::flushItemBuffer() {
             }
         }
     } // ub goes OUT OF SCOPE here, table updates and signals are enabled
-    const auto rowCount = filesTable->rowCount();
-    if ((_foundCount + _dirCount + _symlinkCount) < quint64(rowCount))
+    itemBuffer.clear();
+    const auto rowCount = (quint64)filesTable->rowCount();
+    if ((_foundCount + _dirCount + _symlinkCount) < rowCount)
         qDebug() << "ERROR: (_foundCount + _dirCount + _symlinkCount)" <<
                             (_foundCount + _dirCount + _symlinkCount) << 
                             "!= rowCount" << rowCount;
-    if (_foundCount == 0)
-        _foundCount = quint64(filesTable->rowCount() + itemBuffer.size());
+    if (_totCount < rowCount)
+        _totCount = rowCount;
     if (_totCount < (_foundCount + _dirCount + _symlinkCount))
         _totCount = (_foundCount + _dirCount + _symlinkCount);
-    itemBuffer.clear();
     processEvents();
 }
 
