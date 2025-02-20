@@ -146,7 +146,7 @@ void FolderScanner::getAllItems(const QString& path, QFileInfoList& infos) const
 
 quint64 FolderScanner::getItemSize(const QFileInfo& info) const
 {
-    static constexpr qint64 DIR_SYMLINK_SIZE = 4 * 1024;
+    // static constexpr qint64 DIR_SYMLINK_SIZE = 4 * 1024;
     return quint64(info.size());  // isSymbolic(info) ? DIR_SYMLINK_SIZE : quint64(info.size());
 }
 

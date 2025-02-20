@@ -1018,7 +1018,7 @@ void MainWindow::flushItemBuffer() {
         }
     } // ub goes OUT OF SCOPE here, table updates and signals are enabled
     const auto rowCount = filesTable->rowCount();
-    if ((_foundCount + _dirCount + _symlinkCount) < rowCount)
+    if ((_foundCount + _dirCount + _symlinkCount) < quint64(rowCount))
         qDebug() << "ERROR: (_foundCount + _dirCount + _symlinkCount)" <<
                             (_foundCount + _dirCount + _symlinkCount) << 
                             "!= rowCount" << rowCount;
