@@ -26,7 +26,7 @@ FolderScanner::FolderScanner(QObject* parent)
 void FolderScanner::reportProgress(const QString& path, bool doit /*= false*/) {
     const auto elapsed = progressTimer.elapsed();
     const auto diff = elapsed - prevProgress;
-    if (doit || diff >= 1'000) {  // msec
+    if (doit || diff >= 500) {  // msec
         prevProgress = elapsed;
         if (!stopped)
             emit progressUpdate(path, dirCount, foundCount, foundSize, symlinkCount, totCount, totSize);

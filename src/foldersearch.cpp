@@ -506,10 +506,10 @@ void MainWindow::cancelBtnClicked()
     if (_stopped)
         return;
     stopAllThreads();
-    itemBuffer.clear();
+    flushItemBuffer();
     setFilesFoundLabel("INTERRUPTED | ");
-    //filesTable->sortByColumn(-1, Qt::AscendingOrder);
-    //filesTable->setSortingEnabled(true);
+    filesTable->setSortingEnabled(true);
+    filesTable->sortByColumn(-1, Qt::AscendingOrder);
     setStopped(true);
 }
 
@@ -555,8 +555,8 @@ void MainWindow::setStopped(bool stopped)
     _stopped = stopped;
     if (_stopped) {
         //filesTable->update();
-        //filesTable->sortByColumn(-1, Qt::AscendingOrder);
-        //filesTable->setSortingEnabled(true);
+        filesTable->setSortingEnabled(true);
+        filesTable->sortByColumn(-1, Qt::AscendingOrder);
     }
     findButton->setEnabled(     _stopped);
     deleteButton->setEnabled(   _stopped && filesTable->selectedItems().count() > 0);
@@ -692,7 +692,7 @@ bool MainWindow::findFilesPrep()
 
     BATCH_SIZE = (_searchWords.isEmpty() &&
                   _exclusionWords.isEmpty() &&
-                  scanner->params.nameFilters.isEmpty()) ? 500 : 1;
+                  scanner->params.nameFilters.isEmpty()) ? 1'000 : 1;
 
     bool maxValid = false;
     _maxSubDirDepth =  maxSubDirDepthEdt->text().toInt(&maxValid);
@@ -723,7 +723,6 @@ void MainWindow::findBtnClicked()
         if (!findFilesPrep()) {
             return;
         }
-        //filesTable->sortByColumn(-1, Qt::AscendingOrder);
         filesTable->setSortingEnabled(false);
         Clear();
         setStopped(false);
@@ -881,27 +880,25 @@ bool isSymbolic(const QFileInfo& info) {
     return info.isSymLink() || info.isSymbolicLink() || info.isShortcut();
 }
 
-QString MainWindow::FsItemType(const QFileInfo & finfo) const
+QString MainWindow::FsItemType(bool isFile, bool isDir, bool isSymlink, bool isHidden) const
 {
     QString fsType;
-    if (isSymbolic(finfo)) {
-        if (finfo.isDir())
+    if (isSymlink) {
+        if (isDir)
             fsType = OvSk_FsOp_SYMLINK_TXT " to folder";
-        else if (finfo.isFile())
+        else if (isFile)
             fsType = OvSk_FsOp_SYMLINK_TXT " to file";
         else
             fsType = OvSk_FsOp_SYMLINK_TXT;
     }
-    else if (finfo.isDir())
+    else if (isDir)
         fsType = "Folder";
-    else if (finfo.isFile())
+    else if (isFile)
         fsType = "File";
     else
         fsType = "";
-
-    if (isHidden(finfo))
+    if (isHidden)
         fsType += " - hidden";
-
     return fsType;
 }
 
@@ -909,17 +906,29 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
 {
     if (_stopped)
         return;
+    const auto isFile = finfo.isFile();
+    const auto isDir = finfo.isDir();
+    const auto isSymLink = isSymbolic(finfo);
+    const auto isHidden = finfo.isHidden();
+    const auto fsize = finfo.size();
+    _foundSize += fsize;
+    if (isFile)
+        _foundCount++;
+    else if (isDir)
+        _dirCount++;
+    else if (isSymLink)
+        _symlinkCount++;
     processEvents();
     auto fileNameItem = new QTableWidgetItem;
     auto fileName = finfo.fileName();
-    if (isSymbolic(finfo) && !finfo.symLinkTarget().isEmpty())
+    if (isSymLink && !finfo.symLinkTarget().isEmpty())
         fileName += " -> " + finfo.symLinkTarget();
-    else if (finfo.isDir())
+    else if (isDir)
         fileName += QDir::separator();
     fileNameItem->setData(Qt::DisplayRole, QDir::toNativeSeparators(fileName));
     fileNameItem->setFlags(fileNameItem->flags() ^ Qt::ItemIsEditable);
     auto absFilePath = QDir::toNativeSeparators(finfo.absoluteFilePath());
-    if (finfo.isDir())
+    if (isDir)
         absFilePath += QDir::separator();
     fileNameItem->setData(Qt::ToolTipRole, QVariant(absFilePath));
 
@@ -933,12 +942,12 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
     filePathItem->setFlags( filePathItem->flags() ^ Qt::ItemIsEditable);
     filePathItem->setData( Qt::UserRole, QDir::toNativeSeparators( filePath));
     auto fpTooltip = "{SF} = " + dirComboBox->currentText();
-    if (!fpTooltip.endsWith(QDir::separator()) && finfo.isDir())
+    if (!fpTooltip.endsWith(QDir::separator()) && isDir)
             fpTooltip += QDir::separator();
     filePathItem->setData(Qt::ToolTipRole, QVariant(fpTooltip));
 
     auto fileExt = !finfo.suffix().isEmpty() ? "." + finfo.suffix() : "";
-    if (fileExt == fileName || finfo.isDir())
+    if (fileExt == fileName || isDir)
         fileExt = "";
     auto fileExtItem = new QTableWidgetItem(fileExt);
     fileExtItem->setFlags( fileExtItem->flags() ^ Qt::ItemIsEditable);
@@ -950,7 +959,6 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
     dateModItem->setFlags( dateModItem->flags() ^ Qt::ItemIsEditable);
     dateModItem->setData( Qt::DisplayRole, finfo.lastModified());
 
-    const auto fsize = scanner->getItemSize(finfo);
     const double sizeKB = fsize > 0 && fsize < 104 ?
                             0.1 : double(fsize) / double(1024);
     const QString sizeKBqs = QString::number(sizeKB, 'f', 1);
@@ -959,10 +967,10 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
     QTableWidgetItem* sizeItem = new QTableWidgetItem();
     sizeItem->setFlags(sizeItem->flags() ^ Qt::ItemIsEditable);
     sizeItem->setTextAlignment( Qt::AlignHCenter | Qt::AlignVCenter);
-    sizeItem->setData(Qt::DisplayRole, finfo.isDir() ? QVariant("") : QVariant(sizeKBround));
-    sizeItem->setData(Qt::ToolTipRole, finfo.isDir() ? QVariant("") : QVariant(sizeText));
+    sizeItem->setData(Qt::DisplayRole, isDir ? QVariant("") : QVariant(sizeKBround));
+    sizeItem->setData(Qt::ToolTipRole, isDir ? QVariant("") : QVariant(sizeText));
 
-    auto fsTypeItem = new QTableWidgetItem(FsItemType(finfo));
+    auto fsTypeItem = new QTableWidgetItem(FsItemType(isFile, isDir, isSymLink, isHidden));
     fsTypeItem->setFlags(fsTypeItem->flags() ^ Qt::ItemIsEditable);
     fsTypeItem->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 
@@ -994,7 +1002,6 @@ void MainWindow::flushItemBuffer() {
 
     UpdateBlocker ub{ filesTable };
     const auto startRow = filesTable->rowCount();
-    // filesTable->setRowCount(startRow + int(itemBuffer.size()));
 
     filesTable->model()->insertRows(startRow, int(itemBuffer.size()));  // Qt row index is int
     for (int i = 0; i < itemBuffer.size(); ++i) {
@@ -1004,6 +1011,15 @@ void MainWindow::flushItemBuffer() {
             filesTable->setRowHeight(startRow + i, 50);
         }
     }
+    const auto rowCount = filesTable->rowCount();
+    if ((_foundCount + _dirCount + _symlinkCount) < rowCount)
+        qDebug() << "ERROR: (_foundCount + _dirCount + _symlinkCount)" <<
+                            (_foundCount + _dirCount + _symlinkCount) << 
+                            "!= rowCount" << rowCount;
+    if (_foundCount == 0)
+        _foundCount = quint64(filesTable->rowCount() + itemBuffer.size());
+    if (_totCount < (_foundCount + _dirCount + _symlinkCount))
+        _totCount = (_foundCount + _dirCount + _symlinkCount);
     itemBuffer.clear();
     processEvents();
 }
@@ -1019,7 +1035,6 @@ void MainWindow::createFilesTable()
     filesTable->setWordWrap(true);
     filesTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     filesTable->setAlternatingRowColors(true);
-    //filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(false);
     filesTable->setShowGrid(true);
 
@@ -1367,8 +1382,8 @@ void MainWindow::scanThreadFinished()
     setFilesFoundLabel(_stopped ? "INTERRUPTED | " : "COMPLETED | ");
     stopAllThreads();
     setStopped(true);
-    //filesTable->sortByColumn(-1, Qt::AscendingOrder);
-    //filesTable->setSortingEnabled(true);
+    filesTable->setSortingEnabled(true);
+    filesTable->sortByColumn(-1, Qt::AscendingOrder);
 }
 
 void MainWindow::itemFound(const QString& path, const QFileInfo& info) {
@@ -1395,14 +1410,15 @@ void MainWindow::itemRemoved(int row, quint64 count, quint64 size) {
 
 void MainWindow::progressUpdate(const QString& path, quint64 dirCount,
                                 quint64 foundCount, quint64 foundSize,
-                                quint64 symlinkCount, quint64 totCount, quint64 totSize) {
+                                quint64 symlinkCount, quint64 totCount, quint64 totSize)
+{
     if (_stopped) {
         return;
     }
-    _dirCount = dirCount;
-    _foundCount = foundCount;
-    _foundSize = foundSize;
-    _symlinkCount = symlinkCount;
+    //_dirCount = dirCount;
+    //_foundCount = foundCount;
+    //_foundSize = foundSize;
+    //_symlinkCount = symlinkCount;
     _totCount = totCount;
     _totSize = totSize;
     //const auto itemsText = filesTable->rowCount() == 1 ? "item" : "items";
