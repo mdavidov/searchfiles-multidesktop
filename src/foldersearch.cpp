@@ -11,7 +11,7 @@
 
 #undef QT_NO_CONTEXTMENU
 
-#if defined(Q_OS_WIN)
+#ifdef Q_OS_WIN
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -63,7 +63,7 @@ const QString stopText( "S&top");
 const int N_COL = 7;
 const int RELPATH_COL_IDX = 0;
 
-static int BATCH_SIZE = 1'000;
+static int BATCH_SIZE = 1'000;  // see also MainWindow::findFilesPrep()
 QVector<QVector<QTableWidgetItem*>> itemBuffer;
 
 #if defined(Q_OS_WIN)
@@ -585,16 +585,20 @@ void MainWindow::setStopped(bool stopped)
 
 void MainWindow::setFilesFoundLabel(const QString& prefix)
 {
+    if (_foundCount == 0) {
+        _foundSize = 0;
+    }
     const auto totItemsSizeStr = sizeToHumanReadable(_totSize);
     const auto foundItemsSizeStr = sizeToHumanReadable(_foundSize);
     const auto foundLabelText =
         prefix
-        + tr("%1 matching files (%2), %3 folders, %4 %5 (searched total %6 items, %7). ")
+        + tr("%1 matching files (%2), %3 folders, %4 %5, table rows %6 (searched total %7 items, %8). ")
             .arg(_foundCount)
             .arg(foundItemsSizeStr)
             .arg(_dirCount)
             .arg(_symlinkCount)
-            .arg(OvSk_FsOp_SYMLINKS_TXT)
+            .arg(OvSk_FsOp_SYMLINKS_LOW)
+            .arg(filesTable->rowCount())
             .arg(_totCount)
             .arg(totItemsSizeStr);
     filesFoundLabel->setText(foundLabelText);
@@ -876,13 +880,15 @@ QComboBox* MainWindow::createComboBoxText()
     return comboBox;
 }
 
-bool isSymbolic(const QFileInfo& info) {
-    return info.isSymLink() || info.isSymbolicLink() || info.isShortcut();
-}
-
 QString MainWindow::FsItemType(bool isFile, bool isDir, bool isSymlink, bool isHidden) const
 {
     QString fsType;
+    //if (finfo.isAlias())
+    //    fsType = "Alias";
+    //else if (isAppExecutionAlias(finfo.absoluteFilePath()))
+    //    fsType = "App execution alias";
+    //else if (isWindowsSymlink(finfo.absoluteFilePath()))
+    //    fsType = "Windows symlink";
     if (isSymlink) {
         if (isDir)
             fsType = OvSk_FsOp_SYMLINK_TXT " to folder";
@@ -896,7 +902,7 @@ QString MainWindow::FsItemType(bool isFile, bool isDir, bool isSymlink, bool isH
     else if (isFile)
         fsType = "File";
     else
-        fsType = "";
+        fsType = "Unknown";
     if (isHidden)
         fsType += " - hidden";
     return fsType;
@@ -999,18 +1005,18 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
 void MainWindow::flushItemBuffer() {
     if (itemBuffer.isEmpty())
         return;
-
-    UpdateBlocker ub{ filesTable };
-    const auto startRow = filesTable->rowCount();
-
-    filesTable->model()->insertRows(startRow, int(itemBuffer.size()));  // Qt row index is int
-    for (int i = 0; i < itemBuffer.size(); ++i) {
-        const auto& rowItems = itemBuffer[i];
-        for (int col = 0; col < rowItems.size(); ++col) {
-            filesTable->setItem(startRow + i, col, rowItems[col]);
-            filesTable->setRowHeight(startRow + i, 50);
+    {
+        UpdateBlocker ub{ filesTable };
+        const auto startRow = filesTable->rowCount();
+        filesTable->model()->insertRows(startRow, int(itemBuffer.size()));  // Qt row index is int
+        for (int i = 0; i < itemBuffer.size(); ++i) {
+            const auto& rowItems = itemBuffer[i];
+            for (int col = 0; col < rowItems.size(); ++col) {
+                filesTable->setItem(startRow + i, col, rowItems[col]);
+                filesTable->setRowHeight(startRow + i, 50);
+            }
         }
-    }
+    } // ub goes OUT OF SCOPE here, table updates and signals are enabled
     const auto rowCount = filesTable->rowCount();
     if ((_foundCount + _dirCount + _symlinkCount) < rowCount)
         qDebug() << "ERROR: (_foundCount + _dirCount + _symlinkCount)" <<
@@ -1379,6 +1385,9 @@ void MainWindow::deepScanFolderOnThread(const QString& startPath, const int maxD
 void MainWindow::scanThreadFinished()
 {
     flushItemBuffer();
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    filesTable->update();
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     setFilesFoundLabel(_stopped ? "INTERRUPTED | " : "COMPLETED | ");
     stopAllThreads();
     setStopped(true);
@@ -1397,38 +1406,28 @@ void MainWindow::itemSized(const QString& path, const QFileInfo& info) {
 }
 
 void MainWindow::itemRemoved(int row, quint64 count, quint64 size) {
-    if (_stopped) {
-        return;
+    if (!_stopped) {
+        filesTable->removeRow(row);
+        // Too expensive for performance to call filesTable->update() on each removal.
+        _foundCount -= count;
+        _foundSize -= size;
+        _totCount -= count;
+        _totSize -= size;
     }
-    filesTable->removeRow(row);
-    // Too expensive for performance to filesTable->update() on each removal.
-    _foundCount -= count;
-    _foundSize -= size;
-    _totCount -= count;
-    _totSize -= size;
 }
 
-void MainWindow::progressUpdate(const QString& path, quint64 dirCount,
-                                quint64 foundCount, quint64 foundSize,
-                                quint64 symlinkCount, quint64 totCount, quint64 totSize)
+void MainWindow::progressUpdate(const QString& path, quint64 totCount, quint64 totSize)
 {
-    if (_stopped) {
-        return;
+    if (!_stopped) {
+        _totCount = totCount;
+        _totSize = totSize;
+        filesFoundLabel->setText(QString("%1 matching files, %2 folders, %3 %4...  Searching through %5")
+            .arg(_foundCount)
+            .arg(_dirCount)
+            .arg(_symlinkCount)
+            .arg(OvSk_FsOp_SYMLINKS_TXT)
+            .arg(path));
     }
-    //_dirCount = dirCount;
-    //_foundCount = foundCount;
-    //_foundSize = foundSize;
-    //_symlinkCount = symlinkCount;
-    _totCount = totCount;
-    _totSize = totSize;
-    //const auto itemsText = filesTable->rowCount() == 1 ? "item" : "items";
-    // Some progress update signals arrive after the search thread has stopped
-    filesFoundLabel->setText(QString("%1 matching files, %2 folders, %3 %4...  Searching through %5")
-        .arg(_foundCount)
-        .arg(_dirCount)
-        .arg(symlinkCount)
-        .arg(OvSk_FsOp_SYMLINKS_TXT)
-        .arg(path));
 }
 
 void MainWindow::removeRows()
@@ -1444,10 +1443,12 @@ void MainWindow::removeRows()
                     filesTable->removeRow(pair.first);
             }
         }
-    }  // ub goes out of scope here, table updates and signals are enabled
+    } // ub goes OUT OF SCOPE here, table updates and signals are enabled
     rowsToRemove_.clear();
-    filesTable->clearSelection();
-    filesTable->update();
+    filesTable->sortByColumn(-1, Qt::AscendingOrder);
+    filesTable->setSortingEnabled(true);
+    //filesTable->update();
+    processEvents();
 }
 
 void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/, bool rmOk) {
