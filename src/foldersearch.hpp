@@ -87,29 +87,30 @@ public:
     }
     void setAllUpdatesEnabled(QTableWidget* table, bool enabled)
     {
-        table->setSortingEnabled(false);
+        //table->sortByColumn(-1, Qt::AscendingOrder);
+        //table->setSortingEnabled(false);
         table->setUpdatesEnabled(enabled);
-        enabled ?
-            table->setSelectionMode(QAbstractItemView::ExtendedSelection) :
-            table->setSelectionMode(QAbstractItemView::NoSelection);
-        table->viewport()->setUpdatesEnabled(enabled);
-        table->blockSignals(!enabled);
+        //table->viewport()->setUpdatesEnabled(enabled);
+        //enabled ?
+        //    table->setSelectionMode(QAbstractItemView::ExtendedSelection) :
+        //    table->setSelectionMode(QAbstractItemView::NoSelection);
+        //table->blockSignals(!enabled);
     }
 private:
     QTableWidget* _table;
 };
 
 
-class TableWidgetItem : public QTableWidgetItem
-{
-public:
-    TableWidgetItem() : QTableWidgetItem() {}
-    explicit TableWidgetItem(const QString & itemText) : QTableWidgetItem(itemText) {}
-private:
-    bool operator<(const QTableWidgetItem & other) const override {
-        return text().toLower() < other.text().toLower(); // performance problem?
-    }
-};
+// class TableWidgetItem : public QTableWidgetItem
+// {
+// public:
+//     TableWidgetItem() : QTableWidgetItem() {}
+//     explicit TableWidgetItem(const QString & itemText) : QTableWidgetItem(itemText) {}
+// private:
+//     bool operator<(const QTableWidgetItem & other) const override {
+//         return text().compare(other.text()) < 0; // performance problem? YES
+//     }
+// };
 
 
 class MainWindow : public QMainWindow
@@ -172,8 +173,10 @@ private:
     void removeRows();
     void removalProgress(int row, const QString& path, uint64_t size, bool rmOk);
     void removalComplete(bool success);
+    qint64 prevProgress{ 0 };
     QElapsedTimer progressTimer;
 
+    qint64 prevEvents{ 0 };
     QElapsedTimer eventsTimer;
     inline void processEvents();
 
