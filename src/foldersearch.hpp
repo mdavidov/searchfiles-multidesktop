@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "folderscanner.hpp"
+#include <chrono>
 #include <memory>
 #include <QtWidgets/QMainWindow>
 #include <QDir>
@@ -127,6 +128,9 @@ private:
     QElapsedTimer eventsTimer;
     inline void processEvents();
 
+    std::unique_ptr<QElapsedTimer> runningTimer;
+    std::chrono::steady_clock::time_point opStart;
+    std::chrono::steady_clock::time_point opEnd;
     bool isHidden(const QFileInfo& finfo) const;
     QString FsItemType(bool isFile, bool isDir, bool isSymlink, bool isHidden) const;
 
@@ -146,6 +150,7 @@ private:
 
     bool findFilesPrep();
     void setStopped(bool stopped);
+    QString getElapsedTimeStr() const;
     void setFilesFoundLabel(const QString& prefix);
 
     void showMoreOptions(bool show);

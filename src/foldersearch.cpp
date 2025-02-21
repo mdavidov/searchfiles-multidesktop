@@ -66,6 +66,9 @@ const int RELPATH_COL_IDX = 0;
 static int BATCH_SIZE = 1'000;  // see also MainWindow::findFilesPrep()
 QVector<QVector<QTableWidgetItem*>> itemBuffer;
 
+using namespace std::chrono;
+using namespace std::chrono_literals;
+
 #if defined(Q_OS_WIN)
     #define eCod_MIN_PATH_LEN 3
 #else
@@ -74,18 +77,18 @@ QVector<QVector<QTableWidgetItem*>> itemBuffer;
 
 
 void MainWindow::stopAllThreads() {
-    static long long constexpr sleepLen = 80;
+    static constexpr auto sleepLen = 100ms;
     if (scanner) {
         scanner->blockSignals(true);
-        std::this_thread::sleep_for(std::chrono::milliseconds(sleepLen));
+        std::this_thread::sleep_for(sleepLen);
         scanner->stop();
-        std::this_thread::sleep_for(std::chrono::milliseconds(sleepLen));
+        std::this_thread::sleep_for(sleepLen);
         scanner.reset();
         qDebug() << "scanner STOPPED & RESET";
     }
     if (scanThread) {
         scanThread->blockSignals(true);
-        std::this_thread::sleep_for(std::chrono::milliseconds(sleepLen));
+        std::this_thread::sleep_for(sleepLen);
         scanThread->exit(0);
         scanThread->wait();
         scanThread.reset();
@@ -93,13 +96,13 @@ void MainWindow::stopAllThreads() {
     }
     if (removerAmzQ_) {
         removerAmzQ_->stop();
-        std::this_thread::sleep_for(std::chrono::milliseconds(sleepLen));
+        std::this_thread::sleep_for(sleepLen);
         removerAmzQ_.reset();
         qDebug() << "removerAmzQ_ STOPPED & RESET";
     }
     if (removerClaude_) {
         removerClaude_->stop();
-        std::this_thread::sleep_for(std::chrono::milliseconds(sleepLen));
+        std::this_thread::sleep_for(sleepLen);
         removerClaude_.reset();
         qDebug() << "removerClaude_ STOPPED & RESET";
     }
@@ -451,6 +454,7 @@ void MainWindow::deleteBtnClicked()
         processEvents();
         IntQStringMap itemList;
         getSelectedItems(itemList);
+        opStart = steady_clock::now();
 
         // REMOVE ITEMS
         //removeItems(itemList);
@@ -493,6 +497,7 @@ void MainWindow::shredBtnClicked()
             // return;
         }
         setStopped(false);
+        opStart = steady_clock::now();
 
         // TODO: IMPLEMENT Shredding
 
@@ -583,22 +588,48 @@ void MainWindow::setStopped(bool stopped)
     filesTable->verticalHeader()->setEnabled(   _stopped);
 }
 
+QString MainWindow::getElapsedTimeStr() const
+{
+    const auto diff = opEnd - opStart;
+    const auto totSecs = duration_cast<seconds>(diff).count();
+    const auto hr  = totSecs / 3600;
+    const auto min = (totSecs % 3600) / 60;
+    const auto sec = totSecs % 60;
+    const auto secStr = QString::number(sec);
+    const auto minStr = QString::number(min);
+    const auto hrStr  = QString::number(hr);
+    QString timeStr;
+    if (hr > 0)
+        timeStr = " hr " + minStr + " min " + secStr + " sec";
+    else if (min > 0)
+        timeStr = minStr + " min " + secStr + " sec";
+    else {
+        const auto ms = duration_cast<milliseconds>(diff).count();
+        const auto sec = ms / 1000.0;
+        timeStr = QString::number(sec, 'f', 3) + " sec";
+    }
+    return timeStr;
+}
+
 void MainWindow::setFilesFoundLabel(const QString& prefix)
 {
     if (_foundCount == 0) {
         _foundSize = 0;
     }
+    opEnd = steady_clock::now();
+    const auto elapsedStr = getElapsedTimeStr();
     const auto totItemsSizeStr = sizeToHumanReadable(_totSize);
     const auto foundItemsSizeStr = sizeToHumanReadable(_foundSize);
     const auto foundLabelText =
         prefix
-        + tr("%1 matching files (%2), %3 folders, %4 %5, table rows %6")  // (searched total % 7 items, % 8). ")
+        + tr("%1 matching files (%2), %3 folders, %4 %5, total %6; took %7")
         .arg(_foundCount)
         .arg(foundItemsSizeStr)
         .arg(_dirCount)
         .arg(_symlinkCount)
         .arg(OvSk_FsOp_SYMLINKS_LOW)
-        .arg(filesTable->rowCount());
+        .arg(filesTable->rowCount())
+        .arg(elapsedStr);
         //.arg(_totCount)
         //.arg(totItemsSizeStr);
     filesFoundLabel->setText(foundLabelText);
@@ -730,6 +761,7 @@ void MainWindow::findBtnClicked()
         filesTable->setSortingEnabled(false);
         Clear();
         setStopped(false);
+        opStart = steady_clock::now();
 
         deepScanFolderOnThread(_origDirPath, _unlimSubDirDepth ? -1 : _maxSubDirDepth);
     }
@@ -740,10 +772,9 @@ inline void MainWindow::processEvents()
 {
     const auto elapsed = eventsTimer.elapsed();
     const auto diff = elapsed - prevEvents;
-    if (diff >= 500) {  // msec
-        // Static var prev keeps its value for the next call of this function.
+    if (diff >= 1'000) {  // msec
         prevEvents = elapsed;
-        qApp->processEvents(QEventLoop::AllEvents, 200);
+        qApp->processEvents(QEventLoop::AllEvents, 300);
     }
 }
 
@@ -1387,9 +1418,9 @@ void MainWindow::deepScanFolderOnThread(const QString& startPath, const int maxD
 void MainWindow::scanThreadFinished()
 {
     flushItemBuffer();
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(100ms);
     filesTable->update();
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(100ms);
     setFilesFoundLabel(_stopped ? "INTERRUPTED | " : "COMPLETED | ");
     stopAllThreads();
     setStopped(true);
