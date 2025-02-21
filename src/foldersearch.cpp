@@ -1459,7 +1459,7 @@ void MainWindow::progressUpdate(const QString& path, quint64 totCount, quint64 t
             .arg(_dirCount)
             .arg(_symlinkCount)
             .arg(OvSk_FsOp_SYMLINKS_TXT)
-            .arg(path));
+            .arg(QDir::toNativeSeparators(path)));
     }
 }
 
