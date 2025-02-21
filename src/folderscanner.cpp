@@ -101,9 +101,10 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
                 symlinkCount++;
             else if (isDir)
                 dirCount++;
-            else if (isFile)
+            else if (isFile) {
                 foundCount++;
-            foundSize += getItemSize(info);
+                foundSize += info.size();
+            }
         }
         return toAppend;
     }
@@ -146,12 +147,6 @@ void FolderScanner::getAllItems(const QString& path, QFileInfoList& infos) const
     infos = dir.entryInfoList(filters);
 }
 
-quint64 FolderScanner::getItemSize(const QFileInfo& info) const
-{
-    // static constexpr qint64 DIR_SYMLINK_SIZE = 4 * 1024;
-    return quint64(info.size());  // isSymbolic(info) ? DIR_SYMLINK_SIZE : quint64(info.size());
-}
-
 quint64 FolderScanner::combinedSize(const QFileInfoList& infos)
 {
     quint64 size = 0;
@@ -159,18 +154,18 @@ quint64 FolderScanner::combinedSize(const QFileInfoList& infos)
         //processEvents();
         if (stopped)
             return 0;
-        size += getItemSize(info);
+        size += info.size();
     }
     return size;
 }
 
-void FolderScanner::updateTotals(const QString& path)
-{
-    QFileInfoList infos;
-    getAllItems(path, infos);
-    totCount += quint64(infos.count());
-    totSize += combinedSize(infos);
-}
+// Not necessary: void FolderScanner::updateTotals(const QString& path)
+//{
+//    QFileInfoList infos;
+//    getAllItems(path, infos);
+//    totCount += quint64(infos.count());
+//    totSize += combinedSize(infos);
+//}
 
 bool FolderScanner::stringContainsAllWords(const QString& str, const QStringList& words)
 {
@@ -271,7 +266,7 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
             }
             reportProgress(currPath);
         }
-        updateTotals(currPath);
+        // Not necessary: updateTotals(currPath);
 
         QFileInfoList infos;
         getFileInfos(currPath, infos);
@@ -331,7 +326,7 @@ uint64pair FolderScanner::deepCountSize(const QString& startPath)
                 return{ count, size };
             }
             ++count;
-            size += getItemSize(info);
+            size += info.size();
             foundCount = count;
             foundSize = size;
             reportProgress(info.absoluteFilePath());
@@ -364,7 +359,7 @@ void FolderScanner::deepRemove(const IntQStringMap& rowPathMap)
             if (!info.isDir()) {
                 // RM FILE or SYMLINK
                 QFile file(path);
-                const auto size = getItemSize(info);
+                const auto size = info.size();
                 const auto rmok = file.remove();
                 if (rmok) {
                     ++nbrDeleted;

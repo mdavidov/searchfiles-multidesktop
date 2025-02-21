@@ -592,15 +592,15 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
     const auto foundItemsSizeStr = sizeToHumanReadable(_foundSize);
     const auto foundLabelText =
         prefix
-        + tr("%1 matching files (%2), %3 folders, %4 %5, table rows %6 (searched total %7 items, %8). ")
-            .arg(_foundCount)
-            .arg(foundItemsSizeStr)
-            .arg(_dirCount)
-            .arg(_symlinkCount)
-            .arg(OvSk_FsOp_SYMLINKS_LOW)
-            .arg(filesTable->rowCount())
-            .arg(_totCount)
-            .arg(totItemsSizeStr);
+        + tr("%1 matching files (%2), %3 folders, %4 %5, table rows %6")  // (searched total % 7 items, % 8). ")
+        .arg(_foundCount)
+        .arg(foundItemsSizeStr)
+        .arg(_dirCount)
+        .arg(_symlinkCount)
+        .arg(OvSk_FsOp_SYMLINKS_LOW)
+        .arg(filesTable->rowCount());
+        //.arg(_totCount)
+        //.arg(totItemsSizeStr);
     filesFoundLabel->setText(foundLabelText);
     qDebug() << foundLabelText;
     if ((_foundCount + _dirCount + _symlinkCount) != quint64(filesTable->rowCount())) {
@@ -912,22 +912,23 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
 {
     if (_stopped)
         return;
-    const auto isSymLink = isSymbolic(finfo);
-    const auto isDir = finfo.isDir() && !isSymLink;
-    const auto isFile = finfo.isFile() && !isSymLink;
+    const auto isSymlink = isSymbolic(finfo);
+    const auto isDir = finfo.isDir() && !isSymlink;
+    const auto isFile = finfo.isFile() && !isSymlink;
     const auto isHidden = finfo.isHidden();
     const auto fsize = (quint64)finfo.size();
-    _foundSize += fsize;
-    if (isSymLink)
+    if (isSymlink)
         _symlinkCount++;
     else if (isDir)
         _dirCount++;
-    else if (isFile)
+    else if (isFile) {
         _foundCount++;
+        _foundSize += fsize;
+    }
     processEvents();
     auto fileNameItem = new QTableWidgetItem;
     auto fileName = finfo.fileName();
-    if (isSymLink && !finfo.symLinkTarget().isEmpty())
+    if (isSymlink && !finfo.symLinkTarget().isEmpty())
         fileName += " -> " + finfo.symLinkTarget();
     else if (isDir)
         fileName += QDir::separator();
@@ -947,8 +948,8 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
     auto filePathItem = new QTableWidgetItem( QDir::toNativeSeparators( relPath));
     filePathItem->setFlags( filePathItem->flags() ^ Qt::ItemIsEditable);
     filePathItem->setData( Qt::UserRole, QDir::toNativeSeparators( filePath));
-    auto fpTooltip = "{SF} = " + dirComboBox->currentText();
-    if (!fpTooltip.endsWith(QDir::separator()) && isDir)
+    auto fpTooltip = QDir::toNativeSeparators(finfo.absolutePath());
+    if (!fpTooltip.endsWith(QDir::separator()))
             fpTooltip += QDir::separator();
     filePathItem->setData(Qt::ToolTipRole, QVariant(fpTooltip));
 
@@ -973,10 +974,10 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
     QTableWidgetItem* sizeItem = new QTableWidgetItem();
     sizeItem->setFlags(sizeItem->flags() ^ Qt::ItemIsEditable);
     sizeItem->setTextAlignment( Qt::AlignHCenter | Qt::AlignVCenter);
-    sizeItem->setData(Qt::DisplayRole, isDir ? QVariant("") : QVariant(sizeKBround));
-    sizeItem->setData(Qt::ToolTipRole, isDir ? QVariant("") : QVariant(sizeText));
+    sizeItem->setData(Qt::DisplayRole, (isDir || isSymlink) ? QVariant("") : QVariant(sizeKBround));
+    sizeItem->setData(Qt::ToolTipRole, (isDir || isSymlink) ? QVariant("") : QVariant(sizeText));
 
-    auto fsTypeItem = new QTableWidgetItem(FsItemType(isFile, isDir, isSymLink, isHidden));
+    auto fsTypeItem = new QTableWidgetItem(FsItemType(isFile, isDir, isSymlink, isHidden));
     fsTypeItem->setFlags(fsTypeItem->flags() ^ Qt::ItemIsEditable);
     fsTypeItem->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 
@@ -1019,14 +1020,15 @@ void MainWindow::flushItemBuffer() {
     } // ub goes OUT OF SCOPE here, table updates and signals are enabled
     itemBuffer.clear();
     const auto rowCount = (quint64)filesTable->rowCount();
-    if ((_foundCount + _dirCount + _symlinkCount) < rowCount)
+    if ((_foundCount + _dirCount + _symlinkCount) < rowCount) {
         qDebug() << "ERROR: (_foundCount + _dirCount + _symlinkCount)" <<
                             (_foundCount + _dirCount + _symlinkCount) << 
-                            "!= rowCount" << rowCount;
-    if (_totCount < rowCount)
-        _totCount = rowCount;
-    if (_totCount < (_foundCount + _dirCount + _symlinkCount))
-        _totCount = (_foundCount + _dirCount + _symlinkCount);
+                            "< rowCount" << rowCount;
+    }
+    //if (_totCount < rowCount)
+    //    _totCount = rowCount;
+    //if (_totCount < (_foundCount + _dirCount + _symlinkCount))
+    //    _totCount = (_foundCount + _dirCount + _symlinkCount);
     processEvents();
 }
 
@@ -1241,19 +1243,19 @@ void MainWindow::getSizeWithAsync(const IntQStringMap& itemList)
         uint64pair countNsize;
         const auto nbrItems = itemList.size();
         QString filePath;
-        auto scnr = std::make_unique<FolderScanner>();
+        auto scanner = std::make_unique<FolderScanner>();
         for (const auto& item : itemList) {
             filePath = item.second;
             const auto info = QFileInfo(filePath);
             // Do not follow symlinks
             if (info.isDir() && !isSymbolic(info)) {
-                const auto [count, dirSize] = scnr->deepCountSize(filePath);
+                const auto [count, dirSize] = scanner->deepCountSize(filePath);
                 countNsize.first += count;
                 countNsize.second += dirSize;
             }
             else {
                 countNsize.first++;
-                countNsize.second += scnr->getItemSize(info);
+                countNsize.second += info.size();
             }
         }
 
@@ -1402,7 +1404,7 @@ void MainWindow::itemFound(const QString& path, const QFileInfo& info) {
 
 void MainWindow::itemSized(const QString& path, const QFileInfo& info) {
     if (!_stopped)
-        filesFoundLabel->setText(path + " " + sizeToHumanReadable(scanner->getItemSize(info)));
+        filesFoundLabel->setText(path + " " + sizeToHumanReadable(info.size()));
 }
 
 void MainWindow::itemRemoved(int row, quint64 count, quint64 size) {
@@ -1411,8 +1413,8 @@ void MainWindow::itemRemoved(int row, quint64 count, quint64 size) {
         // Too expensive for performance to call filesTable->update() on each removal.
         _foundCount -= count;
         _foundSize -= size;
-        _totCount -= count;
-        _totSize -= size;
+        //_totCount -= count;
+        //_totSize -= size;
     }
 }
 
