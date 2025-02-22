@@ -34,7 +34,7 @@ public:
 signals:
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
-    void itemRemoved(int row, quint64 count, quint64 size, int nbrDeleted);
+    void itemRemoved(int row, quint64 count, quint64 size, quint64 nbrDeleted);
     void progressUpdate(const QString& path, quint64 totCount, quint64 totSize);
     void scanComplete();
     void scanCancelled();
@@ -44,6 +44,8 @@ public slots:
     void deepScan(const QString& startPath, const int maxDepth);
     uint64pair deepCountSize(const QString& startPath);
     void deepRemove(const IntQStringMap& itemList);
+    void deepRemoveLimited(const IntQStringMap& itemList, const int maxDepth);
+    void deepRemLimitedImpl(const QString& startPath, const int maxDepth);
 
 private:
     void zeroCounters();

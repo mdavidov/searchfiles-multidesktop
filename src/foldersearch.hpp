@@ -76,7 +76,7 @@ public:
 public slots:
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
-    void itemRemoved(int row, quint64 count, quint64 size);
+    void itemRemoved(int row, quint64 count, quint64 size, quint64 nbrDeleted);
     void progressUpdate(const QString& path, quint64 totCount, quint64 totSize);
 
     void findBtnClicked();
@@ -241,6 +241,7 @@ private:
     quint64 _symlinkCount;
     quint64 _totCount;
     quint64 _totSize;
+    quint64 _nbrDeleted;
 
     Devonline::Op::Type _opType;
     bool _stopped{ true };

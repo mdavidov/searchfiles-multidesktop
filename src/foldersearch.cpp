@@ -458,8 +458,9 @@ void MainWindow::deleteBtnClicked()
 
         // REMOVE ITEMS
         //removeItems(itemList);
-        deepRemoveFilesOnThread_Claude(itemList);
+        // deepRemoveFilesOnThread_Claude(itemList);
          //deepRemoveFilesOnThread_AmzQ(itemList);
+         scanner->deepRemoveLimited(itemList, _maxSubDirDepth);
     }
     catch (...) { Q_ASSERT(false); } // tell the user?
 }
@@ -605,8 +606,8 @@ QString MainWindow::getElapsedTimeStr() const
         timeStr = minStr + " min " + secStr + " sec";
     else {
         const auto ms = duration_cast<milliseconds>(diff).count();
-        const auto sec = ms / 1000.0;
-        timeStr = QString::number(sec, 'f', 1) + " sec";
+        const auto secs = ms / 1000.0;
+        timeStr = QString::number(secs, 'f', 2) + " sec";
     }
     return timeStr;
 }
@@ -1274,19 +1275,19 @@ void MainWindow::getSizeWithAsync(const IntQStringMap& itemList)
         uint64pair countNsize;
         const auto nbrItems = itemList.size();
         QString filePath;
-        auto scanner = std::make_unique<FolderScanner>();
+        auto _scanner = std::make_unique<FolderScanner>();
         for (const auto& item : itemList) {
             filePath = item.second;
             const auto info = QFileInfo(filePath);
             // Do not follow symlinks
             if (info.isDir() && !isSymbolic(info)) {
-                const auto [count, dirSize] = scanner->deepCountSize(filePath);
+                const auto [count, dirSize] = _scanner->deepCountSize(filePath);
                 countNsize.first += count;
                 countNsize.second += dirSize;
             }
             else {
                 countNsize.first++;
-                countNsize.second += info.size();
+                countNsize.second += (quint64)info.size();
             }
         }
 
@@ -1435,10 +1436,10 @@ void MainWindow::itemFound(const QString& path, const QFileInfo& info) {
 
 void MainWindow::itemSized(const QString& path, const QFileInfo& info) {
     if (!_stopped)
-        filesFoundLabel->setText(path + " " + sizeToHumanReadable(info.size()));
+        filesFoundLabel->setText(path + " " + sizeToHumanReadable((quint64)info.size()));
 }
 
-void MainWindow::itemRemoved(int row, quint64 count, quint64 size) {
+void MainWindow::itemRemoved(int row, quint64 count, quint64 size, quint64 nbrDeleted) {
     if (!_stopped) {
         filesTable->removeRow(row);
         // Too expensive for performance to call filesTable->update() on each removal.
@@ -1446,6 +1447,7 @@ void MainWindow::itemRemoved(int row, quint64 count, quint64 size) {
         _foundSize -= size;
         //_totCount -= count;
         //_totSize -= size;
+        _nbrDeleted = nbrDeleted;
     }
 }
 
@@ -1471,9 +1473,9 @@ void MainWindow::removeRows()
             filesTable->clearContents();
         }
         else {
-            for (const auto pair : rowsToRemove_) {
-                if (pair.second)
-                    filesTable->removeRow(pair.first);
+            for (const auto rowNresult : rowsToRemove_) {
+                if (rowNresult.first >= 0 && rowNresult.second)
+                    filesTable->removeRow(rowNresult.first);
             }
         }
     } // ub goes OUT OF SCOPE here, table updates and signals are enabled
@@ -1493,7 +1495,7 @@ void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/
         filesFoundLabel->setText(QString("%1: %2").arg(resWord).arg(path));
     }
     if (rmOk) {
-        //itemRemoved(row, 1, size);
+        //itemRemoved(row, 1, size, nbrDeleted);
         rowsToRemove_.insert({ row, rmOk });
     }
     else {
@@ -1502,10 +1504,13 @@ void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/
 }
 
 void MainWindow::removalComplete(bool success) {
-    removeRows(); // files that failed to delete will not be removed
+    removeRows(); // files that failed to delete will not be removed from the table
+    opEnd = steady_clock::now();
     const QString prefix = _stopped ? "INTERRUPTED | " : "COMPLETED | ";
-    const QString suffix = (success && !_stopped) ? "Removal successful" : "Some files were not removed";
-    filesFoundLabel->setText(prefix + suffix);
+    const auto elapsedStr = getElapsedTimeStr();
+    const QString suffix = (success && !_stopped) ? "SUCCESS" : "SOME FAILED";
+    filesFoundLabel->setText(prefix + suffix + ", number deleted " +
+                            QString::number(_nbrDeleted) + ", it took " + elapsedStr);
     stopAllThreads();
     setStopped(true);
 }

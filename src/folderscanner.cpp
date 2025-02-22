@@ -103,7 +103,7 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
                 dirCount++;
             else if (isFile) {
                 foundCount++;
-                foundSize += info.size();
+                foundSize += (quint64)info.size();
             }
         }
         return toAppend;
@@ -154,7 +154,7 @@ quint64 FolderScanner::combinedSize(const QFileInfoList& infos)
         //processEvents();
         if (stopped)
             return 0;
-        size += info.size();
+        size += (quint64)info.size();
     }
     return size;
 }
@@ -241,7 +241,8 @@ bool FolderScanner::fileContainsAnyWordChunked(const QString& filePath, const QS
     return false;
 }
 
-void FolderScanner::deepScan(const QString& startPath, const int maxDepth) {
+void FolderScanner::deepScan(const QString& startPath, const int maxDepth)
+{
     stopped = false;
     zeroCounters();
     QString lastPath;
@@ -326,7 +327,7 @@ uint64pair FolderScanner::deepCountSize(const QString& startPath)
                 return{ count, size };
             }
             ++count;
-            size += info.size();
+            size += (quint64)info.size();
             foundCount = count;
             foundSize = size;
             reportProgress(info.absoluteFilePath());
@@ -346,7 +347,7 @@ void FolderScanner::deepRemove(const IntQStringMap& rowPathMap)
 {
     stopped = false;
     zeroCounters();
-    int nbrDeleted = 0;
+    quint64 nbrDeleted = 0;
     for (const auto& rowPath : rowPathMap)
     {
         try {
@@ -363,7 +364,7 @@ void FolderScanner::deepRemove(const IntQStringMap& rowPathMap)
                 const auto rmok = file.remove();
                 if (rmok) {
                     ++nbrDeleted;
-                    emit itemRemoved(rowPath.first, 1, size, nbrDeleted);
+                    emit itemRemoved(rowPath.first, 1, (quint64)size, nbrDeleted);
                 }
             }
             else {
@@ -381,6 +382,92 @@ void FolderScanner::deepRemove(const IntQStringMap& rowPathMap)
         catch (...) { Q_ASSERT(false); } // tell the user?
     }
     stopped = true;
+}
+
+void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int maxDepth)
+{
+    stopped = false;
+    zeroCounters();
+    quint64 nbrDeleted = 0;
+    QString lastPath;
+    std::deque<QString> dirPaths;
+
+    // Get all selected files and dirs; rm files, add dirs to deque
+    for (const auto& rowPath : rowPathMap) {
+        processEvents();
+        if (stopped)
+            return;
+        const auto path = rowPath.second;
+        const auto info = QFileInfo(path);
+        if (!info.isDir()) {
+            // RM FILE or SYMLINK at level 0
+            QFile file(path);
+            const auto size = info.size(); // must be done BEFORE removal
+            const auto rmok = file.remove();
+            if (rmok) {
+                lastPath = path;
+                ++nbrDeleted;
+                emit itemRemoved(rowPath.first, 1, (quint64)size, nbrDeleted);
+                qDebug() << "deepRemoveLimited: emit itemRemoved" << path << "size" << size << "nbrDeleted" << nbrDeleted;
+            }
+        }
+        else {
+            dirPaths.push_back(path);
+        }
+    }
+
+    // For each dir that was selected (i.e. it's in rowPathMap):
+    // deep remove its files until maxDepth is reached.
+    if (maxDepth != 0) {  // maxDepth == -1 means unlimitted, >= 0 means limited
+        for (const auto& dirPath : dirPaths) {
+            deepRemLimitedImpl(dirPath, maxDepth);
+        }
+    }
+    else
+        qDebug() << "deepRemoveLimited: maxDepth == 0";
+    stopped = true;
+}
+
+void FolderScanner::deepRemLimitedImpl(const QString& startPath, const int maxDepth)
+{
+    std::queue<std::pair<QString, int>> dirQ;
+    dirQ.push({ startPath, 1 }); // start at level 1
+    quint64 nbrDeleted = 0;
+
+    while (!dirQ.empty() && !stopped) {
+        processEvents();
+        const auto [currPath, currDepth] = dirQ.front();
+        dirQ.pop();
+        QFileInfoList dirInfos;
+        getAllDirs(currPath, dirInfos);
+        for (const auto& dir : dirInfos) {
+            if (stopped)
+                return;
+            if (maxDepth < 0 || currDepth < maxDepth) {
+                dirQ.push({ dir.absoluteFilePath(), currDepth + 1 });
+                qDebug() << "deepRemLimitedImpl: dirQ.push" << dir.absoluteFilePath() << "currDepth" << currDepth << "maxDepth" << maxDepth;
+            }
+        }
+
+        QFileInfoList infos;
+        getFileInfos(currPath, infos);
+        for (const auto& info : infos) {
+            processEvents();
+            if (stopped)
+                return;
+            if (!info.isDir()) {
+                // RM FILE or SYMLINK at this level
+                QFile file(info.absoluteFilePath());
+                const auto size = info.size();
+                const auto rmok = file.remove();
+                if (rmok) {
+                    ++nbrDeleted;
+                    emit itemRemoved(-1, 1, (quint64)size, nbrDeleted); // not in the table, so row = -1
+                    qDebug() << "deepRemLimitedImpl: emit itemRemoved" << info.absoluteFilePath() << "size" << size << "nbrDeleted" << nbrDeleted;
+                }
+            }
+        }
+    }
 }
 
 void FolderScanner::zeroCounters()
