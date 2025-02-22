@@ -1078,10 +1078,6 @@ void MainWindow::flushItemBuffer() {
         .arg(_symlinkCount)
         .arg(OvSk_FsOp_SYMLINKS_TXT)
         .arg(QDir::toNativeSeparators(_origDirPath)));
-    //if (_totCount < rowCount)
-    //    _totCount = rowCount;
-    //if (_totCount < (_foundCount + _dirCount + _symlinkCount))
-    //    _totCount = (_foundCount + _dirCount + _symlinkCount);
     //qDebug() << "Item buffer flushed, current row count " << rowCount;
     //processEvents();
 }
@@ -1528,12 +1524,16 @@ void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/
 
 void MainWindow::removalComplete(bool success) {
     removeRows(); // files that failed to delete will not be removed from the table
-    opEnd = steady_clock::now();
     const QString prefix = _stopped ? "INTERRUPTED | " : "COMPLETED | ";
-    const auto elapsedStr = getElapsedTimeStr();
-    const QString suffix = (success && !_stopped) ? "DELETE SUCCESS" : "SOME FAILED to DELETE";
-    const auto nbrDel = QString::number(_nbrDeleted);
-    const auto text = prefix + suffix + ", deleted " + nbrDel + " items, took " + elapsedStr;
+    QString suffix = success ? "DELETE SUCCESS" : "SOME FAILED to DELETE";
+    if (_nbrDeleted == 0) {
+        suffix = "NO ITEMS DELETED";
+    }
+    else {
+        suffix += ", deleted " + QString::number(_nbrDeleted) + " items";
+    }
+    opEnd = steady_clock::now();
+    const auto text = prefix + suffix + ", took " + getElapsedTimeStr();
     filesFoundLabel->setText(text);
     qDebug() << text;
     stopAllThreads();

@@ -97,7 +97,6 @@ public:
 private:
     void rmFiles(const std::stop_token& st, const IntQStringMap& rowPathMap)
     {
-        qDebug() << "Claude: worker thread FUNCTION started";
         set_thread_name("ClaudeFileRemover");
         const auto tid = std::hash<std::thread::id>{}(std::this_thread::get_id());
         qDebug() << "Claude: rmFiles: my thread id:" << get_readable_thread_id() << " hash:" << tid;
@@ -114,9 +113,11 @@ private:
             try {
                 if (fs::is_directory(pathStd)) {
                     ndel = deepCount(pathStd);
+                    ndel.folders++; // count the root folder
                     rmOk = fs::remove_all(pathStd) > 0;
                 }
                 else {
+                    ndel = { 1, 0 };
                     size = fs::file_size(pathStd); // MUST BE DONE BEFORE REMOVAL
                     rmOk = fs::remove(pathStd);
                 }
