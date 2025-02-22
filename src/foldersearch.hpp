@@ -78,6 +78,7 @@ public slots:
     void itemSized(const QString& path, const QFileInfo& info);
     void itemRemoved(int row, quint64 count, quint64 size, quint64 nbrDeleted);
     void progressUpdate(const QString& path, quint64 totCount, quint64 totSize);
+    void removalComplete(bool success);
 
     void findBtnClicked();
     void deleteBtnClicked();
@@ -120,7 +121,6 @@ private:
     std::map<int, bool, std::greater<int>> rowsToRemove_;
     void removeRows();
     void removalProgress(int row, const QString& path, uint64_t size, bool rmOk);
-    void removalComplete(bool success);
     qint64 prevProgress{ 0 };
     QElapsedTimer progressTimer;
 

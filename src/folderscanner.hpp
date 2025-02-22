@@ -38,6 +38,7 @@ signals:
     void progressUpdate(const QString& path, quint64 totCount, quint64 totSize);
     void scanComplete();
     void scanCancelled();
+    void removalComplete(bool success);
 
 public slots:
     void stop();

@@ -391,6 +391,7 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
     quint64 nbrDeleted = 0;
     QString lastPath;
     std::deque<QString> dirPaths;
+    auto success = true;
 
     // Get all selected files and dirs; rm files, add dirs to deque
     for (const auto& rowPath : rowPathMap) {
@@ -410,6 +411,8 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
                 emit itemRemoved(rowPath.first, 1, (quint64)size, nbrDeleted);
                 qDebug() << "deepRemoveLimited: emit itemRemoved" << path << "size" << size << "nbrDeleted" << nbrDeleted;
             }
+            else
+                success = false;
         }
         else {
             dirPaths.push_back(path);
@@ -423,8 +426,9 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
             deepRemLimitedImpl(dirPath, maxDepth);
         }
     }
-    else
-        qDebug() << "deepRemoveLimited: maxDepth == 0";
+
+    qDebug() << "Removal complete, deleted " << nbrDeleted << " items";
+    emit removalComplete(success);
     stopped = true;
 }
 

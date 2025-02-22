@@ -459,8 +459,11 @@ void MainWindow::deleteBtnClicked()
         // REMOVE ITEMS
         //removeItems(itemList);
         // deepRemoveFilesOnThread_Claude(itemList);
-         //deepRemoveFilesOnThread_AmzQ(itemList);
-         scanner->deepRemoveLimited(itemList, _maxSubDirDepth);
+        //deepRemoveFilesOnThread_AmzQ(itemList);
+        auto _scanner = std::make_unique<FolderScanner>();
+        connect(_scanner.get(), &FolderScanner::removalComplete, this, &MainWindow::removalComplete);
+        connect(_scanner.get(), &FolderScanner::itemRemoved, this, &MainWindow::itemRemoved);
+        _scanner->deepRemoveLimited(itemList, _maxSubDirDepth);
     }
     catch (...) { Q_ASSERT(false); } // tell the user?
 }
@@ -1510,7 +1513,7 @@ void MainWindow::removalComplete(bool success) {
     const auto elapsedStr = getElapsedTimeStr();
     const QString suffix = (success && !_stopped) ? "SUCCESS" : "SOME FAILED";
     filesFoundLabel->setText(prefix + suffix + ", number deleted " +
-                            QString::number(_nbrDeleted) + ", it took " + elapsedStr);
+                            QString::number(_nbrDeleted) + ", took " + elapsedStr);
     stopAllThreads();
     setStopped(true);
 }
