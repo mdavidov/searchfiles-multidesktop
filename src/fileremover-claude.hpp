@@ -17,8 +17,11 @@ class QString;
 
 namespace Claude
 {
-using ProgressCallback = std::function<void(int, const QString&, uint64_t, bool)>;
+using ProgressCallback = std::function<void(int, const QString&, uint64_t, bool, uint64_t)>;
 using CompletionCallback = std::function<void(bool)>;
+
+using rec_dir_it = fs::recursive_directory_iterator;
+using dir_opts = fs::directory_options;
 
 class FileRemover
 {
@@ -56,6 +59,41 @@ public:
         worker_.request_stop();
     }
 
+    //bool isFile(fs::directory_entry entry) {
+    //    return entry.is_regular_file() || entry.is_symlink() ||
+    //           entry.is_block_file() || entry.is_character_file() ||
+    //           entry.is_fifo() || entry.is_socket() || entry.is_other();
+    //}
+
+    struct DeepDirCount {
+        uint64_t files = 0;
+        uint64_t folders = 0;
+    };
+
+    DeepDirCount deepCount(const fs::path& path) {
+        DeepDirCount count;
+        try {
+            for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
+                try {
+                    if (entry.is_directory())
+                        count.folders++;
+                    else {
+                        count.files++;
+                    }
+                }
+                catch (const fs::filesystem_error& ex) {
+                    std::cerr << "ERROR accessing " << entry.path() << ":\n"
+                              << ex.what() << std::endl;
+                }
+            }
+        }
+        catch (const fs::filesystem_error& ex) {
+            std::cerr << "ERROR accessing dir " << path << ":\n"
+                      << ex.what() << std::endl;
+        }
+        return count;
+    }
+
 private:
     void rmFiles(const std::stop_token& st, const IntQStringMap& rowPathMap)
     {
@@ -64,7 +102,7 @@ private:
         const auto tid = std::hash<std::thread::id>{}(std::this_thread::get_id());
         qDebug() << "Claude: rmFiles: my thread id:" << get_readable_thread_id() << " hash:" << tid;
         auto success = true;
-        auto nbrDel = 0;
+        auto nbrDel = uint64_t(0);
         for (const auto& [row, path] : rowPathMap) {
             if (st.stop_requested())
                 break;
@@ -72,8 +110,10 @@ private:
             bool rmOk = false;
             const auto isDir = fs::is_directory(pathStd);
             uint64_t size = 0;
+            DeepDirCount ndel;
             try {
                 if (fs::is_directory(pathStd)) {
+                    ndel = deepCount(pathStd);
                     rmOk = fs::remove_all(pathStd) > 0;
                 }
                 else {
@@ -85,15 +125,15 @@ private:
                 rmOk = false;
                 qDebug() << "Remove ERROR:" << e.what();
             }
-            if (!rmOk)
-                success = false;
+            if (rmOk)
+                nbrDel += ndel.files + ndel.folders;
             else
-                ++nbrDel;
+                success = false;
             // Report progress
             const QString kind = isDir ? "FOLDER" : "file";
             std::lock_guard<std::mutex> lock(mutex_);
             if (progressCallback_) {
-                progressCallback_(row, path, size, rmOk);
+                progressCallback_(row, path, size, rmOk, nbrDel);
                 //qDebug() << "rmOk:" << rmOk << "removed:" << kind << pathQstr;
             }
         }

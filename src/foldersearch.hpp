@@ -120,7 +120,7 @@ private:
     // Boolean value is the result of file/folder removal.
     std::map<int, bool, std::greater<int>> rowsToRemove_;
     void removeRows();
-    void removalProgress(int row, const QString& path, uint64_t size, bool rmOk);
+    void removalProgress(int row, const QString& path, uint64_t size, bool rmOk, uint64_t nbrDel);
     qint64 prevProgress{ 0 };
     QElapsedTimer progressTimer;
 

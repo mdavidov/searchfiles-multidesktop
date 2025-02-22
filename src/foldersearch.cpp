@@ -454,16 +454,27 @@ void MainWindow::deleteBtnClicked()
         processEvents();
         IntQStringMap itemList;
         getSelectedItems(itemList);
+        bool maxValid = false;
+        _maxSubDirDepth = maxSubDirDepthEdt->text().toInt(&maxValid);
+        if (!maxValid)
+            _maxSubDirDepth = 0;
+        const auto maxDepth = unlimSubDirDepthBtn->isChecked() ? -1 : _maxSubDirDepth;
         opStart = steady_clock::now();
 
         // REMOVE ITEMS
-        //removeItems(itemList);
-        // deepRemoveFilesOnThread_Claude(itemList);
-        //deepRemoveFilesOnThread_AmzQ(itemList);
-        auto _scanner = std::make_unique<FolderScanner>();
-        connect(_scanner.get(), &FolderScanner::removalComplete, this, &MainWindow::removalComplete);
-        connect(_scanner.get(), &FolderScanner::itemRemoved, this, &MainWindow::itemRemoved);
-        _scanner->deepRemoveLimited(itemList, _maxSubDirDepth);
+        if (maxDepth < 0) {
+            // UNLIMITED
+            deepRemoveFilesOnThread_Claude(itemList);
+            // old impl: removeItems(itemList);
+            // different impl: deepRemoveFilesOnThread_AmzQ(itemList);
+        }
+        else {
+            // LIMITTED
+            auto _scanner = std::make_unique<FolderScanner>();
+            connect(_scanner.get(), &FolderScanner::removalComplete, this, &MainWindow::removalComplete);
+            connect(_scanner.get(), &FolderScanner::itemRemoved, this, &MainWindow::itemRemoved);
+            _scanner->deepRemoveLimited(itemList, maxDepth);
+        }
     }
     catch (...) { Q_ASSERT(false); } // tell the user?
 }
@@ -554,6 +565,7 @@ void MainWindow::Clear()
         _symlinkCount = 0;
         _totCount = 0;
         _totSize = 0;
+        _nbrDeleted = 0;
         processEvents();
     }
     catch (...) { Q_ASSERT(false); }
@@ -947,6 +959,7 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
 {
     if (_stopped)
         return;
+    //processEvents();
     const auto isSymlink = isSymbolic(finfo);
     const auto isDir = finfo.isDir() && !isSymlink;
     const auto isFile = finfo.isFile() && !isSymlink;
@@ -960,7 +973,6 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
         _foundCount++;
         _foundSize += fsize;
     }
-    processEvents();
     auto fileNameItem = new QTableWidgetItem;
     auto fileName = finfo.fileName();
     if (isSymlink && !finfo.symLinkTarget().isEmpty())
@@ -1060,11 +1072,18 @@ void MainWindow::flushItemBuffer() {
                             (_foundCount + _dirCount + _symlinkCount) << 
                             "< rowCount" << rowCount;
     }
+    filesFoundLabel->setText(QString("%1 matching files, %2 folders, %3 %4...  Searching through %5")
+        .arg(_foundCount)
+        .arg(_dirCount)
+        .arg(_symlinkCount)
+        .arg(OvSk_FsOp_SYMLINKS_TXT)
+        .arg(QDir::toNativeSeparators(_origDirPath)));
     //if (_totCount < rowCount)
     //    _totCount = rowCount;
     //if (_totCount < (_foundCount + _dirCount + _symlinkCount))
     //    _totCount = (_foundCount + _dirCount + _symlinkCount);
-    processEvents();
+    //qDebug() << "Item buffer flushed, current row count " << rowCount;
+    //processEvents();
 }
 
 void MainWindow::createFilesTable()
@@ -1489,7 +1508,8 @@ void MainWindow::removeRows()
     processEvents();
 }
 
-void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/, bool rmOk) {
+void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/, bool rmOk, uint64_t nbrDel) {
+    _nbrDeleted = nbrDel;
     const auto elapsed = progressTimer.elapsed();
     const auto diff = elapsed - prevProgress;
     if (diff >= 1'000) {  // msec
@@ -1511,9 +1531,11 @@ void MainWindow::removalComplete(bool success) {
     opEnd = steady_clock::now();
     const QString prefix = _stopped ? "INTERRUPTED | " : "COMPLETED | ";
     const auto elapsedStr = getElapsedTimeStr();
-    const QString suffix = (success && !_stopped) ? "SUCCESS" : "SOME FAILED";
-    filesFoundLabel->setText(prefix + suffix + ", number deleted " +
-                            QString::number(_nbrDeleted) + ", took " + elapsedStr);
+    const QString suffix = (success && !_stopped) ? "DELETE SUCCESS" : "SOME FAILED to DELETE";
+    const auto nbrDel = QString::number(_nbrDeleted);
+    const auto text = prefix + suffix + ", deleted " + nbrDel + " items, took " + elapsedStr;
+    filesFoundLabel->setText(text);
+    qDebug() << text;
     stopAllThreads();
     setStopped(true);
 }
@@ -1533,7 +1555,7 @@ void MainWindow::deepRemoveFilesOnThread_AmzQ(const IntQStringMap& rowPathMap)
         rowPathMap,
         // Progress callback
         [this](int row, const QString& path, uint64_t size, bool rmOk) {
-            removalProgress(row, path, size, rmOk);
+            removalProgress(row, path, size, rmOk, 0);
         },
         // Completion callback
         [this](bool success) {
@@ -1550,11 +1572,11 @@ void MainWindow::deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap)
     qDebug() << msg;
 
     // Set up progress callback (can update UI)
-    removerClaude_->setProgressCallback([this](int row, const QString& path, uint64_t size, bool rmOk)
+    removerClaude_->setProgressCallback([this](int row, const QString& path, uint64_t size, bool rmOk, uint64_t nbrDel)
     {
         // Since this callback runs in a different thread, use Qt::QueuedConnection
-        QMetaObject::invokeMethod(this, [this, row, path, size, rmOk]() {
-            removalProgress(row, path, size, rmOk);
+        QMetaObject::invokeMethod(this, [this, row, path, size, rmOk, nbrDel]() {
+            removalProgress(row, path, size, rmOk, nbrDel);
         }, Qt::QueuedConnection);
     });
     removerClaude_->setCompletionCallback([this](bool success)
