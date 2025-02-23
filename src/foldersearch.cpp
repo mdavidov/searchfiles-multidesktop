@@ -621,7 +621,7 @@ QString MainWindow::getElapsedTimeStr() const
         timeStr = minStr + " min " + secStr + " sec";
     else {
         const auto ms = duration_cast<milliseconds>(diff).count();
-        const auto secs = ms / 1000.0;
+        const auto secs = (double)ms / 1000.0;
         timeStr = QString::number(secs, 'f', 2) + " sec";
     }
     return timeStr;
