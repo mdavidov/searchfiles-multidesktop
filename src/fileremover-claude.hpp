@@ -96,6 +96,7 @@ public:
     }
 
     bool deepRemoveFiles(const std::stop_token& st, int row, const fs::path& path, uint64_t& nbrDel, uint64_t& size) {
+        (void)st;
         auto rmOk = true;
         try {
             for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
@@ -128,6 +129,7 @@ public:
     }
 
     bool deepRemoveDirs(const std::stop_token& st, int row, const fs::path& path, uint64_t& nbrDel) {
+        (void)st;
         auto rmOk = true;
         try {
             for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
