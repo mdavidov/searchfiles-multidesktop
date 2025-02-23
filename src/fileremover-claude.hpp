@@ -27,11 +27,11 @@ class FileRemover
 {
 public:
     FileRemover() {
-        qDebug() << "Claude::FileRemover CTOR";
+        //qDebug() << "Claude::FileRemover CTOR";
     }
 
     ~FileRemover() {
-        qDebug() << "Claude::FileRemover DTOR";
+        //qDebug() << "Claude::FileRemover DTOR";
         worker_.request_stop();
         //condition_.notify_one();
     }

@@ -23,10 +23,10 @@ namespace AmzQ
         using CompletionCallback = std::function<void(bool)>;
 
         FileRemover(QObject* uiObject) : m_uiObject(uiObject) {
-            qDebug() << "AmzQ::FileRemover CTOR";
+            //qDebug() << "AmzQ::FileRemover CTOR";
         }
         ~FileRemover() {
-            qDebug() << "AmzQ::FileRemover DTOR";
+            //qDebug() << "AmzQ::FileRemover DTOR";
         }
 
         void removeFilesAndFolders02(

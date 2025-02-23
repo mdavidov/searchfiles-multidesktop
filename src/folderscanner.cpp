@@ -473,11 +473,11 @@ bool FolderScanner::doRemoveOneFile(const QFileInfo& info, int row, quint64& nbr
         if (rmok) {
             ++nbrDeleted;
             emit itemRemoved(row, 1, (quint64)size, nbrDeleted); // not in the table, so row = -1
-            qDebug() << "deepRemLimitedImpl: item removed" << info.absoluteFilePath() << "size" << size << "nbrDeleted" << nbrDeleted;
+            //qDebug() << "Removed" << info.absoluteFilePath() << "size" << size << "nbrDeleted" << nbrDeleted;
         }
         else {
             res = false;
-            qDebug() << "deepRemLimitedImpl: remove FAILED" << info.absoluteFilePath() << "size" << size << "nbrDeleted" << nbrDeleted;
+            qDebug() << "FAILED to remove" << info.absoluteFilePath() << "size" << size << "nbrDeleted" << nbrDeleted;
         }
     }
     return res;
