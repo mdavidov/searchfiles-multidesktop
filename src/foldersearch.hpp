@@ -28,6 +28,12 @@ class QLineEdit;
 QT_END_NAMESPACE
 #pragma endregion
 
+#if defined(Q_OS_WIN)
+#define eCod_MIN_PATH_LEN 3
+#else
+#define eCod_MIN_PATH_LEN 1
+#endif
+
 namespace AmzQ {
     class FileRemover;
 }

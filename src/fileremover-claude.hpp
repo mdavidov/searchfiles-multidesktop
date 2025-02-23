@@ -11,6 +11,8 @@
 #include <functional>
 #include <mutex>
 #include <queue>
+#include <iostream>
+#include <string>
 
 namespace fs = std::filesystem;
 class QString;
@@ -23,22 +25,26 @@ using CompletionCallback = std::function<void(bool)>;
 using rec_dir_it = fs::recursive_directory_iterator;
 using dir_opts = fs::directory_options;
 
+using std::cout;
+using std::endl;
+
+
 class FileRemover
 {
 public:
     FileRemover() {
         //qDebug() << "Claude::FileRemover CTOR";
+        stop_req = false;
     }
 
     ~FileRemover() {
         //qDebug() << "Claude::FileRemover DTOR";
-        worker_.request_stop();
-        //condition_.notify_one();
     }
 
     void removeFiles(const IntQStringMap& rowPathMap)
     {
         worker_ = std::jthread([this, rowPathMap](const std::stop_token& st) {
+            stop_req = false;
             rmFiles(st, rowPathMap);
         });
     }
@@ -56,42 +62,102 @@ public:
     }
 
     void stop() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        stop_req = true;
         worker_.request_stop();
     }
-
-    //bool isFile(fs::directory_entry entry) {
-    //    return entry.is_regular_file() || entry.is_symlink() ||
-    //           entry.is_block_file() || entry.is_character_file() ||
-    //           entry.is_fifo() || entry.is_socket() || entry.is_other();
-    //}
 
     struct DeepDirCount {
         uint64_t files = 0;
         uint64_t folders = 0;
     };
 
-    DeepDirCount deepCount(const fs::path& path) {
+    DeepDirCount deepCount(const std::stop_token& st, const fs::path& path) {
         DeepDirCount count;
         try {
             for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
+                if (stop_req || st.stop_requested())
+                    return count;
                 try {
                     if (entry.is_directory())
                         count.folders++;
-                    else {
+                    else
                         count.files++;
-                    }
                 }
                 catch (const fs::filesystem_error& ex) {
-                    std::cerr << "ERROR accessing " << entry.path() << ":\n"
-                              << ex.what() << std::endl;
+                    cout << "ERROR: "  << ex.what() << "  " << entry.path() << endl;
                 }
             }
         }
         catch (const fs::filesystem_error& ex) {
-            std::cerr << "ERROR accessing dir " << path << ":\n"
-                      << ex.what() << std::endl;
+            cout << "ERROR: " << ex.what() << "  " << path << endl;
         }
         return count;
+    }
+
+    bool deepRemoveFiles(const std::stop_token& st, int row, const fs::path& path, uint64_t& nbrDel, uint64_t& size) {
+        auto rmOk = true;
+        try {
+            for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
+                if (stop_req)
+                    return rmOk;
+                try {
+                    if (!entry.is_directory()) {
+                        if (fs::remove(entry.path())) {
+                            nbrDel++;
+                            size += fs::file_size(path);
+                        }
+                        else
+                            rmOk = false;
+                        std::lock_guard<std::mutex> lock(mutex_);
+                        if (progressCallback_) {
+                            progressCallback_(row, QString::fromStdString(entry.path().string()), size, rmOk, nbrDel);
+                            qDebug() << "rmOk:" << rmOk << "removed file:" << entry.path().string();
+                        }
+                    }
+                }
+                catch (const fs::filesystem_error& ex) {
+                    cout << "ERROR with " << entry.path() << " | " << ex.what() << endl;
+                }
+            }
+        }
+        catch (const fs::filesystem_error& ex) {
+            cout << "ERROR with " << path << " | " << ex.what() << endl;
+        }
+        return rmOk;
+    }
+
+    bool deepRemoveDirs(const std::stop_token& st, int row, const fs::path& path, uint64_t& nbrDel) {
+        auto rmOk = true;
+        try {
+            for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
+                if (stop_req)
+                    return rmOk;
+                try {
+                    if (entry.is_directory()) {
+                        const auto ndel = fs::remove_all(entry.path());
+                        if (ndel > 0)
+                            nbrDel += ndel;
+                        else
+                            rmOk = false;
+                        std::lock_guard<std::mutex> lock(mutex_);
+                        if (progressCallback_) {
+                            progressCallback_(row, QString::fromStdString(entry.path().string()), 0, rmOk, nbrDel);
+                            qDebug() << "rmOk:" << rmOk << "removed folder:" << entry.path().string();
+                        }
+                    }
+                }
+                catch (const fs::filesystem_error& ex) {
+                    rmOk = false;
+                    cout << "ERROR: " << ex.what() << "  " << entry.path() << endl;
+                }
+            }
+        }
+        catch (const fs::filesystem_error& ex) {
+            rmOk = false;
+            cout << "ERROR: " << ex.what() << "  " << path << endl;
+        }
+        return rmOk;
     }
 
 private:
@@ -102,40 +168,23 @@ private:
         qDebug() << "Claude: rmFiles: my thread id:" << get_readable_thread_id() << " hash:" << tid;
         auto success = true;
         auto nbrDel = uint64_t(0);
-        for (const auto& [row, path] : rowPathMap) {
-            if (st.stop_requested())
-                break;
-            const auto pathStd = path.toStdString();
-            bool rmOk = false;
-            const auto isDir = fs::is_directory(pathStd);
-            uint64_t size = 0;
-            DeepDirCount ndel;
+        auto size = (uint64_t)0;
+        for (const auto& [row, pathQstr] : rowPathMap) {
+            if (stop_req)
+                return;
+            const auto path = pathQstr.toStdString();
+            const auto isDir = fs::is_directory(path);
             try {
-                if (fs::is_directory(pathStd)) {
-                    ndel = deepCount(pathStd);
-                    ndel.folders++; // count the root folder
-                    rmOk = fs::remove_all(pathStd) > 0;
+                if (!deepRemoveFiles(st, row, path, nbrDel, size)) {
+                    success = false;
                 }
-                else {
-                    ndel = { 1, 0 };
-                    size = fs::file_size(pathStd); // MUST BE DONE BEFORE REMOVAL
-                    rmOk = fs::remove(pathStd);
+                if (!deepRemoveDirs(st, row, path, nbrDel)) {
+                    success = false;
                 }
             }
             catch (const fs::filesystem_error& e) {
-                rmOk = false;
-                qDebug() << "Remove ERROR:" << e.what();
-            }
-            if (rmOk)
-                nbrDel += ndel.files + ndel.folders;
-            else
                 success = false;
-            // Report progress
-            const QString kind = isDir ? "FOLDER" : "file";
-            std::lock_guard<std::mutex> lock(mutex_);
-            if (progressCallback_) {
-                progressCallback_(row, path, size, rmOk, nbrDel);
-                //qDebug() << "rmOk:" << rmOk << "removed:" << kind << pathQstr;
+                qDebug() << "Remove ERROR:" << e.what();
             }
         }
         if (completionCallback_) {
@@ -146,8 +195,7 @@ private:
 
     std::jthread worker_;
     std::mutex mutex_;
-    //std::queue<IntFsPathPair> removalQueue_;
-    //std::condition_variable_any condition_;
+    bool stop_req{ false };
     ProgressCallback progressCallback_;
     CompletionCallback completionCallback_;
 };

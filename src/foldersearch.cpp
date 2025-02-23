@@ -34,7 +34,6 @@
 
 #include <algorithm>
 #include <chrono>
-#include <filesystem>
 #include <memory>
 #include <thread>
 
@@ -57,24 +56,15 @@ extern "C" void showFileProperties(const char* filePath);
 
 namespace Devonline
 {
-const QString findText( "&Search");
-const QString stopText( "S&top");
-
 const int N_COL = 7;
 const int RELPATH_COL_IDX = 0;
+const int NAME_COL_IDX = 1;
 
 static int BATCH_SIZE = 1'000;  // see also MainWindow::findFilesPrep()
 QVector<QVector<QTableWidgetItem*>> itemBuffer;
 
 using namespace std::chrono;
 using namespace std::chrono_literals;
-
-#if defined(Q_OS_WIN)
-    #define eCod_MIN_PATH_LEN 3
-#else
-    #define eCod_MIN_PATH_LEN 1
-#endif
-
 
 void MainWindow::stopAllThreads() {
     static constexpr auto sleepLen = 100ms;
@@ -241,7 +231,7 @@ void MainWindow::createNavigLayout()
     navigLout->addWidget( goUpButton);
     navigLout->addStretch();
 
-    findButton   = createButton(findText,         SLOT(findBtnClicked()));
+    findButton   = createButton(tr("&Search"),    SLOT(findBtnClicked()));
     deleteButton = createButton(tr("&Delete"),    SLOT(deleteBtnClicked()));
     shredButton  = createButton(tr("S&hred"),     SLOT(shredBtnClicked()));
     cancelButton = createButton(tr("S&top"),      SLOT(cancelBtnClicked()));
@@ -1053,15 +1043,22 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
 void MainWindow::flushItemBuffer() {
     if (itemBuffer.isEmpty())
         return;
+    QString lastPath;
     {
         UpdateBlocker ub{ filesTable };
         const auto startRow = filesTable->rowCount();
         filesTable->model()->insertRows(startRow, int(itemBuffer.size()));  // Qt row index is int
-        for (int i = 0; i < itemBuffer.size(); ++i) {
+        const auto buffSize = itemBuffer.size();
+        for (int i = 0; i < buffSize; ++i) {
             const auto& rowItems = itemBuffer[i];
             for (int col = 0; col < rowItems.size(); ++col) {
                 filesTable->setItem(startRow + i, col, rowItems[col]);
                 filesTable->setRowHeight(startRow + i, 50);
+            }
+            if (i == (buffSize - 1)) {
+                lastPath = rowItems[RELPATH_COL_IDX]->data(Qt::UserRole).toString() +
+                           QDir::separator() +
+                           rowItems[NAME_COL_IDX]->data(Qt::DisplayRole).toString();
             }
         }
     } // ub goes OUT OF SCOPE here, table updates and signals are enabled
@@ -1077,7 +1074,7 @@ void MainWindow::flushItemBuffer() {
         .arg(_dirCount)
         .arg(_symlinkCount)
         .arg(OvSk_FsOp_SYMLINKS_TXT)
-        .arg(QDir::toNativeSeparators(_origDirPath)));
+        .arg(QDir::toNativeSeparators(lastPath)));
     //qDebug() << "Item buffer flushed, current row count " << rowCount;
     //processEvents();
 }
@@ -1510,8 +1507,9 @@ void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/
     const auto diff = elapsed - prevProgress;
     if (diff >= 1'000) {  // msec
         prevProgress = elapsed;
-        const QString resWord = rmOk ? "Removed" : "Failed to remove";
-        filesFoundLabel->setText(QString("%1: %2").arg(resWord).arg(path));
+        const QString text = rmOk ? QString("Removed %1 items").arg(nbrDel) :
+                                    QString("Failed to remove some items, removed %1").arg(nbrDel);
+        filesFoundLabel->setText(text);
     }
     if (rmOk) {
         //itemRemoved(row, 1, size, nbrDeleted);
@@ -1527,11 +1525,13 @@ void MainWindow::removalComplete(bool success) {
     removeRows(); // files that failed to delete will not be removed from the table
     const QString prefix = _stopped ? "INTERRUPTED | " : "COMPLETED | ";
     QString suffix = success ? "DELETE SUCCESS" : "SOME FAILED to DELETE";
+    const auto maxDepth = unlimSubDirDepthBtn->isChecked() ? -1 : _maxSubDirDepth;
+    const auto filesStr = (maxDepth < 0) ? " files & folders" : " files";
     if (_nbrDeleted == 0) {
         suffix = "NO ITEMS DELETED";
     }
     else {
-        suffix += ", deleted " + QString::number(_nbrDeleted) + " items";
+        suffix += ", deleted " + QString::number(_nbrDeleted) + filesStr;
     }
     opEnd = steady_clock::now();
     const auto text = prefix + suffix + ", took " + getElapsedTimeStr();
