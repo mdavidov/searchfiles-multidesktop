@@ -171,15 +171,19 @@ private:
         auto size = (uint64_t)0;
         for (const auto& [row, pathQstr] : rowPathMap) {
             if (stop_req)
-                return;
+                break;
             const auto path = pathQstr.toStdString();
-            const auto isDir = fs::is_directory(path);
             try {
                 if (!deepRemoveFiles(st, row, path, nbrDel, size)) {
                     success = false;
                 }
-                if (!deepRemoveDirs(st, row, path, nbrDel)) {
-                    success = false;
+                if (stop_req)
+                    break;
+                if (fs::is_directory(path)) {
+                    const auto ndel = fs::remove_all(path);
+                    nbrDel += ndel;
+                    if (ndel <= 0)
+                        success = false;
                 }
             }
             catch (const fs::filesystem_error& e) {
