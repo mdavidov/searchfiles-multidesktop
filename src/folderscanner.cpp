@@ -419,7 +419,7 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
     // deep remove its files until maxDepth is reached.
     if (maxDepth != 0) {  // maxDepth == -1 means unlimitted, >= 0 means limited
         for (const auto& dirPath : dirPaths) {
-            deepRemLimitedImpl(dirPath, maxDepth);
+            deepRemLimitedImpl(dirPath, maxDepth, nbrDeleted);
         }
     }
 
@@ -427,11 +427,10 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
     stopped = true;
 }
 
-bool FolderScanner::deepRemLimitedImpl(const QString& startPath, const int maxDepth)
+bool FolderScanner::deepRemLimitedImpl(const QString& startPath, const int maxDepth, quint64& nbrDeleted)
 {
     std::queue<std::pair<QString, int>> dirQ;
     dirQ.push({ startPath, 1 }); // start at level 1
-    quint64 nbrDeleted = 0;
     auto res = true;
 
     while (!dirQ.empty() && !stopped) {

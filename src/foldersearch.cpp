@@ -1523,6 +1523,7 @@ void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/
 }
 
 void MainWindow::removalComplete(bool success) {
+    stopAllThreads();
     removeRows(); // files that failed to delete will not be removed from the table
     const QString prefix = _stopped ? "INTERRUPTED | " : "COMPLETED | ";
     QString suffix = success ? "DELETE SUCCESS" : "SOME FAILED to DELETE";
@@ -1536,7 +1537,6 @@ void MainWindow::removalComplete(bool success) {
     const auto text = prefix + suffix + ", took " + getElapsedTimeStr();
     filesFoundLabel->setText(text);
     qDebug() << text;
-    stopAllThreads();
     setStopped(true);
 }
 
