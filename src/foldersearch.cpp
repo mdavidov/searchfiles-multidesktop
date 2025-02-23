@@ -1526,7 +1526,7 @@ void MainWindow::removalComplete(bool success) {
     const QString prefix = _stopped ? "INTERRUPTED | " : "COMPLETED | ";
     QString suffix = success ? "DELETE SUCCESS" : "SOME FAILED to DELETE";
     const auto maxDepth = unlimSubDirDepthBtn->isChecked() ? -1 : _maxSubDirDepth;
-    const auto filesStr = (maxDepth < 0) ? " files & folders" : " files";
+    const auto filesStr = (maxDepth < 0) ? " files/folders" : " files";
     if (_nbrDeleted == 0) {
         suffix = "NO ITEMS DELETED";
     }

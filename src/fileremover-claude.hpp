@@ -43,9 +43,9 @@ public:
 
     void removeFiles(const IntQStringMap& rowPathMap)
     {
-        worker_ = std::jthread([this, rowPathMap](const std::stop_token& st) {
+        worker_ = std::jthread([this, rowPathMap](const std::stop_token&) {
             stop_req = false;
-            rmFiles(st, rowPathMap);
+            rmFilesAndDirs(rowPathMap);
         });
     }
 
@@ -72,11 +72,11 @@ public:
         uint64_t folders = 0;
     };
 
-    DeepDirCount deepCount(const std::stop_token& st, const fs::path& path) {
+    DeepDirCount deepCount(const fs::path& path) {
         DeepDirCount count;
         try {
             for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
-                if (stop_req || st.stop_requested())
+                if (stop_req)
                     return count;
                 try {
                     if (entry.is_directory())
@@ -95,12 +95,11 @@ public:
         return count;
     }
 
-    bool deepRemoveFiles(const std::stop_token& st, int row, const fs::path& path, uint64_t& nbrDel, uint64_t& size) {
-        (void)st;
+    bool deepRemoveFiles(int row, const fs::path& path, uint64_t& nbrDel, uint64_t& size) {
         auto rmOk = true;
         try {
             if (!fs::is_directory(path)) {
-                const auto sz = fs::file_size(path);
+                const auto sz = fs::file_size(path);  // do it BEFORE removal
                 if (fs::remove(path)) {
                     nbrDel++;
                     size += sz;
@@ -119,9 +118,10 @@ public:
                     return rmOk;
                 try {
                     if (!entry.is_directory()) {
+                        const auto sz = entry.file_size();  // do it BEFORE removal
                         if (fs::remove(entry.path())) {
                             nbrDel++;
-                            size += fs::file_size(path);
+                            size += sz;
                         }
                         else
                             rmOk = false;
@@ -145,46 +145,12 @@ public:
         return rmOk;
     }
 
-    bool deepRemoveDirs(const std::stop_token& st, int row, const fs::path& path, uint64_t& nbrDel) {
-        (void)st;
-        auto rmOk = true;
-        try {
-            for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
-                if (stop_req)
-                    return rmOk;
-                try {
-                    if (entry.is_directory()) {
-                        const auto ndel = fs::remove_all(entry.path());
-                        if (ndel > 0)
-                            nbrDel += ndel;
-                        else
-                            rmOk = false;
-                        std::lock_guard<std::mutex> lock(mutex_);
-                        if (progressCallback_) {
-                            progressCallback_(row, QString::fromStdString(entry.path().string()), 0, rmOk, nbrDel);
-                            qDebug() << "rmOk:" << rmOk << "removed folder:" << entry.path().string();
-                        }
-                    }
-                }
-                catch (const fs::filesystem_error& ex) {
-                    rmOk = false;
-                    cout << "ERROR: " << ex.what() << "  " << entry.path() << endl;
-                }
-            }
-        }
-        catch (const fs::filesystem_error& ex) {
-            rmOk = false;
-            cout << "ERROR: " << ex.what() << "  " << path << endl;
-        }
-        return rmOk;
-    }
-
 private:
-    void rmFiles(const std::stop_token& st, const IntQStringMap& rowPathMap)
+    void rmFilesAndDirs(const IntQStringMap& rowPathMap)
     {
         set_thread_name("ClaudeFileRemover");
         const auto tid = std::hash<std::thread::id>{}(std::this_thread::get_id());
-        qDebug() << "Claude: rmFiles: my thread id:" << get_readable_thread_id() << " hash:" << tid;
+        qDebug() << "Claude: rmFilesAndDirs: my thread id:" << get_readable_thread_id() << " hash:" << tid;
         auto success = true;
         auto nbrDel = uint64_t(0);
         auto size = (uint64_t)0;
@@ -193,11 +159,13 @@ private:
                 break;
             const auto path = pathQstr.toStdString();
             try {
-                if (!deepRemoveFiles(st, row, path, nbrDel, size)) {
+                // Remove all files in all subdirs
+                if (!deepRemoveFiles(row, path, nbrDel, size)) {
                     success = false;
                 }
                 if (stop_req)
                     break;
+                // Dirs are now empty, it's going to be fast to remove all
                 if (fs::is_directory(path)) {
                     const auto ndel = fs::remove_all(path);
                     nbrDel += ndel;
