@@ -99,6 +99,21 @@ public:
         (void)st;
         auto rmOk = true;
         try {
+            if (!fs::is_directory(path)) {
+                const auto sz = fs::file_size(path);
+                if (fs::remove(path)) {
+                    nbrDel++;
+                    size += sz;
+                }
+                else
+                    rmOk = false;
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (progressCallback_) {
+                    progressCallback_(row, QString::fromStdString(path.string()), size, rmOk, nbrDel);
+                    qDebug() << "rmOk:" << rmOk << "removed file:" << path.string();
+                }
+                return rmOk;
+            }
             for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
                 if (stop_req)
                     return rmOk;
@@ -118,11 +133,13 @@ public:
                     }
                 }
                 catch (const fs::filesystem_error& ex) {
+                    rmOk = false;
                     cout << "ERROR with " << entry.path() << " | " << ex.what() << endl;
                 }
             }
         }
         catch (const fs::filesystem_error& ex) {
+            rmOk = false;
             cout << "ERROR with " << path << " | " << ex.what() << endl;
         }
         return rmOk;
