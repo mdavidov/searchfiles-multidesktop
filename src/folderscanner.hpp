@@ -39,6 +39,7 @@ signals:
     void scanComplete();
     void scanCancelled();
     void removalComplete(bool success);
+    void removalCancelled();
 
 public slots:
     void stop();

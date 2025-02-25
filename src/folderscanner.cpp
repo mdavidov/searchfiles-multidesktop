@@ -323,7 +323,6 @@ uint64pair FolderScanner::deepCountSize(const QString& startPath)
                 return{ count, size };
             }
             dirQ.enqueue(dir.absoluteFilePath());
-            //reportProgress(dir.absoluteFilePath());
         }
 
         QFileInfoList infos;
@@ -402,8 +401,11 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
     // Get all selected files and dirs; remove files, add dirs to deque
     for (const auto& rowNpath : rowPathMap) {
         processEvents();
-        if (stopped)
+        if (stopped) {
+            qDebug() << "deepRemoveLimited: STOPPED";
+            emit removalCancelled();
             return;
+        }
         const auto path = rowNpath.second;
         const auto info = QFileInfo(path);
         if (!doRemoveOneFile(info, rowNpath.first, nbrDeleted)) {
@@ -439,8 +441,11 @@ bool FolderScanner::deepRemLimitedImpl(const QString& startPath, const int maxDe
         QFileInfoList dirInfos;
         getAllDirs(dirPath, dirInfos);
         for (const auto& dir : dirInfos) {
-            if (stopped)
+            if (stopped) {
+                qDebug() << "deepRemLimitedImpl: STOPPED @ line 445";
+                emit removalCancelled();
                 return res;
+            }
             if (maxDepth < 0 || currDepth < maxDepth) {
                 dirQ.push({ dir.absoluteFilePath(), currDepth + 1 });
                 qDebug() << "deepRemLimitedImpl: dirQ.push" << dir.absoluteFilePath() << "currDepth" << currDepth << "maxDepth" << maxDepth;
@@ -451,8 +456,11 @@ bool FolderScanner::deepRemLimitedImpl(const QString& startPath, const int maxDe
         getFileInfos(dirPath, infos);
         for (const auto& info : infos) {
             processEvents();
-            if (stopped)
+            if (stopped) {
+                qDebug() << "deepRemLimitedImpl: STOPPED @ line 458";
+                emit removalCancelled();
                 return res;
+            }
             if (!doRemoveOneFile(info, -1, nbrDeleted)) {  // not in the files table, so row = -1
                 res = false;
             }
@@ -472,7 +480,7 @@ bool FolderScanner::doRemoveOneFile(const QFileInfo& info, int row, quint64& nbr
         if (rmok) {
             ++nbrDeleted;
             emit itemRemoved(row, 1, (quint64)size, nbrDeleted); // not in the table, so row = -1
-            //qDebug() << "Removed" << info.absoluteFilePath() << "size" << size << "nbrDeleted" << nbrDeleted;
+            qDebug() << "Removed" << info.absoluteFilePath() << "size" << size << "nbrDeleted" << nbrDeleted;
         }
         else {
             res = false;

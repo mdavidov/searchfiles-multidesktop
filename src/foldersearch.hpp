@@ -118,8 +118,8 @@ private slots:
 private:
     std::unique_ptr<QThread> scanThread;
     std::unique_ptr<FolderScanner> scanner;
-    std::unique_ptr<AmzQ::FileRemover> removerAmzQ_;
-    std::unique_ptr<Claude::FileRemover> removerClaude_;
+    std::unique_ptr<AmzQ::FileRemover> removerAmzQ;
+    std::unique_ptr<Claude::FileRemover> removerClaude;
 
     // We need to remove rows in decreasing order of row indices,
     // so we use a map sorted in descending order.
@@ -148,6 +148,7 @@ private:
 
     void deepScanFolderOnThread(const QString& startPath, const int maxDepth);
     void scanThreadFinished();
+    void deepRemoveLimitedOnThread(const IntQStringMap& itemList, const int maxDepth);
     void deepRemoveFilesOnThread_AmzQ(const IntQStringMap& paths);
     void deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap);
     void getSizeWithAsync(const IntQStringMap& itemList);
@@ -251,6 +252,7 @@ private:
 
     Devonline::Op::Type _opType;
     bool _stopped{ true };
+    bool _removal{ false };
 };
 
 }
