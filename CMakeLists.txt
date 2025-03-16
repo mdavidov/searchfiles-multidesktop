@@ -15,11 +15,12 @@ ELSEIF(WIN32)
     SET(CMAKE_PREFIX_PATH "C:/Qt/6.8.1/msvc2022_64")
 ENDIF()
 
-LIST(APPEND CMAKE_MODULE_PATH
+SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${Qt6_DIR})
+
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     "${Qt6_DIR}/lib/cmake/Qt6"
     "${Qt6_DIR}/lib/cmake/Qt6Quick"
-    "${Qt6_DIR}/lib/cmake/Qt6Controls"
-)
+    "${Qt6_DIR}/lib/cmake/Qt6Controls")
 
 FIND_PACKAGE(Qt6 REQUIRED COMPONENTS
     Core
@@ -93,13 +94,13 @@ if(APPLE)
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/images/Info.plist
     )
     include_directories(
-        /opt/Qt/6.8.1/macos/include
-        /opt/Qt/6.8.1/macos/lib/QtCore.framework/Headers
-        /opt/Qt/6.8.1/macos/lib/QtWidgets.framework/Headers
+        ${Qt6_DIR}/include
+        ${Qt6_DIR}/lib/QtCore.framework/Headers
+        ${Qt6_DIR}/lib/QtWidgets.framework/Headers
         ${CMAKE_SOURCE_DIR}/src
     )
     link_directories(
-        /opt/Qt/6.8.1/macos/lib
+        ${Qt6_DIR}/lib
     )
 elseif(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused -Wdouble-promotion -Wundef -Wcast-align" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)

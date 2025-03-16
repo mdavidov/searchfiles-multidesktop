@@ -398,7 +398,7 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
     std::deque<QString> dirPaths;
     auto res = true;
 
-    // Get all selected files and dirs; remove files, add dirs to deque
+    // Get all selected files and dirs; remove files and empty dirs; add still existing dirs to deque
     for (const auto& rowNpath : rowPathMap) {
         processEvents();
         if (stopped) {
@@ -411,7 +411,7 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
         if (!doRemoveOneFile(info, rowNpath.first, nbrDeleted)) {
             res = false;
         }
-        if (info.isDir()) {
+        if (info.isDir() && QFileInfo::exists(path)) {
             dirPaths.push_back(path);
         }
     }
@@ -487,7 +487,31 @@ bool FolderScanner::doRemoveOneFile(const QFileInfo& info, int row, quint64& nbr
             qDebug() << "FAILED to remove" << info.absoluteFilePath() << "size" << size << "nbrDeleted" << nbrDeleted;
         }
     }
+    else {
+        // RM DIR if it's empty
+        res = rmEmptyDir(info.absoluteFilePath(), row, nbrDeleted);
+    }
     return res;
+}
+
+bool FolderScanner::rmEmptyDir(const QString& dirPath, int row, quint64& nbrDeleted)
+{
+    // RM DIR if it's empty
+    QDir dir(dirPath);
+    if (!dir.isEmpty())
+        return true;
+    const auto rmok = dir.rmdir(dirPath);
+    processEvents();
+    if (rmok) {
+        ++nbrDeleted;
+        emit itemRemoved(row, 1, 0, nbrDeleted);
+        qDebug() << "Removed" << dirPath << "nbrDeleted" << nbrDeleted;
+        return true;
+    }
+    else {
+        qDebug() << "FAILED to remove" << dirPath << "nbrDeleted" << nbrDeleted;
+        return false;
+    }
 }
 
 }
