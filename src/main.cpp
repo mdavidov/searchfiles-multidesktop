@@ -29,8 +29,6 @@ int main(int argc, char* argv[])
 
         return app.exec();
     }
-    catch (...) {
-        Q_ASSERT(false);
-        return 1;
-    }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }

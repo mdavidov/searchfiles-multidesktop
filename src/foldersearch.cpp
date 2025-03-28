@@ -67,34 +67,26 @@ using namespace std::chrono;
 using namespace std::chrono_literals;
 
 void MainWindow::stopAllThreads() {
-    static constexpr auto sleepLen = 100ms;
+    static constexpr auto sleepLen = 200ms;
     if (scanner) {
         scanner->blockSignals(true);
         std::this_thread::sleep_for(sleepLen);
         scanner->stop();
         std::this_thread::sleep_for(sleepLen);
-        scanner.reset();
-        qDebug() << "scanner STOPPED & RESET";
     }
     if (scanThread) {
         scanThread->blockSignals(true);
         std::this_thread::sleep_for(sleepLen);
         scanThread->exit(0);
         scanThread->wait();
-        scanThread.reset();
-        qDebug() << "scanThread STOPPED & RESET";
     }
     if (removerAmzQ) {
         removerAmzQ->stop();
         std::this_thread::sleep_for(sleepLen);
-        removerAmzQ.reset();
-        qDebug() << "removerAmzQ STOPPED & RESET";
     }
     if (removerClaude) {
         removerClaude->stop();
         std::this_thread::sleep_for(sleepLen);
-        removerClaude.reset();
-        qDebug() << "removerClaude STOPPED & RESET";
     }
 }
 
@@ -466,7 +458,8 @@ void MainWindow::deleteBtnClicked()
             deepRemoveLimitedOnThread(itemList, maxDepth);
         }
     }
-    catch (...) { Q_ASSERT(false); } // tell the user?
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::getSelectedItems(IntQStringMap& itemList)
@@ -509,7 +502,8 @@ void MainWindow::shredBtnClicked()
 
         emit filesTable->itemSelectionChanged();
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::cancelBtnClicked()
@@ -542,7 +536,8 @@ void MainWindow::SetDirPath( const QString& dirPath)
             dirComboBox->addItem(_origDirPath);
         dirComboBox->setCurrentIndex( dirComboBox->findText(_origDirPath));
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::Clear()
@@ -564,7 +559,8 @@ void MainWindow::Clear()
         _nbrDeleted = 0;
         processEvents();
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::setStopped(bool stopped)
@@ -777,7 +773,8 @@ void MainWindow::findBtnClicked()
 
         deepScanFolderOnThread(_origDirPath, _unlimSubDirDepth ? -1 : _maxSubDirDepth);
     }
-    catch (...) { Q_ASSERT(false); } // tell the user?
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 inline void MainWindow::processEvents()
@@ -842,7 +839,8 @@ void MainWindow::dirPathEditTextChanged(const QString& newText)
         }
         _editTextTimeDiff.restart();
     }
-    catch(...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::completerTimeout()
@@ -852,7 +850,8 @@ void MainWindow::completerTimeout()
         if (dirComboBox->completer())
             dirComboBox->completer()->complete(); // shows the popup if the completion count > 0
     }
-    catch(...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 QFileSystemModel * MainWindow::newFileSystemModel(QCompleter * completer, const QString & currentDir)
@@ -1158,7 +1157,8 @@ void MainWindow::createFilesTable()
     //c = connect(filesTable, SIGNAL(customContextMenuRequested(const QPoint &)),
     //            this,         SLOT(showContextMenu(const QPoint &)));  Q_ASSERT(c);
   }
-  catch (...) { /*Q_ASSERT(false)*/; }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::openFileOfItem( int row, int /* column */)
@@ -1194,7 +1194,8 @@ void MainWindow::createContextMenu()
         connect(getSizeAct, &QAction::triggered, this, &MainWindow::getSizeSlot);
         connect(propertiesAct, &QAction::triggered, this, &MainWindow::propertiesSlot);
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::showContextMenu(const QPoint& point)
@@ -1223,7 +1224,8 @@ void MainWindow::showContextMenu(const QPoint& point)
         // Show the menu at the correct global position
         contextMenu->popup(filesTable->viewport()->mapToGlobal(point));
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::openRunSlot() {
@@ -1238,7 +1240,8 @@ void MainWindow::openRunSlot() {
         const auto url = QUrl::fromLocalFile(finfo.absoluteFilePath());
         QDesktopServices::openUrl(url);
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::openContainingFolderSlot() {
@@ -1254,7 +1257,8 @@ void MainWindow::openContainingFolderSlot() {
         const auto url = QUrl::fromLocalFile(finfo.absolutePath());
         QDesktopServices::openUrl(url);
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::copyPathSlot() {
@@ -1272,7 +1276,8 @@ void MainWindow::copyPathSlot() {
         const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
         clipboard->setText(QDir::toNativeSeparators(finfo.absoluteFilePath()));
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::getSizeSlot() {
@@ -1286,7 +1291,8 @@ void MainWindow::getSizeSlot() {
         getSelectedItems(itemList);
         getSizeWithAsync(itemList);
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::getSizeWithAsync(const IntQStringMap& itemList)
@@ -1353,7 +1359,8 @@ void MainWindow::propertiesSlot() {
         }
 #endif
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::keyReleaseEvent(QKeyEvent* ev) {
@@ -1370,7 +1377,8 @@ void MainWindow::keyReleaseEvent(QKeyEvent* ev) {
         else
             QMainWindow::keyReleaseEvent(ev);
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::unlimSubDirDepthToggled(bool /*checked*/)
@@ -1392,7 +1400,8 @@ void MainWindow::unlimSubDirDepthToggled(bool /*checked*/)
             maxSubDirDepthEdt->setText(QString("%1").arg(_maxSubDirDepth));
         }
     }
-    catch (...) { Q_ASSERT(false); }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::showAboutDialog() {
