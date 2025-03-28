@@ -84,7 +84,7 @@ bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo&
         const auto isDir = info.isDir() && !isSymlink;
         const auto isFile = info.isFile() && !isSymlink;
         if (!params.exclFolderPatterns.empty() &&
-                stringContainsAnyWord(dirPath, params.exclFolderPatterns)) {
+                stringContainsAnyWord(filePath, params.exclFolderPatterns)) {
             return false;
         }
         if (isFile) {
@@ -290,8 +290,9 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth)
                 }
                 processEvents();
                 const auto dPath = dir.absoluteFilePath();
-                if (maxDepth < 0 || currDepth < maxDepth) {
-                    dirQ.enqueue({ dPath, currDepth + 1 });
+                if ((maxDepth < 0 || currDepth < maxDepth) &&
+                    (params.exclFolderPatterns.empty() || !stringContainsAnyWord(dPath, params.exclFolderPatterns))) {
+                        dirQ.enqueue({ dPath, currDepth + 1 });
                 }
                 reportProgress(dPath + QDir::separator());
             }
@@ -305,7 +306,7 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth)
                 }
                 processEvents();
                 const auto filePath = info.absoluteFilePath();
-                if (appendOrExcludeItem(dirPath, info)) {
+                if (appendOrExcludeItem(filePath, info)) {
                     emit itemFound(filePath, info);
                 }
                 reportProgress(filePath);
