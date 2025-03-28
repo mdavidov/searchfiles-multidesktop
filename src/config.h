@@ -83,7 +83,7 @@ QT_END_NAMESPACE
 #define OvSk_FsOp_FAST_COPY_ACT_TXT     tr("&Smart Copy selected items")
 #define OvSk_FsOp_FAST_COPY_STS_TIP     tr("Copy selected file system items, skipping files with same size and date modified.")
 
-#define OvSk_FsOp_SIMPLE_COPY_ACT_TXT   tr("Simple &Copy selected items")
+#define OvSk_FsOp_SIMPLE_COPY_ACT_TXT   tr("Simple C&opy selected items")
 #define OvSk_FsOp_SIMPLE_COPY_STS_TIP   tr("Copy all selected file system items to the opposite pane.")
 
 #define OvSk_FsOp_DUPLICATE_ACT_TXT     tr("Duplicate selected items")

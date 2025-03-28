@@ -280,6 +280,7 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth)
             }
             processEvents();
             const auto [dirPath, currDepth] = dirQ.dequeue();
+            reportProgress(dirPath + QDir::separator());
             QFileInfoList dirInfos;
             getAllDirs(dirPath, dirInfos);
             for (const auto& dir : dirInfos) {
@@ -287,11 +288,12 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth)
                 if (stopped) {
                     return;
                 }
-                //processEvents();
+                processEvents();
+                const auto dPath = dir.absoluteFilePath();
                 if (maxDepth < 0 || currDepth < maxDepth) {
-                    dirQ.enqueue({ dir.absoluteFilePath(), currDepth + 1 });
+                    dirQ.enqueue({ dPath, currDepth + 1 });
                 }
-                //reportProgress(dirPath);
+                reportProgress(dPath + QDir::separator());
             }
             // Not necessary: updateTotals(dirPath);
             
@@ -493,6 +495,11 @@ bool FolderScanner::deepRemLimitedImpl(const QString& startPath, const int maxDe
                 if (!doRemoveOneFile(info, -1, nbrDeleted)) {  // not in the files table, so row = -1
                     res = false;
                 }
+            }
+            // If the containing folder is empty, then remove it.
+            const auto dir = QDir(dirPath);
+            if (dir.isEmpty()) {
+                dir.rmdir(dirPath);
             }
         }
         catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }

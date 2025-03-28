@@ -227,7 +227,7 @@ void MainWindow::createNavigLayout()
     findButton   = createButton(tr("&Search"),    SLOT(findBtnClicked()));
     deleteButton = createButton(tr("&Delete"),    SLOT(deleteBtnClicked()));
     shredButton  = createButton(tr("S&hred"),     SLOT(shredBtnClicked()));
-    cancelButton = createButton(tr("S&top"),      SLOT(cancelBtnClicked()));
+    cancelButton = createButton(tr("&Cancel"),    SLOT(cancelBtnClicked()));
     modifyFont(findButton, +1.0, true, false, false);
 
     dirComboBox = createComboBoxFSys( _origDirPath, true);
@@ -517,7 +517,7 @@ void MainWindow::cancelBtnClicked()
     }
     else {
         flushItemBuffer();
-        setFilesFoundLabel("INTERRUPTED | ");
+        setFilesFoundLabel("CANCELED | ");
         filesTable->setSortingEnabled(true);
         filesTable->sortByColumn(-1, Qt::AscendingOrder);
     }
@@ -758,7 +758,7 @@ void MainWindow::findBtnClicked()
             #else
                 qDebug() << OvSk_FsOp_SELECT_ITEM_TYPE_TXT;
 	        #endif
-            // return;
+            return;
         }
         Cfg::St().setValue(Cfg::origDirPathKey, QDir::toNativeSeparators(dirComboBox->currentText()));
 
@@ -1468,7 +1468,7 @@ void MainWindow::scanThreadFinished()
     std::this_thread::sleep_for(100ms);
     filesTable->update();
     std::this_thread::sleep_for(100ms);
-    setFilesFoundLabel(_stopped ? "INTERRUPTED | " : "COMPLETED | ");
+    setFilesFoundLabel(_stopped ? "CANCELED | " : "COMPLETED | ");
     filesTable->setSortingEnabled(true);
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
     stopAllThreads();
@@ -1554,7 +1554,7 @@ void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/
 
 void MainWindow::removalComplete(bool success) {
     removeRows(); // files that failed to delete will not be removed from the table
-    const QString prefix = _stopped ? "INTERRUPTED | " : "COMPLETED | ";
+    const QString prefix = _stopped ? "CANCELED | " : "COMPLETED | ";
     QString suffix = success ? "DELETE SUCCESS" : "SOME FAILED to DELETE";
     const auto maxDepth = unlimSubDirDepthBtn->isChecked() ? -1 : _maxSubDirDepth;
     const auto filesStr = (maxDepth < 0) ? " files/folders" : " files";
