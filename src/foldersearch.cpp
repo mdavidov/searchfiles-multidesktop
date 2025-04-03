@@ -234,7 +234,7 @@ void MainWindow::createNavigLayout()
     setAllTips(dirComboBox, OvSk_FsOp_TOP_DIR_TIP);
     modifyFont(dirComboBox, +0.0, true, false, false);
     c = connect( dirComboBox,    SIGNAL(editTextChanged(const QString &)),
-                 this,      SLOT(dirPathEditTextChanged(const QString &))); Q_ASSERT(c);
+                 this,           SLOT(dirPathEditTextChanged(const QString &))); Q_ASSERT(c);
 
     wordsLineEdit = new QLineEdit(); //createComboBoxText();
     wordsLineEdit->setPlaceholderText("Search words");

@@ -44,6 +44,49 @@ Component.prototype.createOperations = function()
 
     // Does NOT work: Add a custom operation to calculate the total disk space
     // component.addOperation("CustomOperation", "calculateTotalDiskSpace");
+
+    if (systemInfo.productType === "windows") {
+        // Create shortcuts
+        component.addOperation("CreateShortcut",
+                               "@TargetDir@/foldersearch.exe",
+                               "@StartMenuDir@/FolderSearch.lnk",
+                               "workingDirectory=@TargetDir@");
+
+        component.addOperation("CreateShortcut",
+                               "@TargetDir@/foldersearch.exe",
+                               "@DesktopDir@/FolderSearch.lnk",
+                               "workingDirectory=@TargetDir@");
+    }
+    else if (systemInfo.productType === "mac") {
+           // MacOS-specific operations
+           component.addOperation("CreateDesktopEntry",
+                                 "@HomeDir@/Desktop/FolderSearch.desktop",
+                                 "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch.bin\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.icns");
+
+           // Optional: Create application symlink in /Applications
+           component.addOperation("Execute", "ln", "-sf",
+                                 "@TargetDir@",
+                                 "/Applications/FolderSearch");
+
+           // Set executable permissions
+           component.addOperation("Execute", "chmod", "+x",
+                                 "@TargetDir@/foldersearch.bin");
+       } else if (systemInfo.productType === "x11") {
+           // Linux-specific operations
+           component.addOperation("CreateDesktopEntry",
+                                 "@HomeDir@/Desktop/FolderSearch.desktop",
+                                 "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch.bin\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.png");
+
+           // Create menu entry
+           component.addOperation("CreateDesktopEntry",
+                                 "/usr/share/applications/FolderSearch.desktop",
+                                 "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch.bin\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.png\nCategories=Utility;");
+
+           // Set executable permissions
+           component.addOperation("Execute", "chmod", "+x",
+                                 "@TargetDir@/foldersearch.bin");
+       }
+   }
 }
 
 Component.prototype.installationFinishedPageIsShown = function()
