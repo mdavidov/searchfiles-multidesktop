@@ -58,34 +58,34 @@ Component.prototype.createOperations = function()
                                "workingDirectory=@TargetDir@");
     }
     else if (systemInfo.productType === "mac") {
-           // MacOS-specific operations
-           component.addOperation("CreateDesktopEntry",
-                                 "@HomeDir@/Desktop/FolderSearch.desktop",
-                                 "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch.bin\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.icns");
+       // MacOS-specific operations
+       component.addOperation("CreateDesktopEntry",
+                             "@HomeDir@/Desktop/FolderSearch.desktop",
+                             "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch.bin\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.icns");
 
-           // Optional: Create application symlink in /Applications
-           component.addOperation("Execute", "ln", "-sf",
-                                 "@TargetDir@",
-                                 "/Applications/FolderSearch");
+       // Optional: Create application symlink in /Applications
+       component.addOperation("Execute", "ln", "-sf",
+                             "@TargetDir@",
+                             "/Applications/FolderSearch");
 
-           // Set executable permissions
-           component.addOperation("Execute", "chmod", "+x",
-                                 "@TargetDir@/foldersearch.bin");
-       } else if (systemInfo.productType === "x11") {
-           // Linux-specific operations
-           component.addOperation("CreateDesktopEntry",
-                                 "@HomeDir@/Desktop/FolderSearch.desktop",
-                                 "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch.bin\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.png");
+       // Set executable permissions
+       component.addOperation("Execute", "chmod", "+x",
+                             "@TargetDir@/foldersearch.bin");
+    }
+    else if (systemInfo.productType === "x11") {
+       // Linux-specific operations
+       component.addOperation("CreateDesktopEntry",
+                             "@HomeDir@/Desktop/FolderSearch.desktop",
+                             "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch.bin\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.png");
 
-           // Create menu entry
-           component.addOperation("CreateDesktopEntry",
-                                 "/usr/share/applications/FolderSearch.desktop",
-                                 "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch.bin\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.png\nCategories=Utility;");
+       // Create menu entry
+       component.addOperation("CreateDesktopEntry",
+                             "/usr/share/applications/FolderSearch.desktop",
+                             "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch.bin\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.png\nCategories=Utility;");
 
-           // Set executable permissions
-           component.addOperation("Execute", "chmod", "+x",
-                                 "@TargetDir@/foldersearch.bin");
-       }
+       // Set executable permissions
+       component.addOperation("Execute", "chmod", "+x",
+                             "@TargetDir@/foldersearch.bin");
    }
 }
 
