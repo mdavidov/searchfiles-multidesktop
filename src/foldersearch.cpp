@@ -9,8 +9,6 @@
 **
 ****************************************************************************/
 
-#undef QT_NO_CONTEXTMENU
-
 #ifdef Q_OS_WIN
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
@@ -31,6 +29,7 @@
 #include "config.h"
 #include "keypress.hpp"
 #include "util.h"
+#include "version.h"
 
 #include <algorithm>
 #include <chrono>
@@ -116,7 +115,7 @@ MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
     prevProgress = 0;
     progressTimer.start();
 
-    setWindowTitle(QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR);  // + " " + OvSk_FsOp_APP_BUILD_NBR_STR);
+    setWindowTitle(QString(OvSk_FsOp_APP_NAME_TXT) + " " + OvSk_FsOp_APP_VERSION_STR + " " + OvSk_FsOp_APP_BUILD_NBR_STR);
     const auto savedPath = Cfg::St().value(Cfg::origDirPathKey).toString();
     if (!savedPath.isEmpty())
         _origDirPath = savedPath;
@@ -227,7 +226,7 @@ void MainWindow::createNavigLayout()
     findButton   = createButton(tr("&Search"),    SLOT(findBtnClicked()));
     deleteButton = createButton(tr("&Delete"),    SLOT(deleteBtnClicked()));
     shredButton  = createButton(tr("S&hred"),     SLOT(shredBtnClicked()));
-    cancelButton = createButton(tr("&Cancel"),    SLOT(cancelBtnClicked()));
+    cancelButton = createButton(tr("S&top"),      SLOT(cancelBtnClicked()));
     modifyFont(findButton, +1.0, true, false, false);
 
     dirComboBox = createComboBoxFSys( _origDirPath, true);
@@ -424,6 +423,7 @@ static void updateComboBox(QComboBox *comboBox)
 void MainWindow::deleteBtnClicked()
 {
     try {
+        filesFoundLabel->setText("");
         _opType = Devonline::Op::deletePerm;
         if (filesTable->selectedItems().empty()) {
             #if !defined(Q_OS_MAC)
@@ -485,6 +485,7 @@ void MainWindow::shredBtnClicked()
 {
     try
     {
+        filesFoundLabel->setText("");
         _opType = Devonline::Op::shredPerm;
         if (filesTable->selectedItems().empty()) {
             #if !defined(Q_OS_MAC)
@@ -508,8 +509,6 @@ void MainWindow::shredBtnClicked()
 
 void MainWindow::cancelBtnClicked()
 {
-    if (_stopped)
-        return;
     stopAllThreads();
     setStopped(true);
     if (_removal) {
@@ -517,7 +516,7 @@ void MainWindow::cancelBtnClicked()
     }
     else {
         flushItemBuffer();
-        setFilesFoundLabel("CANCELED | ");
+        setFilesFoundLabel("INTERRUPTED | ");
         filesTable->setSortingEnabled(true);
         filesTable->sortByColumn(-1, Qt::AscendingOrder);
     }
@@ -1282,6 +1281,7 @@ void MainWindow::copyPathSlot() {
 
 void MainWindow::getSizeSlot() {
     try {
+        filesFoundLabel->setText("");
         const auto selectedItems = filesTable->selectedItems();
         if (!_stopped || selectedItems.empty()) {
             return;
@@ -1289,7 +1289,7 @@ void MainWindow::getSizeSlot() {
         setStopped(false);
         IntQStringMap itemList;
         getSelectedItems(itemList);
-        getSizeWithAsync(itemList);
+        getSizeOnThread(itemList);
     }
     catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
     catch (...) { qDebug() << "caught ... EXCEPTION"; }
@@ -1297,7 +1297,7 @@ void MainWindow::getSizeSlot() {
 
 void MainWindow::getSizeWithAsync(const IntQStringMap& itemList)
 {
-    auto ft = std::async(std::launch::async, [this, itemList]()
+    //auto ft = std::async(std::launch::async, [this, itemList]()
     {
         uint64pair countNsize;
         const auto nbrItems = itemList.size();
@@ -1330,7 +1330,8 @@ void MainWindow::getSizeWithAsync(const IntQStringMap& itemList)
                 .arg(countNsize.first)
                 .arg(sizeStr));
         }, Qt::QueuedConnection);
-    });
+    }//);
+    //ft.wait();
 }
 
 void MainWindow::propertiesSlot() {
@@ -1437,6 +1438,28 @@ void MainWindow::deepScanFolderOnThread(const QString& startPath, const int maxD
     scanThread->start();
 }
 
+void MainWindow::getSizeOnThread(const IntQStringMap& itemList)
+{
+    scanThread = std::make_unique<QThread>(this);
+    scanThread->setObjectName("GetFolderSizeThread");
+
+    connect(scanThread.get(), &QThread::started, [this, itemList]() {
+        getSizeWithAsync(itemList);
+    });
+    connect(scanThread.get(), &QThread::finished, this, &MainWindow::scanThreadFinished);
+
+    connect(scanner.get(), &FolderScanner::itemFound, this, &MainWindow::itemFound);
+    connect(scanner.get(), &FolderScanner::itemSized, this, &MainWindow::itemSized);
+    connect(scanner.get(), &FolderScanner::itemRemoved, this, &MainWindow::itemRemoved);
+    connect(scanner.get(), &FolderScanner::progressUpdate, this, &MainWindow::progressUpdate);
+
+    connect(scanner.get(), &FolderScanner::scanComplete, scanThread.get(), &QThread::quit);
+    connect(scanner.get(), &FolderScanner::scanCancelled, scanThread.get(), &QThread::quit);
+
+    // DO IT NOW
+    scanThread->start();
+}
+
 void MainWindow::deepRemoveLimitedOnThread(const IntQStringMap& itemList, const int maxDepth)
 {
     scanThread = std::make_unique<QThread>(this);
@@ -1468,7 +1491,7 @@ void MainWindow::scanThreadFinished()
     std::this_thread::sleep_for(100ms);
     filesTable->update();
     std::this_thread::sleep_for(100ms);
-    setFilesFoundLabel(_stopped ? "CANCELED | " : "COMPLETED | ");
+    setFilesFoundLabel(_stopped ? "INTERRUPTED | " : "COMPLETED | ");
     filesTable->setSortingEnabled(true);
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
     stopAllThreads();
@@ -1554,7 +1577,7 @@ void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/
 
 void MainWindow::removalComplete(bool success) {
     removeRows(); // files that failed to delete will not be removed from the table
-    const QString prefix = _stopped ? "CANCELED | " : "COMPLETED | ";
+    const QString prefix = _stopped ? "INTERRUPTED | " : "COMPLETED | ";
     QString suffix = success ? "DELETE SUCCESS" : "SOME FAILED to DELETE";
     const auto maxDepth = unlimSubDirDepthBtn->isChecked() ? -1 : _maxSubDirDepth;
     const auto filesStr = (maxDepth < 0) ? " files/folders" : " files";

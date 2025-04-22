@@ -11,6 +11,7 @@
 #include "precompiled.h"
 #include "config.h"
 #include "foldersearch.hpp"
+#include "version.h"
 #include <QApplication>
 
 int main(int argc, char* argv[])

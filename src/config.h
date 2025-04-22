@@ -10,7 +10,6 @@
 **
 ****************************************************************************/
 
-#include "version.h"
 #include <QObject>
 #include <QString>
 QT_BEGIN_NAMESPACE

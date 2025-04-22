@@ -1,7 +1,5 @@
 #pragma once
 
-#undef QT_NO_CONTEXTMENU
-
 #include "common.h"
 #include "folderscanner.hpp"
 #include <chrono>
@@ -151,6 +149,7 @@ private:
     void deepRemoveLimitedOnThread(const IntQStringMap& itemList, const int maxDepth);
     void deepRemoveFilesOnThread_AmzQ(const IntQStringMap& paths);
     void deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap);
+    void getSizeOnThread(const IntQStringMap& itemList);
     void getSizeWithAsync(const IntQStringMap& itemList);
 
     void flushItemBuffer();

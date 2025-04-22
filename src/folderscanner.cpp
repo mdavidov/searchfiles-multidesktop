@@ -343,6 +343,7 @@ uint64pair FolderScanner::deepCountSize(const QString& startPath)
             for (const auto& dir : dirInfos) {
                 //processEvents();
                 if (stopped) {
+                    emit scanCancelled();
                     return{ count, size };
                 }
                 dirQ.enqueue(dir.absoluteFilePath());
@@ -353,6 +354,7 @@ uint64pair FolderScanner::deepCountSize(const QString& startPath)
             for (const auto& info : infos) {
                 processEvents();
                 if (stopped) {
+                    emit scanCancelled();
                     return{ count, size };
                 }
                 ++count;
@@ -369,6 +371,7 @@ uint64pair FolderScanner::deepCountSize(const QString& startPath)
             reportProgress(lastPath, true);
         }
         stopped = true;
+        emit scanComplete();
     }
     catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
     catch (...) { qDebug() << "caught ... EXCEPTION"; }

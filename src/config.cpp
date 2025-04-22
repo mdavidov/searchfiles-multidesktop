@@ -10,6 +10,7 @@
 ****************************************************************************/
 #include "precompiled.h"
 #include "config.h"
+#include "version.h"
 #include <QObject>
 #include <QSettings>
 
