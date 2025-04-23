@@ -66,17 +66,21 @@ using namespace std::chrono;
 using namespace std::chrono_literals;
 
 void MainWindow::stopAllThreads() {
-    static constexpr auto sleepLen = 200ms;
+    static constexpr auto sleepLen = 300ms;
     if (scanner) {
-        scanner->blockSignals(true);
-        std::this_thread::sleep_for(sleepLen);
         scanner->stop();
         std::this_thread::sleep_for(sleepLen);
     }
     if (scanThread) {
-        scanThread->blockSignals(true);
         std::this_thread::sleep_for(sleepLen);
         scanThread->exit(0);
+        for (int i = 0; !scanThread->isFinished() && i < 10 ; ++i) {
+            std::this_thread::sleep_for(sleepLen);
+        }
+        if (!scanThread->isFinished()) {
+            qDebug() << "MainWindow::stopAllThreads: calling thread TERMINATE";
+            scanThread->terminate();
+        }
         scanThread->wait();
     }
     if (removerAmzQ) {
@@ -87,8 +91,8 @@ void MainWindow::stopAllThreads() {
         removerClaude->stop();
         std::this_thread::sleep_for(sleepLen);
     }
+    qDebug() << "MainWindow::stopAllThreads FINISHED";
 }
-
 
 void MainWindow::closeEvent(QCloseEvent* event) {
     const auto shouldAllowClose = true; // TODO: review
@@ -509,8 +513,8 @@ void MainWindow::shredBtnClicked()
 
 void MainWindow::cancelBtnClicked()
 {
-    stopAllThreads();
     setStopped(true);
+    stopAllThreads();
     if (_removal) {
         removalComplete(false);
     }
@@ -570,6 +574,8 @@ void MainWindow::setStopped(bool stopped)
         filesTable->setSortingEnabled(true);
         filesTable->sortByColumn(-1, Qt::AscendingOrder);
     }
+    std::this_thread::sleep_for(200ms);
+
     findButton->setEnabled(     _stopped);
     deleteButton->setEnabled(   _stopped && filesTable->selectedItems().count() > 0);
     shredButton->setEnabled(    _stopped && filesTable->selectedItems().count() > 0);
@@ -1440,8 +1446,14 @@ void MainWindow::deepScanFolderOnThread(const QString& startPath, const int maxD
 
 void MainWindow::getSizeOnThread(const IntQStringMap& itemList)
 {
+    stopAllThreads();
     scanThread = std::make_unique<QThread>(this);
     scanThread->setObjectName("GetFolderSizeThread");
+
+    // Moving worker object pointer to thread (scanner pointer below)
+    // only sets which thread (scanThread) will execute worker's slots.
+    scanner = std::make_unique<FolderScanner>();
+    scanner->moveToThread(scanThread.get());
 
     connect(scanThread.get(), &QThread::started, [this, itemList]() {
         getSizeWithAsync(itemList);
@@ -1487,6 +1499,8 @@ void MainWindow::deepRemoveLimitedOnThread(const IntQStringMap& itemList, const 
 
 void MainWindow::scanThreadFinished()
 {
+    setStopped(true);
+    _removal = false;
     flushItemBuffer();
     std::this_thread::sleep_for(100ms);
     filesTable->update();
@@ -1494,9 +1508,6 @@ void MainWindow::scanThreadFinished()
     setFilesFoundLabel(_stopped ? "INTERRUPTED | " : "COMPLETED | ");
     filesTable->setSortingEnabled(true);
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
-    stopAllThreads();
-    setStopped(true);
-    _removal = false;
 }
 
 void MainWindow::itemFound(const QString& path, const QFileInfo& info) {

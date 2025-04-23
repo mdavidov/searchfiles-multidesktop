@@ -143,7 +143,8 @@ void FolderScanner::getAllDirs(const QString& dirPath, QFileInfoList& infos)
     auto filters = QDir::Dirs | QDir::AllDirs | QDir::Drives | QDir::System | QDir::NoSymLinks | QDir::NoDotAndDotDot;
     if (!params.exclHidden)
         filters |= QDir::Hidden;
-    infos = dir.entryInfoList(filters);
+    if (!stopped)
+        infos = dir.entryInfoList(filters);
 }
 
 void FolderScanner::getFileInfos(const QString& dirPath, QFileInfoList& infos) /*const*/
@@ -363,7 +364,7 @@ uint64pair FolderScanner::deepCountSize(const QString& startPath)
                 foundSize = size;
                 const auto filePath = info.absoluteFilePath();
                 reportProgress(filePath);
-                //emit itemSized(filePath, info);
+                emit itemSized(filePath, info);
                 lastPath = filePath;
             }
         }
