@@ -1301,20 +1301,18 @@ void MainWindow::getSizeSlot() {
     catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
-void MainWindow::getSizeWithAsync(const IntQStringMap& itemList)
+void MainWindow::getSizeImpl(const IntQStringMap& itemList)
 {
-    //auto ft = std::async(std::launch::async, [this, itemList]()
     {
         uint64pair countNsize;
         const auto nbrItems = itemList.size();
         QString filePath;
-        auto _scanner = std::make_unique<FolderScanner>();
         for (const auto& item : itemList) {
             filePath = item.second;
             const auto info = QFileInfo(filePath);
             // Do not follow symlinks
             if (info.isDir() && !isSymbolic(info)) {
-                const auto [count, dirSize] = _scanner->deepCountSize(filePath);
+                const auto [count, dirSize] = scanner->deepCountSize(filePath);
                 countNsize.first += count;
                 countNsize.second += dirSize;
             }
@@ -1336,8 +1334,7 @@ void MainWindow::getSizeWithAsync(const IntQStringMap& itemList)
                 .arg(countNsize.first)
                 .arg(sizeStr));
         }, Qt::QueuedConnection);
-    }//);
-    //ft.wait();
+    }
 }
 
 void MainWindow::propertiesSlot() {
@@ -1456,7 +1453,7 @@ void MainWindow::getSizeOnThread(const IntQStringMap& itemList)
     scanner->moveToThread(scanThread.get());
 
     connect(scanThread.get(), &QThread::started, [this, itemList]() {
-        getSizeWithAsync(itemList);
+        getSizeImpl(itemList);
     });
     connect(scanThread.get(), &QThread::finished, this, &MainWindow::scanThreadFinished);
 

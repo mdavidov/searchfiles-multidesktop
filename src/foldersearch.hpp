@@ -150,7 +150,7 @@ private:
     void deepRemoveFilesOnThread_AmzQ(const IntQStringMap& paths);
     void deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap);
     void getSizeOnThread(const IntQStringMap& itemList);
-    void getSizeWithAsync(const IntQStringMap& itemList);
+    void getSizeImpl(const IntQStringMap& itemList);
 
     void flushItemBuffer();
 
