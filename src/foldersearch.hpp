@@ -252,6 +252,7 @@ private:
     Devonline::Op::Type _opType;
     bool _stopped{ true };
     bool _removal{ false };
+    bool _gettingSize{ false };
 };
 
 }

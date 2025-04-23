@@ -113,6 +113,7 @@ MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
     , _unlimSubDirDepth(true)
     , _stopped(true)
     , _removal(false)
+    , _gettingSize(false)
 {
     prevEvents = 0;
     eventsTimer.start();
@@ -518,6 +519,9 @@ void MainWindow::cancelBtnClicked()
     if (_removal) {
         removalComplete(false);
     }
+    else if (_gettingSize) {
+        filesFoundLabel->setText("INTERRUPTED");
+    }
     else {
         flushItemBuffer();
         setFilesFoundLabel("INTERRUPTED | ");
@@ -626,6 +630,9 @@ QString MainWindow::getElapsedTimeStr() const
 
 void MainWindow::setFilesFoundLabel(const QString& prefix)
 {
+    if (_gettingSize) {
+        return;
+    }
     if (_foundCount == 0) {
         _foundSize = 0;
     }
@@ -1079,12 +1086,14 @@ void MainWindow::flushItemBuffer() {
                             (_foundCount + _dirCount + _symlinkCount) << 
                             "< rowCount" << rowCount;
     }
-    filesFoundLabel->setText(QString("%1 matching files, %2 folders, %3 %4...  Searching through %5")
-        .arg(_foundCount)
-        .arg(_dirCount)
-        .arg(_symlinkCount)
-        .arg(OvSk_FsOp_SYMLINKS_TXT)
-        .arg(QDir::toNativeSeparators(lastPath)));
+    if (!_gettingSize) {
+        filesFoundLabel->setText(QString("%1 matching files, %2 folders, %3 %4...  Searching through %5")
+            .arg(_foundCount)
+            .arg(_dirCount)
+            .arg(_symlinkCount)
+            .arg(OvSk_FsOp_SYMLINKS_TXT)
+            .arg(QDir::toNativeSeparators(lastPath)));
+    }
     //qDebug() << "Item buffer flushed, current row count " << rowCount;
     //processEvents();
 }
@@ -1287,11 +1296,12 @@ void MainWindow::copyPathSlot() {
 
 void MainWindow::getSizeSlot() {
     try {
-        filesFoundLabel->setText("");
         const auto selectedItems = filesTable->selectedItems();
         if (!_stopped || selectedItems.empty()) {
             return;
         }
+        _gettingSize = true;
+        filesFoundLabel->setText("");
         setStopped(false);
         IntQStringMap itemList;
         getSelectedItems(itemList);
@@ -1326,7 +1336,6 @@ void MainWindow::getSizeImpl(const IntQStringMap& itemList)
         QMetaObject::invokeMethod(this, [this, nbrItems, filePath, countNsize]() {
             // Update UI here
             const QString text = (nbrItems > 1) ? "Multiple files/folders" : filePath;
-            setStopped(true);
             const auto sizeStr = sizeToHumanReadable(countNsize.second);
             QMessageBox::information(this, OvSk_FsOp_APP_NAME_TXT,
                 tr("%1\n\nItem count: %2\nTotal size: %3")
@@ -1496,15 +1505,22 @@ void MainWindow::deepRemoveLimitedOnThread(const IntQStringMap& itemList, const 
 
 void MainWindow::scanThreadFinished()
 {
-    setStopped(true);
     _removal = false;
     flushItemBuffer();
     std::this_thread::sleep_for(100ms);
     filesTable->update();
     std::this_thread::sleep_for(100ms);
-    setFilesFoundLabel(_stopped ? "INTERRUPTED | " : "COMPLETED | ");
+    if (!_gettingSize) {
+        setFilesFoundLabel(_stopped ? "INTERRUPTED | " : "COMPLETED | ");
+    }
+    else {
+        _gettingSize = false;
+        if (filesFoundLabel->text() != "INTERRUPTED")
+            filesFoundLabel->setText("COMPLETED");
+    }
     filesTable->setSortingEnabled(true);
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
+    setStopped(true);
 }
 
 void MainWindow::itemFound(const QString& path, const QFileInfo& info) {
@@ -1531,9 +1547,9 @@ void MainWindow::itemRemoved(int row, quint64 count, quint64 size, quint64 nbrDe
 
 void MainWindow::progressUpdate(const QString& path, quint64 totCount, quint64 totSize)
 {
-    if (!_stopped) {
-        _totCount = totCount;
-        _totSize = totSize;
+    _totCount = totCount;
+    _totSize = totSize;
+    if (!_stopped && !_gettingSize) {
         filesFoundLabel->setText(QString("%1 matching files, %2 folders, %3 %4...  Searching through %5")
             .arg(_foundCount)
             .arg(_dirCount)
