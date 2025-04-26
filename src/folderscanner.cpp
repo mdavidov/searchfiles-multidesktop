@@ -76,7 +76,7 @@ bool FolderScanner::isStopped() const {
     return stopped;
 }
 
-bool FolderScanner::appendOrExcludeItem(const QString& dirPath, const QFileInfo& info)
+bool FolderScanner::appendOrExcludeItem(const QString& /*dirPath*/, const QFileInfo& info)
 {
     try {
         const auto filePath = QDir::fromNativeSeparators(info.absoluteFilePath());
@@ -341,13 +341,15 @@ uint64pair FolderScanner::deepCountSize(const QString& startPath)
             lastPath = dirPath;
             QFileInfoList dirInfos;
             getAllDirs(dirPath, dirInfos);
-            for (const auto& dir : dirInfos) {
+            for (const auto& info : dirInfos) {
                 //processEvents();
                 if (stopped) {
                     emit scanCancelled();
                     return{ count, size };
                 }
-                dirQ.enqueue(dir.absoluteFilePath());
+                if (info.isDir() && !isSymbolic(info)) {
+                    dirQ.enqueue(info.absoluteFilePath());
+                }
             }
 
             QFileInfoList infos;
@@ -371,8 +373,6 @@ uint64pair FolderScanner::deepCountSize(const QString& startPath)
         if (!stopped) {
             reportProgress(lastPath, true);
         }
-        stopped = true;
-        emit scanComplete();
     }
     catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
     catch (...) { qDebug() << "caught ... EXCEPTION"; }
@@ -403,10 +403,10 @@ void FolderScanner::deepRemove(const IntQStringMap& rowPathMap)
                     emit itemRemoved(rowPath.first, 1, (quint64)size, nbrDeleted);
                 }
             }
-            else {
+            else if (!isSymbolic(info)) {
                 // RM DIR
                 QDir dir(path);
-                // Getting dir size (deepCountSize(path)) could be way too time consuming
+                // Getting dir size (deepCountSize(path)) could be hugely time consuming
                 const auto rmok = dir.removeRecursively();
                 processEvents();
                 if (rmok) {
@@ -443,7 +443,7 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
             if (!doRemoveOneFile(info, rowNpath.first, nbrDeleted)) {
                 res = false;
             }
-            if (info.isDir() && QFileInfo::exists(path)) {
+            if (info.isDir() && !isSymbolic(info) && QFileInfo::exists(path)) {
                 dirPaths.push_back(path);
             }
         }

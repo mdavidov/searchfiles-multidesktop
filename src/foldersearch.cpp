@@ -1297,9 +1297,6 @@ void MainWindow::copyPathSlot() {
 void MainWindow::getSizeSlot() {
     try {
         const auto selectedItems = filesTable->selectedItems();
-        if (!_stopped || selectedItems.empty()) {
-            return;
-        }
         _gettingSize = true;
         filesFoundLabel->setText("");
         setStopped(false);
@@ -1331,6 +1328,7 @@ void MainWindow::getSizeImpl(const IntQStringMap& itemList)
                 countNsize.second += (quint64)info.size();
             }
         }
+        emit scanner->scanComplete();
 
         // Use QMetaObject::invokeMethod to safely update UI from background thread
         QMetaObject::invokeMethod(this, [this, nbrItems, filePath, countNsize]() {
