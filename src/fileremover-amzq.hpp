@@ -22,7 +22,7 @@ namespace AmzQ
         using ProgressCallback = std::function<void(int row, const QString&, uint64_t size, bool success)>;
         using CompletionCallback = std::function<void(bool)>;
 
-        FileRemover(QObject* uiObject) : m_uiObject(uiObject) {
+        explicit FileRemover(QObject* uiObject) : m_uiObject(uiObject) {
             //qDebug() << "AmzQ::FileRemover CTOR";
         }
         ~FileRemover() {
