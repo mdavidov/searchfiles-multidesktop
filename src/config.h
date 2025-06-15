@@ -10,7 +10,6 @@
 **
 ****************************************************************************/
 
-#include "version.h"
 #include <QObject>
 #include <QString>
 QT_BEGIN_NAMESPACE
@@ -83,7 +82,7 @@ QT_END_NAMESPACE
 #define OvSk_FsOp_FAST_COPY_ACT_TXT     tr("&Smart Copy selected items")
 #define OvSk_FsOp_FAST_COPY_STS_TIP     tr("Copy selected file system items, skipping files with same size and date modified.")
 
-#define OvSk_FsOp_SIMPLE_COPY_ACT_TXT   tr("Simple &Copy selected items")
+#define OvSk_FsOp_SIMPLE_COPY_ACT_TXT   tr("Simple C&opy selected items")
 #define OvSk_FsOp_SIMPLE_COPY_STS_TIP   tr("Copy all selected file system items to the opposite pane.")
 
 #define OvSk_FsOp_DUPLICATE_ACT_TXT     tr("Duplicate selected items")
@@ -123,8 +122,9 @@ QT_END_NAMESPACE
 #define OvSk_CONFIRM_DEL2TRASH1_TXT     tr("Are you sure you want to move the selected item to Trash?\n%1")
 #define OvSk_CONFIRM_DEL2TRASH_TXT      tr("Are you sure you want to move selected items to Trash?")
 #define OvSk_FsOp_NBR_SYMLINKS_TXT      tr("Symbolic links: %1")
-#define OvSk_FsOp_SYMLINK_TXT           "Symbolic link"
-#define OvSk_FsOp_SYMLINKS_TXT          "Symbolic links"
+#define OvSk_FsOp_SYMLINK_TXT           "Symlink"
+#define OvSk_FsOp_SYMLINKS_TXT          "Symlinks"
+#define OvSk_FsOp_SYMLINKS_LOW          "symlinks"
 #elif defined(Q_OS_WIN)
 #define OvSk_DEL2TRASH_ACT_TXT          tr("&Recycle")
 #define OvSk_DEL2TRASH_STS_TIP          tr("Move selected items to the Recycle Bin.")
@@ -133,14 +133,16 @@ QT_END_NAMESPACE
 #define OvSk_FsOp_NBR_SYMLINKS_TXT      tr("Shortcuts: %1")
 #define OvSk_FsOp_SYMLINK_TXT           "Shortcut"
 #define OvSk_FsOp_SYMLINKS_TXT          "Shortcuts"
+#define OvSk_FsOp_SYMLINKS_LOW          "shortcuts"
 #else
 #define OvSk_DEL2TRASH_ACT_TXT          tr("&Trash")
 #define OvSk_DEL2TRASH_STS_TIP          tr("Move selected file system items to Trash.")
 #define OvSk_CONFIRM_DEL2TRASH1_TXT     tr("Are you sure you want to move the selected item to Trash?\n%1")
 #define OvSk_CONFIRM_DEL2TRASH_TXT      tr("Are you sure you want to move selected items to Trash?")
 #define OvSk_FsOp_NBR_SYMLINKS_TXT      tr("Symbolic links: %1")
-#define OvSk_FsOp_SYMLINK_TXT           "Symbolic link"
-#define OvSk_FsOp_SYMLINKS_TXT          "Symbolic links"
+#define OvSk_FsOp_SYMLINK_TXT           "Symlink"
+#define OvSk_FsOp_SYMLINKS_TXT          "Symlinks"
+#define OvSk_FsOp_SYMLINKS_LOW          "symlinks"
 #endif
 
 #define OvSk_FsOp_DELETEPERM_ACT_TXT    tr("&Delete selected items")
@@ -192,7 +194,7 @@ QT_END_NAMESPACE
 #define OvSk_FsOp_SHRED_NAME_ERR_TXT    tr("An error occurred while shredding the item's name.")
 
 #define eCod_SEARCH_BY_TYPE_TIP         tr("Specify which type(s) of items to search for: folders, files, and/or shortcuts.")
-#define OvSk_FsOp_NAME_FILTERS_TIP      tr("File/folder/shortcut name patterns to search for, semicolon separated. Search all items if empty.")
+#define OvSk_FsOp_NAME_FILTERS_TIP      tr("Space separated file/folder/shortcut name patterns to search for. Search all items if empty.")
 #define OvSk_FsOp_CONTAINING_TEXT_TIP   tr("Text to search for in each file's contents. Not applicable to folders. ")
 #define OvSk_FsOp_TOP_DIR_TIP           tr("Search Folder {SF}: The folder to deeply/recursively search. ")
 #define eCod_EXCL_FILES_BY_NAME_TIP     tr("Exclude files whose name contains this text (case insensitive, simple text, no wild-cards).")

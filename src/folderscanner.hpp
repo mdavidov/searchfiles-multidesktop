@@ -1,76 +1,86 @@
 #pragma once
 
+#include "common.h"
 #include "scanparams.hpp"
+#include "windows_symlink.hpp"
 #include <atomic>
+#include <map>
 #include <shared_mutex>
 #include <QDir>
 #include <QFileInfo>
 #include <QFileInfoList>
 #include <QObject>
+#include <QString>
 #include <QQueue>
 #include <QTimer>
 #include <QElapsedTimer>
 
+using uint64pair = std::pair<uint64_t, uint64_t>;
+
 namespace Devonline
 {
 
-template<class _Ty>
-struct bigger {
-    bool operator()(const _Ty& left, const _Ty& right) const {
-        return (left > right);
-    }
-};
-using Uint64StringMap = std::map<quint64, QString, bigger<quint64>>;
+bool isSymbolic(const QFileInfo& info);
+
 
 class FolderScanner : public QObject {
     Q_OBJECT
 public:
     explicit FolderScanner(QObject* parent=nullptr);
+    bool isStopped() const;
+    ScanParams params{};
+    quint64 combinedSize(const QFileInfoList& items);
 
 signals:
     void itemFound(const QString& path, const QFileInfo& info);
-    void itemRemoved(int row, quint64 count, quint64 size, int nbrDeleted);
-    void progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
+    void itemSized(const QString& path, const QFileInfo& info);
+    void itemRemoved(int row, quint64 count, quint64 size, quint64 nbrDeleted);
+    void progressUpdate(const QString& path, quint64 totCount, quint64 totSize);
     void scanComplete();
     void scanCancelled();
+    void removalComplete(bool success);
+    void removalCancelled();
 
 public slots:
     void stop();
     void deepScan(const QString& startPath, const int maxDepth);
-    std::pair<quint64, quint64> deepCountSize(const QString& startPath);
-    void deepRemove(const Uint64StringMap& itemList);
-
-private slots:
-    void reportProgress();
+    uint64pair deepCountSize(const QString& startPath);
+    void deepRemove(const IntQStringMap& itemList);
+    void deepRemoveLimited(const IntQStringMap& itemList, const int maxDepth);
+    bool deepRemLimitedImpl(const QString& startPath, const int maxDepth, quint64& nbrDeleted);
+    bool doRemoveOneFile(const QFileInfo& info, int row, quint64& nbrDeleted);
+    bool rmEmptyDir(const QString& dirPath, int row, quint64& nbrDeleted);
 
 private:
+    void zeroCounters();
     bool appendOrExcludeItem(const QString& dirPath, const QFileInfo& info);
-    void getAllDirs(const QString& path, QFileInfoList& infos) const;
+    void getAllDirs(const QString& path, QFileInfoList& infos);
     void getFileInfos(const QString& path, QFileInfoList& infos) /*const*/;
     void getAllItems(const QString& path, QFileInfoList& infos) const;
-    quint64 combinedSize(const QFileInfoList& items);
-    void updateTotals(const QString& path);
+    // Not necessary: void updateTotals(const QString& path);
     bool stringContainsAllWords(const QString& str, const QStringList& words);
     bool stringContainsAnyWord(const QString& str, const QStringList& words);
     bool fileContainsAllWordsChunked(const QString& path, const QStringList& words);
     bool fileContainsAnyWordChunked(const QString& path, const QStringList& words);
 
-public:
-    ScanParams params{};
-
 private:
     mutable std::shared_mutex mutex;  // mutable allows modification in const methods
     bool stopped{ false };
-    bool isStopped() const;
 
+    qint64 prevEvents{ 0 };
     QElapsedTimer eventsTimer;
-    inline void processEvents();
+    void processEvents();
 
-    std::atomic<quint64> dirCount{0};
-    std::atomic<quint64> totCount{0};
-    std::atomic<quint64> totSize{0};
-    std::atomic<quint64> foundSize{0};
-    std::atomic<quint64> foundCount{0};
+    qint64 prevProgress{ 0 };
+    QElapsedTimer progressTimer;
+    void reportProgress(const QString& path, bool doit = false);
+
+    quint64 dirCount{0};
+    quint64 foundCount{0};
+    quint64 foundSize{0};
+    quint64 symlinkCount;
+    quint64 totCount{0};
+    quint64 totSize{0};
 };
 
 }

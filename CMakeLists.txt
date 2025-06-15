@@ -16,11 +16,12 @@ ELSEIF(WIN32)
     SET(CMAKE_PREFIX_PATH "C:/Qt/6.8.1/msvc2022_64")
 ENDIF()
 
-LIST(APPEND CMAKE_MODULE_PATH
+SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${Qt6_DIR})
+
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     "${Qt6_DIR}/lib/cmake/Qt6"
     "${Qt6_DIR}/lib/cmake/Qt6Quick"
-    "${Qt6_DIR}/lib/cmake/Qt6Controls"
-)
+    "${Qt6_DIR}/lib/cmake/Qt6Controls")
 
 FIND_PACKAGE(Qt6 REQUIRED COMPONENTS
     Core
@@ -59,6 +60,8 @@ set(PROJECT_SOURCES
     src/util.h
     src/util.cpp
     src/version.h
+    src/windows_symlink.hpp
+    src/windows_symlink.cpp
     foldersearch.qrc
 )
 
@@ -71,8 +74,6 @@ endif()
 MESSAGE(STATUS "PROJECT_SOURCES: ${PROJECT_SOURCES}")
 
 qt_add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
-qt_add_executable(qt-file-readall src/qt-file-readall.cpp)
-qt_add_executable(qt-folder-scan src/qt-folder-scan.cpp)
 
 # Link Qt6 libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -94,15 +95,15 @@ if(APPLE)
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/images/Info.plist
     )
     include_directories(
-        /opt/Qt/6.8.1/macos/include
-        /opt/Qt/6.8.1/macos/lib/QtCore.framework/Headers
-        /opt/Qt/6.8.1/macos/lib/QtWidgets.framework/Headers
+        ${Qt6_DIR}/include
+        ${Qt6_DIR}/lib/QtCore.framework/Headers
+        ${Qt6_DIR}/lib/QtWidgets.framework/Headers
         ${CMAKE_SOURCE_DIR}/src
     )
     link_directories(
-        /opt/Qt/6.8.1/macos/lib
+        ${Qt6_DIR}/lib
     )
-elseif(UNIX AND NOT APPLE)
+elseif(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused -Wdouble-promotion -Wundef -Wcast-align" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
     set(GUI_TYPE "")
     # Install desktop file
@@ -125,7 +126,7 @@ elseif(UNIX AND NOT APPLE)
         /usr/lib/x86_64-linux-gnu
     )
 elseif(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20 /EHsc /W4 /analyze /permissive- /wd4514 /wd4710 /wd4820 /wd4464 /wd5045")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20 /EHsc /W4 /analyze /permissive- /wd28020")
     set(GUI_TYPE WIN32)
     set(PROJECT_SOURCES ${PROJECT_SOURCES} foldersearch.rc)
     set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -136,7 +137,7 @@ elseif(WIN32)
         src/precompiled.h
     )
     include_directories(
-        C:/Qt/6.8.1/msvc2022_64/include
+        "C:/Qt/6.8.1/msvc2022_64/include"
         "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/include"
         "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/ucrt"
         "C:/Program Files (x86)/Windows Kits/10/Include/10.0.22621.0/um"
@@ -144,7 +145,7 @@ elseif(WIN32)
         ${CMAKE_SOURCE_DIR}/src
     )
     link_directories(
-        C:/Qt/6.8.1/msvc2022_64/lib
+        "C:/Qt/6.8.1/msvc2022_64/lib"
     )
 endif()
 message(STATUS "CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}")

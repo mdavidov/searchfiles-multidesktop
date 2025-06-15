@@ -1,11 +1,10 @@
 #pragma once
 
-#undef QT_NO_CONTEXTMENU
-
 #include "common.h"
 #include "folderscanner.hpp"
+#include <chrono>
 #include <memory>
-#include <QMainWindow>
+#include <QtWidgets/QMainWindow>
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFileInfoList>
@@ -27,6 +26,12 @@ class QLineEdit;
 QT_END_NAMESPACE
 #pragma endregion
 
+#if defined(Q_OS_WIN)
+#define eCod_MIN_PATH_LEN 3
+#else
+#define eCod_MIN_PATH_LEN 1
+#endif
+
 namespace AmzQ {
     class FileRemover;
 }
@@ -36,18 +41,29 @@ namespace Claude {
 
 namespace Devonline
 {
+class MainWindow;
 class FolderScanner;
 
-class TableWidgetItem : public QTableWidgetItem
-{
+
+class UpdateBlocker {
 public:
-    TableWidgetItem() : QTableWidgetItem() {}
-    explicit TableWidgetItem(const QString & itemText) : QTableWidgetItem(itemText) {}
-private:
-    bool operator<(const QTableWidgetItem & other) const override {
-        return text().toLower() < other.text().toLower(); // performance problem?
+    explicit UpdateBlocker(QTableWidget* table) : _table(table) {
+        setAllUpdatesEnabled(_table, false);
     }
+    ~UpdateBlocker() {
+        setAllUpdatesEnabled(_table, true);
+    }
+    void setAllUpdatesEnabled(QTableWidget* table, bool enabled)
+    {
+        table->setSortingEnabled(false);
+        table->setUpdatesEnabled(enabled);
+        table->viewport()->setUpdatesEnabled(enabled);
+        table->blockSignals(!enabled);
+    }
+private:
+    QTableWidget* _table;
 };
+
 
 class MainWindow : public QMainWindow
 {
@@ -61,19 +77,28 @@ public:
     Devonline::Op::Type GetOp() const { return _opType; }
     void Clear();
 
-protected:
-    virtual void keyReleaseEvent( QKeyEvent* ev);
+public slots:
+    void itemFound(const QString& path, const QFileInfo& info);
+    void itemSized(const QString& path, const QFileInfo& info);
+    void itemRemoved(int row, quint64 count, quint64 size, quint64 nbrDeleted);
+    void progressUpdate(const QString& path, quint64 totCount, quint64 totSize);
+    void removalComplete(bool success);
 
-private slots:
-    void onEnterKeyPressed();
-    void scopeCheckClicked(int newCheckState);
-    void goUpBtnClicked();
-    void browseBtnClicked();
-    void toggleExclClicked();
     void findBtnClicked();
     void deleteBtnClicked();
     void shredBtnClicked();
     void cancelBtnClicked();
+
+protected:
+    void keyReleaseEvent(QKeyEvent* ev) override;
+    void closeEvent(QCloseEvent* ev) override;
+    void stopAllThreads();
+
+private slots:
+    void scopeCheckClicked(int newCheckState);
+    void goUpBtnClicked();
+    void browseBtnClicked();
+    void toggleExclClicked();
     void openFileOfItem(int row, int column);
     void itemSelectionChanged();
     void dirPathEditTextChanged(const QString & text);
@@ -87,19 +112,31 @@ private slots:
     void unlimSubDirDepthToggled(bool checked);
     void showAboutDialog();
     void showHelpDialog();
-    void itemFound(const QString& path, const QFileInfo& info);
-    void itemRemoved(int row, quint64 count, quint64 size, int nbrDeleted);
 
 private:
-    FolderScanner* scanner{nullptr};
-    std::unique_ptr<AmzQ::FileRemover> removerAmzQ_;
-    std::unique_ptr<Claude::FileRemover> removerClaude_;
+    std::unique_ptr<QThread> scanThread;
+    std::unique_ptr<FolderScanner> scanner;
+    std::unique_ptr<AmzQ::FileRemover> removerAmzQ;
+    std::unique_ptr<Claude::FileRemover> removerClaude;
 
+    // We need to remove rows in decreasing order of row indices,
+    // so we use a map sorted in descending order.
+    // Boolean value is the result of file/folder removal.
+    std::map<int, bool, std::greater<int>> rowsToRemove_;
+    void removeRows();
+    void removalProgress(int row, const QString& path, uint64_t size, bool rmOk, uint64_t nbrDel);
+    qint64 prevProgress{ 0 };
+    QElapsedTimer progressTimer;
+
+    qint64 prevEvents{ 0 };
     QElapsedTimer eventsTimer;
     inline void processEvents();
 
+    std::unique_ptr<QElapsedTimer> runningTimer;
+    std::chrono::steady_clock::time_point opStart;
+    std::chrono::steady_clock::time_point opEnd;
     bool isHidden(const QFileInfo& finfo) const;
-    QString FsItemType(const QFileInfo& finfo) const;
+    QString FsItemType(bool isFile, bool isDir, bool isSymlink, bool isHidden) const;
 
     QPushButton *createButton(const QString &text, const char *member);
     QComboBox * createComboBoxFSys(const QString & text, bool setCompleter = false);
@@ -109,14 +146,17 @@ private:
 
     void deepScanFolderOnThread(const QString& startPath, const int maxDepth);
     void scanThreadFinished();
-    void deepRemoveFilesOnThread_AmzQ(const QStringList& paths);
-    void deepRemoveFilesOnThread_Claude(const QStringList& pathsToRemove);
+    void deepRemoveLimitedOnThread(const IntQStringMap& itemList, const int maxDepth);
+    void deepRemoveFilesOnThread_AmzQ(const IntQStringMap& paths);
+    void deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap);
+    void getSizeOnThread(const IntQStringMap& itemList);
+    void getSizeImpl(const IntQStringMap& itemList);
 
-    void progressUpdate(quint64 foundCount, quint64 foundSize, quint64 totCount, quint64 totSize);
     void flushItemBuffer();
 
-    bool findFilesPrep(FolderScanner* scanner);
+    bool findFilesPrep();
     void setStopped(bool stopped);
+    QString getElapsedTimeStr() const;
     void setFilesFoundLabel(const QString& prefix);
 
     void showMoreOptions(bool show);
@@ -132,7 +172,7 @@ private:
     void createMainLayout();
     void createContextMenu();
 
-    void getSelectedItems( Uint64StringMap& itemList, QStringList& pathList);
+    void getSelectedItems(IntQStringMap& itemList);
 
 private:
     QLineEdit*  namesLineEdit;
@@ -188,7 +228,6 @@ private:
 
     QString _origDirPath;
     QString _fileNameFilter;
-    QStringList _nameFilters;
     QDir::Filters _itemTypeFilter;
     bool _matchCase;
 
@@ -201,13 +240,19 @@ private:
     QStringList _exclFolderPatterns;
 
     QFileInfoList _outFileInfos;
-    qint64 _dirCount;
-    qint64 _totCount;
-    quint64 _totSize;
-    quint64 _foundSize;
+
+    quint64 _dirCount;
     quint64 _foundCount;
+    quint64 _foundSize;
+    quint64 _symlinkCount;
+    quint64 _totCount;
+    quint64 _totSize;
+    quint64 _nbrDeleted;
+
     Devonline::Op::Type _opType;
-    bool _stopped;
+    bool _stopped{ true };
+    bool _removal{ false };
+    bool _gettingSize{ false };
 };
 
 }

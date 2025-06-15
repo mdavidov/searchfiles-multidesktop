@@ -1,8 +1,8 @@
-# foldersearch
+# FolderSearch
 
-Copyright (c) 2015 Milivoj (Mike) DAVIDOV
+Copyright (c) 2015-2025 Milivoj (Mike) DAVIDOV
 
-## foldersearch GUI application
+## FolderSearch GUI application
 
 Multi-platform desktop GUI app (C++ Qt6) with the following features:
 
@@ -23,4 +23,4 @@ Multi-platform desktop GUI app (C++ Qt6) with the following features:
 
 ## Uninstallation
 
-This app can be uninstalled by running the __maintenancetool__ app which is located in the same folder as the foldersearch app.
+This app can be uninstalled by running the __maintenancetool__ app which is located in the same folder where FolderSearch app is installed.

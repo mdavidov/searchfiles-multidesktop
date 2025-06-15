@@ -22,21 +22,18 @@ namespace Devonline
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    bool sizeToHumanReadable(quint64 size, QString& humanReadable)
+    QString sizeToHumanReadable(quint64 size)
     {
         try
         {
             if (size == 0) {
-                humanReadable = QString("0 Bytes");
-                return true;
+                return QString("0 Bytes");
             }
-
             static const quint64 KILO = 1024;
             static const quint64 MEGA = 1024 * KILO;
             static const quint64 GIGA = 1024 * MEGA;
             static const quint64 TERA = 1024 * GIGA;
             static const quint64 PETA = 1024 * TERA;
-
             double sz = (double) size;
             QString unit = "Bytes";
 
@@ -74,14 +71,12 @@ namespace Devonline
             else {
                 precision = 3;
             }
-
-            humanReadable = QString("%1 %2").arg(sz, 1, 'f', precision).arg(unit);
-            return true;
+            return QString("%1 %2").arg(sz, 1, 'f', precision).arg(unit);
         }
         catch (...)
         {
             indicateErrorDbg("Exception");
-            return false;
+            return QString("");
         }
     }
 

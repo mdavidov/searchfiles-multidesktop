@@ -11,8 +11,23 @@
 ****************************************************************************/
 
 #include "config.h"
+#include <filesystem>
+#include <map>
+#include <utility>
 #include <QtCore/QtGlobal>
 #include <QtCore/QString>
+
+using IntFsPathPair = std::pair<int, std::filesystem::path>;
+using IntQStringMap = std::map<int, QString, std::greater<int>>;
+
+inline QString FsPathToQStr(const std::filesystem::path& path)
+{
+#ifdef _WIN32
+    return QString::fromStdWString(path.wstring());
+#else
+    return QString::fromStdString(path.string());
+#endif
+}
 
 namespace Devonline
 {
@@ -67,7 +82,6 @@ namespace Devonline
             }
         };
     }
-
 
     /// @brief Progress info
     ///

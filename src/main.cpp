@@ -11,6 +11,7 @@
 #include "precompiled.h"
 #include "config.h"
 #include "foldersearch.hpp"
+#include "version.h"
 #include <QApplication>
 
 int main(int argc, char* argv[])
@@ -29,8 +30,6 @@ int main(int argc, char* argv[])
 
         return app.exec();
     }
-    catch (...) {
-        Q_ASSERT(false);
-        return 1;
-    }
+    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
+    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
