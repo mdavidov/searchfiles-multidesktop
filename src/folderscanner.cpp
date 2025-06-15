@@ -1,5 +1,7 @@
 #include "folderscanner.hpp"
 #include "scanparams.hpp"
+#include <condition_variable>
+#include <mutex>
 #include <shared_mutex>
 #include <QApplication>
 #include <QObject>

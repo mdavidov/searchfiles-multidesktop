@@ -963,7 +963,7 @@ void MainWindow::flushItemBuffer() {
 
     filesTable->setUpdatesEnabled(false);
     const int startRow = filesTable->rowCount();
-    filesTable->setRowCount(startRow + itemBuffer.size());
+    filesTable->setRowCount(startRow + int(itemBuffer.size()));
 
     for (int i = 0; i < itemBuffer.size(); ++i) {
         const auto& rowItems = itemBuffer[i];
@@ -1360,7 +1360,7 @@ void MainWindow::deepRemoveFilesOnThread_AmzQ(const QStringList& pathsToRemove) 
     );
 }
 
-void MainWindow::deepRemoveFilesOnThread_Claude(const QStringList & pathsToRemove) {
+void MainWindow::deepRemoveFilesOnThread_Claude(const QStringList& /*pathsToRemove*/) {
     removerClaude_ = std::make_unique<Claude::FileRemover>();
 
     // Set up progress callback (can update UI)
