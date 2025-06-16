@@ -1,4 +1,14 @@
 #pragma once
+/////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) Milivoj (Mike) DAVIDOV
+// All rights reserved.
+//
+// THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+// EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
+//
+/////////////////////////////////////////////////////////////////////////////
 
 #include "common.h"
 #include "get_readable_thread_id.hpp"
@@ -22,11 +32,11 @@ namespace AmzQ
         using ProgressCallback = std::function<void(int row, const QString&, uint64_t size, bool success)>;
         using CompletionCallback = std::function<void(bool)>;
 
-        FileRemover(QObject* uiObject) : m_uiObject(uiObject) {
-            qDebug() << "AmzQ::FileRemover CTOR";
+        explicit FileRemover(QObject* uiObject) : m_uiObject(uiObject) {
+            //qDebug() << "AmzQ::FileRemover CTOR";
         }
         ~FileRemover() {
-            qDebug() << "AmzQ::FileRemover DTOR";
+            //qDebug() << "AmzQ::FileRemover DTOR";
         }
 
         void removeFilesAndFolders02(

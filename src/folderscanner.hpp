@@ -1,4 +1,14 @@
 #pragma once
+/////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) Milivoj (Mike) DAVIDOV
+// All rights reserved.
+//
+// THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+// EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
+//
+/////////////////////////////////////////////////////////////////////////////
 
 #include "common.h"
 #include "scanparams.hpp"
@@ -29,22 +39,27 @@ public:
     explicit FolderScanner(QObject* parent=nullptr);
     bool isStopped() const;
     ScanParams params{};
-    quint64 getItemSize(const QFileInfo& info) const;
     quint64 combinedSize(const QFileInfoList& items);
 
 signals:
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
-    void itemRemoved(int row, quint64 count, quint64 size, int nbrDeleted);
+    void itemRemoved(int row, quint64 count, quint64 size, quint64 nbrDeleted);
     void progressUpdate(const QString& path, quint64 totCount, quint64 totSize);
     void scanComplete();
     void scanCancelled();
+    void removalComplete(bool success);
+    void removalCancelled();
 
 public slots:
     void stop();
     void deepScan(const QString& startPath, const int maxDepth);
     uint64pair deepCountSize(const QString& startPath);
     void deepRemove(const IntQStringMap& itemList);
+    void deepRemoveLimited(const IntQStringMap& itemList, const int maxDepth);
+    bool deepRemLimitedImpl(const QString& startPath, const int maxDepth, quint64& nbrDeleted);
+    bool doRemoveOneFile(const QFileInfo& info, int row, quint64& nbrDeleted);
+    bool rmEmptyDir(const QString& dirPath, int row, quint64& nbrDeleted);
 
 private:
     void zeroCounters();
@@ -52,7 +67,7 @@ private:
     void getAllDirs(const QString& path, QFileInfoList& infos);
     void getFileInfos(const QString& path, QFileInfoList& infos) /*const*/;
     void getAllItems(const QString& path, QFileInfoList& infos) const;
-    void updateTotals(const QString& path);
+    // Not necessary: void updateTotals(const QString& path);
     bool stringContainsAllWords(const QString& str, const QStringList& words);
     bool stringContainsAnyWord(const QString& str, const QStringList& words);
     bool fileContainsAllWordsChunked(const QString& path, const QStringList& words);

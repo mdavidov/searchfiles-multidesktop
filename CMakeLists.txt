@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.28)
-project(foldersearch VERSION 3.0.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.25)
+project(foldersearch VERSION 5.8 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,16 +10,18 @@ set(CMAKE_AUTOUIC ON)
 IF(APPLE)
     SET(Qt6_DIR "/opt/Qt/6.8.1/macos")
 ELSEIF(UNIX)
+    SET(Qt6_DIR "/data/Qt/6.8.2/gcc_arm64")
 ELSEIF(WIN32)
     SET(Qt6_DIR "C:/Qt/6.8.1/msvc2022_64")
     SET(CMAKE_PREFIX_PATH "C:/Qt/6.8.1/msvc2022_64")
 ENDIF()
 
-LIST(APPEND CMAKE_MODULE_PATH
+SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${Qt6_DIR})
+
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     "${Qt6_DIR}/lib/cmake/Qt6"
     "${Qt6_DIR}/lib/cmake/Qt6Quick"
-    "${Qt6_DIR}/lib/cmake/Qt6Controls"
-)
+    "${Qt6_DIR}/lib/cmake/Qt6Controls")
 
 FIND_PACKAGE(Qt6 REQUIRED COMPONENTS
     Core
@@ -82,7 +84,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 # Set target properties
 if(APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -fexperimental-library -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
     set(GUI_TYPE MACOSX_BUNDLE)
     set_source_files_properties(src/macutils.mm PROPERTIES COMPILE_FLAGS "-x objective-c++")
     set_source_files_properties(${CMAKE_SOURCE_DIR}/images/foldersearch.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
@@ -93,13 +95,13 @@ if(APPLE)
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/images/Info.plist
     )
     include_directories(
-        /opt/Qt/6.8.1/macos/include
-        /opt/Qt/6.8.1/macos/lib/QtCore.framework/Headers
-        /opt/Qt/6.8.1/macos/lib/QtWidgets.framework/Headers
+        ${Qt6_DIR}/include
+        ${Qt6_DIR}/lib/QtCore.framework/Headers
+        ${Qt6_DIR}/lib/QtWidgets.framework/Headers
         ${CMAKE_SOURCE_DIR}/src
     )
     link_directories(
-        /opt/Qt/6.8.1/macos/lib
+        ${Qt6_DIR}/lib
     )
 elseif(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused -Wdouble-promotion -Wundef -Wcast-align" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
@@ -124,7 +126,7 @@ elseif(UNIX)
         /usr/lib/x86_64-linux-gnu
     )
 elseif(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20 /EHsc /W4 /analyze /permissive- /wd28020")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest /EHsc /W4 /analyze /permissive- /wd28020")
     set(GUI_TYPE WIN32)
     set(PROJECT_SOURCES ${PROJECT_SOURCES} foldersearch.rc)
     set_target_properties(${PROJECT_NAME} PROPERTIES

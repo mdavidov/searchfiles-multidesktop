@@ -1,9 +1,18 @@
 #pragma once
-
-#undef QT_NO_CONTEXTMENU
+/////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) Milivoj (Mike) DAVIDOV
+// All rights reserved.
+//
+// THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+// EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
+//
+/////////////////////////////////////////////////////////////////////////////
 
 #include "common.h"
 #include "folderscanner.hpp"
+#include <chrono>
 #include <memory>
 #include <QtWidgets/QMainWindow>
 #include <QDir>
@@ -26,6 +35,12 @@ class QKeyEvent;
 class QLineEdit;
 QT_END_NAMESPACE
 #pragma endregion
+
+#if defined(Q_OS_WIN)
+#define eCod_MIN_PATH_LEN 3
+#else
+#define eCod_MIN_PATH_LEN 1
+#endif
 
 namespace AmzQ {
     class FileRemover;
@@ -75,8 +90,9 @@ public:
 public slots:
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
-    void itemRemoved(int row, quint64 count, quint64 size);
+    void itemRemoved(int row, quint64 count, quint64 size, quint64 nbrDeleted);
     void progressUpdate(const QString& path, quint64 totCount, quint64 totSize);
+    void removalComplete(bool success);
 
     void findBtnClicked();
     void deleteBtnClicked();
@@ -110,16 +126,15 @@ private slots:
 private:
     std::unique_ptr<QThread> scanThread;
     std::unique_ptr<FolderScanner> scanner;
-    std::unique_ptr<AmzQ::FileRemover> removerAmzQ_;
-    std::unique_ptr<Claude::FileRemover> removerClaude_;
+    std::unique_ptr<AmzQ::FileRemover> removerAmzQ;
+    std::unique_ptr<Claude::FileRemover> removerClaude;
 
     // We need to remove rows in decreasing order of row indices,
     // so we use a map sorted in descending order.
     // Boolean value is the result of file/folder removal.
     std::map<int, bool, std::greater<int>> rowsToRemove_;
     void removeRows();
-    void removalProgress(int row, const QString& path, uint64_t size, bool rmOk);
-    void removalComplete(bool success);
+    void removalProgress(int row, const QString& path, uint64_t size, bool rmOk, uint64_t nbrDel);
     qint64 prevProgress{ 0 };
     QElapsedTimer progressTimer;
 
@@ -127,6 +142,9 @@ private:
     QElapsedTimer eventsTimer;
     inline void processEvents();
 
+    std::unique_ptr<QElapsedTimer> runningTimer;
+    std::chrono::steady_clock::time_point opStart;
+    std::chrono::steady_clock::time_point opEnd;
     bool isHidden(const QFileInfo& finfo) const;
     QString FsItemType(bool isFile, bool isDir, bool isSymlink, bool isHidden) const;
 
@@ -138,14 +156,17 @@ private:
 
     void deepScanFolderOnThread(const QString& startPath, const int maxDepth);
     void scanThreadFinished();
+    void deepRemoveLimitedOnThread(const IntQStringMap& itemList, const int maxDepth);
     void deepRemoveFilesOnThread_AmzQ(const IntQStringMap& paths);
     void deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap);
-    void getSizeWithAsync(const IntQStringMap& itemList);
+    void getSizeOnThread(const IntQStringMap& itemList);
+    void getSizeImpl(const IntQStringMap& itemList);
 
     void flushItemBuffer();
 
     bool findFilesPrep();
     void setStopped(bool stopped);
+    QString getElapsedTimeStr() const;
     void setFilesFoundLabel(const QString& prefix);
 
     void showMoreOptions(bool show);
@@ -236,9 +257,12 @@ private:
     quint64 _symlinkCount;
     quint64 _totCount;
     quint64 _totSize;
+    quint64 _nbrDeleted;
 
     Devonline::Op::Type _opType;
     bool _stopped{ true };
+    bool _removal{ false };
+    bool _gettingSize{ false };
 };
 
 }
