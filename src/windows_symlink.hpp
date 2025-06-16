@@ -49,7 +49,7 @@ typedef struct _REPARSE_DATA_BUFFER {
 
 namespace Devonline
 {
-    bool  isWindowsSymlink(const QString& path);
-    bool  isAppExecutionAlias(const QString& path);
+    bool isWindowsSymlink(const QString& path);
+    bool isAppExecutionAlias(const QString& path);
     QString getWindowsSymlinkTarget(const QString& path);
 }

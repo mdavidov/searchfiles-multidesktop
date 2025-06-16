@@ -5,10 +5,10 @@
 #include "set_thread_name.hpp"
 #include <filesystem>
 #include <functional>
+#include <thread>
 #include <QMetaObject>
 #include <QString>
 #include <QStringList>
-#include <thread>
 
 namespace fs = std::filesystem;
 

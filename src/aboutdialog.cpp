@@ -1,7 +1,7 @@
 #include "aboutdialog.h"
-#include <QPushButton>
-#include <QTextBrowser>
 #include <QVBoxLayout>
+#include <QTextBrowser>
+#include <QPushButton>
 
 
 AboutDialog::AboutDialog(QWidget* parent /*= nullptr*/) : QDialog(parent) {
