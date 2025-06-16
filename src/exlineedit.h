@@ -35,7 +35,6 @@
 ** ensure the GNU General Public License version 3.0 requirements will be
 ** met: http://www.gnu.org/copyleft/gpl.html.
 **
-**
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
