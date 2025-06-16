@@ -1,7 +1,8 @@
+#include "precompiled.h"
 #include "helpdialog.h"
-#include <QVBoxLayout>
-#include <QTextBrowser>
 #include <QPushButton>
+#include <QTextBrowser>
+#include <QVBoxLayout>
 
 
 HelpDialog::HelpDialog(QWidget* parent /*= nullptr*/) : QDialog(parent) {

@@ -39,13 +39,13 @@
 **
 ****************************************************************************/
 
+#include "precompiled.h"
 #include "exlineedit.h"
 #include "searchlineedit.h"
 
 #include <QtCore/QEvent>
 #include <QtCore/QMimeData>
 #include <QtCore/QDebug>
-
 #include <QtGui/QDrag>
 #include <QtGui/QFocusEvent>
 #include <QtGui/QPainter>

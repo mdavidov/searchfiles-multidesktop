@@ -1,16 +1,16 @@
 #include "precompiled.h"
 #include "folderscanner.hpp"
 #include "scanparams.hpp"
-#include <mutex>
 #include <chrono>
-#include <thread>
-#include <shared_mutex>
+#include <mutex>
 #include <queue>
+#include <shared_mutex>
+#include <thread>
 #include <utility>
 #include <QApplication>
-#include <QObject>
 #include <QDir>
 #include <QFileInfo>
+#include <QObject>
 #include <QQueue>
 #include <QTimer>
 

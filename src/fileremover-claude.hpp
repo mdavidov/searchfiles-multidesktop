@@ -5,14 +5,14 @@
 #include "set_thread_name.hpp"
 #include <atomic>
 #include <chrono>
-#include <thread>
 #include <condition_variable>
 #include <filesystem>
 #include <functional>
+#include <iostream>
 #include <mutex>
 #include <queue>
-#include <iostream>
 #include <string>
+#include <thread>
 
 namespace fs = std::filesystem;
 class QString;

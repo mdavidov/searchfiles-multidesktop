@@ -39,6 +39,7 @@
 **
 ****************************************************************************/
 
+#include "precompiled.h"
 #include "searchlineedit.h"
 
 #include <QtGui/QPainter>
@@ -48,8 +49,7 @@
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QStyleOptionFrame>
 
-ClearButton::ClearButton(QWidget *parent)
-  : QAbstractButton(parent)
+ClearButton::ClearButton(QWidget *parent) : QAbstractButton(parent)
 {
 #ifndef QT_NO_CURSOR
     setCursor(Qt::ArrowCursor);

@@ -8,7 +8,7 @@ namespace Devonline
 bool _isWindowsSymlink(const QString& path)
 {
   DWORD attributes = GetFileAttributesW(reinterpret_cast<LPCWSTR>(path.utf16()));
-  return (attributes != INVALID_FILE_ATTRIBUTES) &&
+  return (attributes != INVALID_FILE_ATTRIBUTES)  &&
          (attributes & FILE_ATTRIBUTE_REPARSE_POINT);
 }
 
@@ -125,6 +125,7 @@ QString _getAppExecLinkTarget(const QString& path)
 
 }
 #endif
+
 
 namespace Devonline
 {

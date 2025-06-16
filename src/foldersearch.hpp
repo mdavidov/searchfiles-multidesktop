@@ -4,12 +4,12 @@
 #include "folderscanner.hpp"
 #include <chrono>
 #include <memory>
-#include <QtWidgets/QMainWindow>
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFileInfoList>
 #include <QStringList>
 #include <QtWidgets>
+#include <QtWidgets/QMainWindow>
 
 #pragma region
 QT_BEGIN_NAMESPACE

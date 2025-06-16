@@ -12,7 +12,6 @@
 #include "precompiled.h"
 #include "config.h"
 #include "util.h"
-
 #include <QObject>
 #include <QtGui>
 #include <QtWidgets>

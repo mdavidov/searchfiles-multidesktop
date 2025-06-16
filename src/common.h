@@ -14,8 +14,8 @@
 #include <filesystem>
 #include <map>
 #include <utility>
-#include <QtCore/QtGlobal>
 #include <QtCore/QString>
+#include <QtCore/QtGlobal>
 
 using IntFsPathPair = std::pair<int, std::filesystem::path>;
 using IntQStringMap = std::map<int, QString, std::greater<int>>;

@@ -3,6 +3,7 @@
 #include <QtWidgets/QDialog>
 class QWidget;
 
+
 class AboutDialog : public QDialog {
     Q_OBJECT
 
