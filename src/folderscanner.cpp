@@ -108,7 +108,7 @@ bool FolderScanner::appendOrExcludeItem(const QString& /*dirPath*/, const QFileI
                 return false;
             }
         }
-        bool toAppend = false;
+        auto toAppend = false;
         if (params.searchWords.empty()) {
             if (isSymlink)
                 toAppend = params.inclSymlinks;

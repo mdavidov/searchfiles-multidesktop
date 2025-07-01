@@ -21,8 +21,8 @@ int main(int argc, char* argv[])
         QApplication app(argc, argv);
         QCoreApplication::setOrganizationName(   OvSk_FsOp_COPMANY_NAME_TXT );
         QCoreApplication::setOrganizationDomain( OvSk_FsOp_COPMANY_DOMAIN_TXT );
-        QCoreApplication::setApplicationName(    OvSk_FsOp_APP_NAME_TXT );
-		QCoreApplication::setApplicationVersion( OvSk_FsOp_APP_VERSION_STR);
+        QCoreApplication::setApplicationName(   OvSk_FsOp_APP_NAME_TXT );
+        QCoreApplication::setApplicationVersion( OvSk_FsOp_APP_VERSION_STR);
         Q_INIT_RESOURCE(foldersearch);
         app.setWindowIcon(QIcon(":/images/foldersearch.png"));
 
@@ -31,6 +31,10 @@ int main(int argc, char* argv[])
 
         return app.exec();
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    catch (const std::exception& ex) {
+        qDebug() << "EXCEPTION: " << ex.what();
+    }
+    catch (...) {
+        qDebug() << "caught ... EXCEPTION";
+    }
 }
