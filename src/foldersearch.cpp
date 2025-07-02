@@ -59,7 +59,7 @@ const int N_COL = 7;
 const int RELPATH_COL_IDX = 0;
 const int NAME_COL_IDX = 1;
 
-static int BATCH_SIZE = 1'000;  // see also MainWindow::findFilesPrep()
+static int BATCH_SIZE = 1'000;
 QVector<QVector<QTableWidgetItem*>> itemBuffer;
 
 using namespace std::chrono;
@@ -91,7 +91,6 @@ void MainWindow::stopAllThreads() {
         removerClaude->stop();
         std::this_thread::sleep_for(sleepLen);
     }
-    qDebug() << "MainWindow::stopAllThreads FINISHED";
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
@@ -438,7 +437,9 @@ void MainWindow::deleteBtnClicked()
             #endif
             return;
         }
-        stopAllThreads();
+        if (!_stopped) {
+            stopAllThreads();
+        }
         setStopped(false);
         _removal = true;
         processEvents();
@@ -514,20 +515,12 @@ void MainWindow::shredBtnClicked()
 
 void MainWindow::cancelBtnClicked()
 {
-    setStopped(true);
+    // scanThreadFinished() does almost everything necessary, so we don't need to do much here
     stopAllThreads();
     if (_removal) {
         removalComplete(false);
     }
-    else if (_gettingSize) {
-        filesFoundLabel->setText("INTERRUPTED");
-    }
-    else {
-        flushItemBuffer();
-        setFilesFoundLabel("INTERRUPTED | ");
-        filesTable->setSortingEnabled(true);
-        filesTable->sortByColumn(-1, Qt::AscendingOrder);
-    }
+    _stopped = true;
 }
 
 void MainWindow::SetDirPath( const QString& dirPath)
@@ -630,7 +623,7 @@ QString MainWindow::getElapsedTimeStr() const
     return timeStr;
 }
 
-void MainWindow::setFilesFoundLabel(const QString& prefix)
+void MainWindow::setFilesFoundLabel(const QString& prefix, bool appendCounts /*= true*/)
 {
     if (_gettingSize) {
         return;
@@ -642,18 +635,21 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
     const auto elapsedStr = getElapsedTimeStr();
     const auto totItemsSizeStr = sizeToHumanReadable(_totSize);
     const auto foundItemsSizeStr = sizeToHumanReadable(_foundSize);
-    const auto foundLabelText =
-        prefix
-        + tr("%1 matching files (%2), %3 folders, %4 %5, total %6; took %7")
-        .arg(_foundCount)
-        .arg(foundItemsSizeStr)
-        .arg(_dirCount)
-        .arg(_symlinkCount)
-        .arg(OvSk_FsOp_SYMLINKS_LOW)
-        .arg(filesTable->rowCount())
-        .arg(elapsedStr);
-        //.arg(_totCount)
-        //.arg(totItemsSizeStr);
+    auto foundLabelText = prefix;
+    if (appendCounts) {
+        foundLabelText += " | ";
+        foundLabelText =
+            foundLabelText + tr("%1 matching files (%2), %3 folders, %4 %5, total %6; took %7")
+                                .arg(_foundCount)
+                                .arg(foundItemsSizeStr)
+                                .arg(_dirCount)
+                                .arg(_symlinkCount)
+                                .arg(OvSk_FsOp_SYMLINKS_LOW)
+                                .arg(filesTable->rowCount())
+                                .arg(elapsedStr);
+                                //.arg(_totCount)
+                                //.arg(totItemsSizeStr);
+    }
     filesFoundLabel->setText(foundLabelText);
     qDebug() << foundLabelText;
     if ((_foundCount + _dirCount + _symlinkCount) != quint64(filesTable->rowCount())) {
@@ -664,17 +660,10 @@ void MainWindow::setFilesFoundLabel(const QString& prefix)
 
 bool MainWindow::findFilesPrep()
 {
-    stopAllThreads();
-
-    // Create scan thread (QThread) and FolderScanner
-    scanThread = std::make_unique<QThread>(this);
-    scanThread->setObjectName("FolderScannerThread");
-    scanner = std::make_unique<FolderScanner>();
-
-    // Moving worker object pointer to thread (scanner pointer below)
-    // only sets which thread (scanThread) will execute worker's slots.
-    scanner->moveToThread(scanThread.get());
-
+    if (!_stopped) {
+        stopAllThreads();
+    }
+    Clear();
     updateComboBox( dirComboBox);
 
     _itemTypeFilter = QDir::Filters(QDir::Drives | QDir::System | QDir::NoDotAndDotDot);
@@ -686,8 +675,9 @@ bool MainWindow::findFilesPrep()
         _itemTypeFilter |= QDir::NoSymLinks;
     if (!exclHiddenCheck->isChecked())
         _itemTypeFilter |= QDir::Hidden;
-    scanner->params.itemTypeFilter = _itemTypeFilter;
 
+    scanner = std::make_unique<FolderScanner>();
+    scanner->params.itemTypeFilter = _itemTypeFilter;
     scanner->params.inclFiles = filesCheck->isChecked();
     scanner->params.inclFolders = foldersCheck->isChecked();
     scanner->params.inclSymlinks = symlinksCheck->isChecked();
@@ -724,6 +714,7 @@ bool MainWindow::findFilesPrep()
         #else
             qDebug() << msg;
 	    #endif
+        setFilesFoundLabel("SEARCH FOLDER NOT FOUND: " + _origDirPath, false);
         setStopped(true);
         return false;
     }
@@ -756,6 +747,14 @@ bool MainWindow::findFilesPrep()
     if (!maxValid)
         _maxSubDirDepth = 0;
     _unlimSubDirDepth = unlimSubDirDepthBtn->isChecked();
+
+    // Create scan thread (QThread) and FolderScanner
+    scanThread = std::make_unique<QThread>(this);
+    scanThread->setObjectName("FolderScannerThread");
+
+    // Moving worker object pointer to thread (scanner pointer below)
+    // only sets which thread (scanThread) will execute worker's slots.
+    scanner->moveToThread(scanThread.get());
     return true;
 }
 
@@ -766,6 +765,7 @@ void MainWindow::findBtnClicked()
         if (!_stopped) {
             return;
         }
+        opStart = steady_clock::now();
         if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
             #if !defined(Q_OS_MAC)
                 QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
@@ -780,10 +780,13 @@ void MainWindow::findBtnClicked()
         if (!findFilesPrep()) {
             return;
         }
+
         filesTable->setSortingEnabled(false);
-        Clear();
         setStopped(false);
-        opStart = steady_clock::now();
+
+        // Moving worker object pointer to thread (scanner pointer below)
+        // only sets which thread (scanThread) will execute worker's slots.
+        scanner->moveToThread(scanThread.get());
 
         deepScanFolderOnThread(_origDirPath, _unlimSubDirDepth ? -1 : _maxSubDirDepth);
     }
@@ -1461,7 +1464,9 @@ void MainWindow::deepScanFolderOnThread(const QString& startPath, const int maxD
 
 void MainWindow::getSizeOnThread(const IntQStringMap& itemList)
 {
-    stopAllThreads();
+    if (!_stopped) {
+        stopAllThreads();
+    }
     scanThread = std::make_unique<QThread>(this);
     scanThread->setObjectName("GetFolderSizeThread");
 
@@ -1514,21 +1519,17 @@ void MainWindow::deepRemoveLimitedOnThread(const IntQStringMap& itemList, const 
 
 void MainWindow::scanThreadFinished()
 {
-    _removal = false;
     flushItemBuffer();
     std::this_thread::sleep_for(100ms);
     filesTable->update();
     std::this_thread::sleep_for(100ms);
-    if (!_gettingSize) {
-        setFilesFoundLabel(_stopped ? "INTERRUPTED | " : "COMPLETED | ");
-    }
-    else {
-        _gettingSize = false;
-        if (filesFoundLabel->text() != "INTERRUPTED")
-            filesFoundLabel->setText("COMPLETED");
-    }
     filesTable->setSortingEnabled(true);
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
+    if (!_removal) { // when _removal is true then removalComplete() sets the FilesFoundLabel
+        setFilesFoundLabel(_stopped ? "INTERRUPTED" : "COMPLETED");
+    }
+    _removal = false;
+    _gettingSize = false;
     setStopped(true);
 }
 
@@ -1589,23 +1590,18 @@ void MainWindow::removeRows()
     processEvents();
 }
 
-void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/, bool rmOk, uint64_t nbrDel) {
+void MainWindow::removalProgress(int row, const QString& /*path*/, uint64_t /*size*/, bool rmOk, uint64_t nbrDel) {
     _nbrDeleted = nbrDel;
     const auto elapsed = progressTimer.elapsed();
     const auto diff = elapsed - prevProgress;
     if (diff >= 1'000) {  // msec
         prevProgress = elapsed;
         const QString text = rmOk ? QString("Removed %1 items").arg(nbrDel) :
-                                    QString("Failed to remove some items, removed %1").arg(nbrDel);
+                                    QString("Failed to remove some items. Removed %1 items").arg(nbrDel);
         filesFoundLabel->setText(text);
     }
-    if (rmOk) {
-        //itemRemoved(row, 1, size, nbrDeleted);
-        rowsToRemove_.insert({ row, rmOk });
-    }
-    else {
-        qDebug() << "FAILED to remove:" << path;
-    }
+    //itemRemoved(row, 1, size, nbrDeleted);
+    rowsToRemove_.insert({ row, rmOk });
 }
 
 void MainWindow::removalComplete(bool success) {
@@ -1615,7 +1611,7 @@ void MainWindow::removalComplete(bool success) {
     const auto maxDepth = unlimSubDirDepthBtn->isChecked() ? -1 : _maxSubDirDepth;
     const auto filesStr = (maxDepth < 0) ? " files/folders" : " files";
     if (_nbrDeleted == 0) {
-        suffix = "NO ITEMS DELETED";
+        suffix = "NO ITEMS DELETED (check the 'Max subfolder depth' setting)";
     }
     else {
         suffix += ", deleted " + QString::number(_nbrDeleted) + filesStr;
@@ -1626,7 +1622,6 @@ void MainWindow::removalComplete(bool success) {
     qDebug() << text;
     stopAllThreads();
     setStopped(true);
-    _removal = false;
 }
 
 void MainWindow::deepRemoveFilesOnThread_AmzQ(const IntQStringMap& rowPathMap)

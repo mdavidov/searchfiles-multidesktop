@@ -445,7 +445,7 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
         try {
             processEvents();
             if (stopped) {
-                qDebug() << "deepRemoveLimited: STOPPED";
+                qDebug() << "deepRemoveLimited: emit removalCancelled; STOPPED";
                 emit removalCancelled();
                 return;
             }
@@ -470,6 +470,7 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
         }
     }
 
+    qDebug() << "deepRemoveLimited: emit removalComplete; nbrDeleted = " << nbrDeleted;
     emit removalComplete(res);
     stopped = true;
 }
@@ -534,7 +535,7 @@ bool FolderScanner::doRemoveOneFileOrDir(const QFileInfo& info, int row, quint64
         const auto rmok = file.remove();
         if (rmok) {
             ++nbrDeleted;
-            emit itemRemoved(row, 1, (quint64)size, nbrDeleted); // not in the table, so row = -1
+            emit itemRemoved(row, 1, (quint64)size, nbrDeleted);
             qDebug() << "Removed" << info.absoluteFilePath() << "size" << size << "nbrDeleted" << nbrDeleted;
         }
         else {

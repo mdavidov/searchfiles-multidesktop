@@ -144,7 +144,7 @@ public:
                 }
                 catch (const fs::filesystem_error& ex) {
                     rmOk = false;
-                    cout << "ERROR with " << entry.path() << " | " << ex.what() << endl;
+                    cout << "[EXCEPTION] " << ex.what() << endl;
                 }
             }
         }

@@ -167,7 +167,7 @@ private:
     bool findFilesPrep();
     void setStopped(bool stopped);
     QString getElapsedTimeStr() const;
-    void setFilesFoundLabel(const QString& prefix);
+    void setFilesFoundLabel(const QString& prefix, bool appendCounts = true);
 
     void showMoreOptions(bool show);
 
