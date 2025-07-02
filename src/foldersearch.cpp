@@ -298,12 +298,12 @@ void MainWindow::createMainLayout()
     filesFoundScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     filesFoundScroll->setMaximumHeight(40);
 
-    auto sfLabel = new QLabel("Search folder {SF}:");
-    sfLabel->setToolTip("Folder to deeply search, a.k.a. {SF}");
-    modifyFont(sfLabel, +0.0, true, false, false);
+    searchFolderLbl = new QLabel("Search folder {SF}:");
+    searchFolderLbl->setToolTip("Folder to deeply search, a.k.a. {SF}");
+    modifyFont(searchFolderLbl, +0.0, true, false, false);
 
     auto dirComboLayout = new QHBoxLayout;
-    dirComboLayout->addWidget(sfLabel);
+    dirComboLayout->addWidget(searchFolderLbl);
     dirComboLayout->addWidget(dirComboBox);
     dirComboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
@@ -459,7 +459,7 @@ void MainWindow::deleteBtnClicked()
             // different impl: deepRemoveFilesOnThread_AmzQ(itemList);
         }
         else {
-            // LIMITTED
+            // LIMITED
             deepRemoveLimitedOnThread(itemList, maxDepth);
         }
     }
@@ -584,6 +584,7 @@ void MainWindow::setStopped(bool stopped)
     deleteButton->setEnabled(   _stopped && filesTable->selectedItems().count() > 0);
     shredButton->setEnabled(    _stopped && filesTable->selectedItems().count() > 0);
     cancelButton->setEnabled(  !_stopped);
+    searchFolderLbl->setEnabled(_stopped);
     namesLineEdit->setEnabled(  _stopped);
     dirComboBox->setEnabled(    _stopped);
     itmTypeLbl->setEnabled(     _stopped);
@@ -593,6 +594,7 @@ void MainWindow::setStopped(bool stopped)
     unlimSubDirDepthBtn->setEnabled(_stopped);
     limSubDirDepthBtn->setEnabled(  _stopped);
     maxSubDirDepthEdt->setEnabled(  _stopped && limSubDirDepthBtn->isChecked());
+    maxSubDirDepthLbl->setEnabled(  _stopped);
     goUpButton->setEnabled(     _stopped);
     browseButton->setEnabled(   _stopped);
     wordsLineEdit->setEnabled(  _stopped && filesCheck->isChecked());
@@ -1296,6 +1298,9 @@ void MainWindow::copyPathSlot() {
 
 void MainWindow::getSizeSlot() {
     try {
+        if (!_stopped) {
+            return;
+        }
         const auto selectedItems = filesTable->selectedItems();
         _gettingSize = true;
         filesFoundLabel->setText("");
@@ -1599,7 +1604,7 @@ void MainWindow::removalProgress(int row, const QString& path, uint64_t /*size*/
 
 void MainWindow::removalComplete(bool success) {
     removeRows(); // files that failed to delete will not be removed from the table
-    const QString prefix = _stopped ? "INTERRUPTED | " : "COMPLETED | ";
+    const QString prefix = "COMPLETED | ";
     QString suffix = success ? "DELETE SUCCESS" : "SOME FAILED to DELETE";
     const auto maxDepth = unlimSubDirDepthBtn->isChecked() ? -1 : _maxSubDirDepth;
     const auto filesStr = (maxDepth < 0) ? " files/folders" : " files";

@@ -130,7 +130,7 @@ private:
     std::unique_ptr<Claude::FileRemover> removerClaude;
 
     // We need to remove rows in decreasing order of row indices,
-    // so we use a map sorted in descending order.
+    // so we use a map sorted in descending (std::greater<int>) order.
     // Boolean value is the result of file/folder removal.
     std::map<int, bool, std::greater<int>> rowsToRemove_;
     void removeRows();
@@ -185,6 +185,7 @@ private:
     void getSelectedItems(IntQStringMap& itemList);
 
 private:
+    QLabel*     searchFolderLbl;
     QLineEdit*  namesLineEdit;
     QLineEdit*  wordsLineEdit;
     QComboBox*  dirComboBox;

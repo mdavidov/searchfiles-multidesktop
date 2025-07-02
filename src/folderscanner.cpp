@@ -451,7 +451,7 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
             }
             const auto path = rowNpath.second;
             const auto info = QFileInfo(path);
-            if (!doRemoveOneFile(info, rowNpath.first, nbrDeleted)) {
+            if (!doRemoveOneFileOrDir(info, rowNpath.first, nbrDeleted)) {
                 res = false;
             }
             if (info.isDir() && !isSymbolic(info) && QFileInfo::exists(path)) {
@@ -508,7 +508,7 @@ bool FolderScanner::deepRemLimitedImpl(const QString& startPath, const int maxDe
                     emit removalCancelled();
                     return res;
                 }
-                if (!doRemoveOneFile(info, -1, nbrDeleted)) {  // not in the files table, so row = -1
+                if (!doRemoveOneFileOrDir(info, -1, nbrDeleted)) {  // not in the files table, so row = -1
                     res = false;
                 }
             }
@@ -524,7 +524,7 @@ bool FolderScanner::deepRemLimitedImpl(const QString& startPath, const int maxDe
     return res;
 }
 
-bool FolderScanner::doRemoveOneFile(const QFileInfo& info, int row, quint64& nbrDeleted)
+bool FolderScanner::doRemoveOneFileOrDir(const QFileInfo& info, int row, quint64& nbrDeleted)
 {
     auto res = true;
     if (!info.isDir()) {

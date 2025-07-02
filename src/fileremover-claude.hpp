@@ -119,7 +119,7 @@ public:
                 std::lock_guard<std::mutex> lock(mutex_);
                 if (progressCallback_) {
                     progressCallback_(row, QString::fromStdString(path.string()), size, rmOk, nbrDel);
-                    qDebug() << "rmOk:" << rmOk << "removed file:" << path.string().c_str() << "nbrDel:" << nbrDel;
+                    // qDebug() << "rmOk:" << rmOk << "removed file:" << path.string().c_str() << "nbrDel:" << nbrDel;
                 }
                 return rmOk;
             }
@@ -138,7 +138,7 @@ public:
                         std::lock_guard<std::mutex> lock(mutex_);
                         if (progressCallback_) {
                             progressCallback_(row, QString::fromStdString(entry.path().string()), size, rmOk, nbrDel);
-                            qDebug() << "rmOk:" << rmOk << "removed file:" << entry.path().string().c_str() << "nbrDel:" << nbrDel;
+                            // qDebug() << "rmOk:" << rmOk << "removed file:" << entry.path().string().c_str() << "nbrDel:" << nbrDel;
                         }
                     }
                 }
