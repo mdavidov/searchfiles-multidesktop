@@ -1242,7 +1242,7 @@ void MainWindow::showContextMenu(const QPoint& point)
         openContaingFolderAct->setEnabled(hasSelection);
         copyPathAct->setEnabled(hasSelection);
         #if !defined(Q_OS_MAC)
-            getSizeAct->setEnabled(hasSelection);
+            getSizeAct->setEnabled(hasSelection && _stopped);
             propertiesAct->setEnabled(hasSelection);
         #endif
 
@@ -1307,9 +1307,6 @@ void MainWindow::copyPathSlot() {
 
 void MainWindow::getSizeSlot() {
     try {
-        if (!_stopped) {
-            return;
-        }
         const auto selectedItems = filesTable->selectedItems();
         _gettingSize = true;
         filesFoundLabel->setText("");

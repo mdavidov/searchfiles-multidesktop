@@ -11,7 +11,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define OvSk_FsOp_APP_VERSION_STR       "5.8"
-#define OvSk_FsOp_APP_BUILD_NBR_STR     " 20250701 "
+#define OvSk_FsOp_APP_BUILD_NBR_STR     " 20250702 "
 
 #define OvSk_FsOp_APP_NAME_TXT          "foldersearch"
 #define OvSk_FsOp_APP_NM_TXT            "foldersearch"
