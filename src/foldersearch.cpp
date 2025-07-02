@@ -1199,16 +1199,23 @@ void MainWindow::createContextMenu()
         openRunAct = contextMenu->addAction(OvSk_FsOp_OPENRUN_ACT_TXT);
         openContaingFolderAct = contextMenu->addAction(eCod_OPEN_CONT_FOLDER_ACT_TXT);
         copyPathAct = contextMenu->addAction(eCod_COPY_PATH_ACT_TXT);
-        contextMenu->addSeparator();
-        getSizeAct = contextMenu->addAction(eCod_GET_SIZE_ACT_TXT);
-        propertiesAct = contextMenu->addAction(eCod_PROPERTIES_ACT_TXT);
+        #if !defined(Q_OS_MAC)
+            contextMenu->addSeparator();
+            getSizeAct = contextMenu->addAction(eCod_GET_SIZE_ACT_TXT);      // Not available on Mac
+            propertiesAct = contextMenu->addAction(eCod_PROPERTIES_ACT_TXT); // ditto
+        #else
+            getSizeAct = nullptr;
+            propertiesAct = nullptr;
+        #endif
 
         // Connect using new syntax
         connect(openRunAct, &QAction::triggered, this, &MainWindow::openRunSlot);
         connect(openContaingFolderAct, &QAction::triggered, this, &MainWindow::openContainingFolderSlot);
         connect(copyPathAct, &QAction::triggered, this, &MainWindow::copyPathSlot);
-        connect(getSizeAct, &QAction::triggered, this, &MainWindow::getSizeSlot);
-        connect(propertiesAct, &QAction::triggered, this, &MainWindow::propertiesSlot);
+        #if !defined(Q_OS_MAC)
+            connect(getSizeAct, &QAction::triggered, this, &MainWindow::getSizeSlot);
+            connect(propertiesAct, &QAction::triggered, this, &MainWindow::propertiesSlot);
+        #endif
     }
     catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
     catch (...) { qDebug() << "caught ... EXCEPTION"; }
@@ -1234,8 +1241,10 @@ void MainWindow::showContextMenu(const QPoint& point)
         openRunAct->setEnabled(hasSelection);
         openContaingFolderAct->setEnabled(hasSelection);
         copyPathAct->setEnabled(hasSelection);
-        getSizeAct->setEnabled(hasSelection);
-        propertiesAct->setEnabled(hasSelection);
+        #if !defined(Q_OS_MAC)
+            getSizeAct->setEnabled(hasSelection);
+            propertiesAct->setEnabled(hasSelection);
+        #endif
 
         // Show the menu at the correct global position
         contextMenu->popup(filesTable->viewport()->mapToGlobal(point));
