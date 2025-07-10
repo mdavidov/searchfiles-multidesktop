@@ -426,46 +426,42 @@ static void updateComboBox(QComboBox *comboBox)
 
 void MainWindow::deleteBtnClicked()
 {
-    try {
-        filesFoundLabel->setText("");
-        _opType = Devonline::Op::deletePerm;
-        if (filesTable->selectedItems().empty()) {
-            #if !defined(Q_OS_MAC)
-                QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
-            #else
-                qDebug() << OvSk_FsOp_SELECT_FOUNDFILES_TXT;
-            #endif
-            return;
-        }
-        if (!_stopped) {
-            stopAllThreads();
-        }
-        setStopped(false);
-        _removal = true;
-        processEvents();
-        IntQStringMap itemList;
-        getSelectedItems(itemList);
-        bool maxValid = false;
-        _maxSubDirDepth = maxSubDirDepthEdt->text().toInt(&maxValid);
-        if (!maxValid)
-            _maxSubDirDepth = 0;
-        const auto maxDepth = unlimSubDirDepthBtn->isChecked() ? -1 : _maxSubDirDepth;
-        opStart = steady_clock::now();
-
-        // REMOVE ITEMS
-        if (maxDepth < 0) {
-            // UNLIMITED
-            deepRemoveFilesOnThread_Claude(itemList);
-            // old impl: removeItems(itemList);
-            // different impl: deepRemoveFilesOnThread_AmzQ(itemList);
-        }
-        else {
-            // LIMITED
-            deepRemoveLimitedOnThread(itemList, maxDepth);
-        }
+    filesFoundLabel->setText("");
+    _opType = Devonline::Op::deletePerm;
+    if (filesTable->selectedItems().empty()) {
+        #if !defined(Q_OS_MAC)
+            QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
+        #else
+            qDebug() << OvSk_FsOp_SELECT_FOUNDFILES_TXT;
+        #endif
+        return;
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    if (!_stopped) {
+        stopAllThreads();
+    }
+    setStopped(false);
+    _removal = true;
+    processEvents();
+    IntQStringMap itemList;
+    getSelectedItems(itemList);
+    bool maxValid = false;
+    _maxSubDirDepth = maxSubDirDepthEdt->text().toInt(&maxValid);
+    if (!maxValid)
+        _maxSubDirDepth = 0;
+    const auto maxDepth = unlimSubDirDepthBtn->isChecked() ? -1 : _maxSubDirDepth;
+    opStart = steady_clock::now();
+
+    // REMOVE ITEMS
+    if (maxDepth < 0) {
+        // UNLIMITED
+        deepRemoveFilesOnThread_Claude(itemList);
+        // old impl: removeItems(itemList);
+        // different impl: deepRemoveFilesOnThread_AmzQ(itemList);
+    }
+    else {
+        // LIMITED
+        deepRemoveLimitedOnThread(itemList, maxDepth);
+    }
 }
 
 void MainWindow::getSelectedItems(IntQStringMap& itemList)
@@ -489,28 +485,23 @@ void MainWindow::getSelectedItems(IntQStringMap& itemList)
 
 void MainWindow::shredBtnClicked()
 {
-    try
-    {
-        filesFoundLabel->setText("");
-        _opType = Devonline::Op::shredPerm;
-        if (filesTable->selectedItems().empty()) {
-            #if !defined(Q_OS_MAC)
-                QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
-            #else
-                qDebug() << OvSk_FsOp_SELECT_FOUNDFILES_TXT;
-            #endif
-            // return;
-        }
-        setStopped(false);
-        _removal = true;
-        opStart = steady_clock::now();
-
-        // TODO: IMPLEMENT Shredding
-
-        emit filesTable->itemSelectionChanged();
+    filesFoundLabel->setText("");
+    _opType = Devonline::Op::shredPerm;
+    if (filesTable->selectedItems().empty()) {
+        #if !defined(Q_OS_MAC)
+            QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
+        #else
+            qDebug() << OvSk_FsOp_SELECT_FOUNDFILES_TXT;
+        #endif
+        // return;
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    setStopped(false);
+    _removal = true;
+    opStart = steady_clock::now();
+
+    // TODO: IMPLEMENT Shredding
+
+    emit filesTable->itemSelectionChanged();
 }
 
 void MainWindow::cancelBtnClicked()
@@ -525,42 +516,32 @@ void MainWindow::cancelBtnClicked()
 
 void MainWindow::SetDirPath( const QString& dirPath)
 {
-    try
-    {
-        if (dirPath.isEmpty()) {
-            dirComboBox->setCurrentText("");
-            return;
-        }
-        _origDirPath = QDir::toNativeSeparators( dirPath);
-        if (dirComboBox->findText(_origDirPath) == -1)
-            dirComboBox->addItem(_origDirPath);
-        dirComboBox->setCurrentIndex( dirComboBox->findText(_origDirPath));
+    if (dirPath.isEmpty()) {
+        dirComboBox->setCurrentText("");
+        return;
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    _origDirPath = QDir::toNativeSeparators( dirPath);
+    if (dirComboBox->findText(_origDirPath) == -1)
+        dirComboBox->addItem(_origDirPath);
+    dirComboBox->setCurrentIndex( dirComboBox->findText(_origDirPath));
 }
 
 void MainWindow::Clear()
 {
-    try
-    {
-        filesTable->setRowCount(0);
-        filesTable->hide();
-        filesTable->show();
-        itemBuffer.clear();
-        rowsToRemove_.clear();
-        filesFoundLabel->setText("");
-        _dirCount = 0;
-        _foundCount = 0;
-        _foundSize = 0;
-        _symlinkCount = 0;
-        _totCount = 0;
-        _totSize = 0;
-        _nbrDeleted = 0;
-        processEvents();
-    }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    filesTable->setRowCount(0);
+    filesTable->hide();
+    filesTable->show();
+    itemBuffer.clear();
+    rowsToRemove_.clear();
+    filesFoundLabel->setText("");
+    _dirCount = 0;
+    _foundCount = 0;
+    _foundSize = 0;
+    _symlinkCount = 0;
+    _totCount = 0;
+    _totSize = 0;
+    _nbrDeleted = 0;
+    processEvents();
 }
 
 void MainWindow::setStopped(bool stopped)
@@ -760,38 +741,33 @@ bool MainWindow::findFilesPrep()
 
 void MainWindow::findBtnClicked()
 {
-    try
-    {
-        if (!_stopped) {
-            return;
-        }
-        opStart = steady_clock::now();
-        if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
-            #if !defined(Q_OS_MAC)
-                QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
-            #else
-                qDebug() << OvSk_FsOp_SELECT_ITEM_TYPE_TXT;
-	        #endif
-            return;
-        }
-        Cfg::St().setValue(Cfg::origDirPathKey, QDir::toNativeSeparators(dirComboBox->currentText()));
-
-        // Will only start the thread if preparation succeeds
-        if (!findFilesPrep()) {
-            return;
-        }
-
-        filesTable->setSortingEnabled(false);
-        setStopped(false);
-
-        // Moving worker object pointer to thread (scanner pointer below)
-        // only sets which thread (scanThread) will execute worker's slots.
-        scanner->moveToThread(scanThread.get());
-
-        deepScanFolderOnThread(_origDirPath, _unlimSubDirDepth ? -1 : _maxSubDirDepth);
+    if (!_stopped) {
+        return;
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    opStart = steady_clock::now();
+    if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
+        #if !defined(Q_OS_MAC)
+            QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
+        #else
+            qDebug() << OvSk_FsOp_SELECT_ITEM_TYPE_TXT;
+	    #endif
+        return;
+    }
+    Cfg::St().setValue(Cfg::origDirPathKey, QDir::toNativeSeparators(dirComboBox->currentText()));
+
+    // Will only start the thread if preparation succeeds
+    if (!findFilesPrep()) {
+        return;
+    }
+
+    filesTable->setSortingEnabled(false);
+    setStopped(false);
+
+    // Moving worker object pointer to thread (scanner pointer below)
+    // only sets which thread (scanThread) will execute worker's slots.
+    scanner->moveToThread(scanThread.get());
+
+    deepScanFolderOnThread(_origDirPath, _unlimSubDirDepth ? -1 : _maxSubDirDepth);
 }
 
 inline void MainWindow::processEvents()
@@ -819,56 +795,46 @@ QPushButton * MainWindow::createButton(const QString & text, const char *member)
 
 void MainWindow::dirPathEditTextChanged(const QString& newText)
 {
-    try
-    {
-        if (_ignoreDirPathChange) {
-            _ignoreDirPathChange = false;
-            return;
-        }
-        if (newText.isEmpty())
-            return;
-        const qint64 timeDiff = _editTextTimeDiff.elapsed();
+    if (_ignoreDirPathChange) {
+        _ignoreDirPathChange = false;
+        return;
+    }
+    if (newText.isEmpty())
+        return;
+    const qint64 timeDiff = _editTextTimeDiff.elapsed();
 
-        if (newText.endsWith(QDir::separator())) {
-            fileSystemModel->setRootPath(newText);
-            dirComboBox->completer()->setCompletionPrefix(newText);
-            #if defined(Q_OS_WIN)
-                if (newText.length() == 1) {
-                    _ignoreDirPathChange = true;
-                    fileSystemModel->setRootPath(eCod_TOP_ROOT_PATH);
-                    dirComboBox->completer()->setCompletionPrefix(eCod_TOP_ROOT_PATH);
-                    dirComboBox->setCurrentText( eCod_TOP_ROOT_PATH);
-                }
-            #endif
+    if (newText.endsWith(QDir::separator())) {
+        fileSystemModel->setRootPath(newText);
+        dirComboBox->completer()->setCompletionPrefix(newText);
+        #if defined(Q_OS_WIN)
+            if (newText.length() == 1) {
+                _ignoreDirPathChange = true;
+                fileSystemModel->setRootPath(eCod_TOP_ROOT_PATH);
+                dirComboBox->completer()->setCompletionPrefix(eCod_TOP_ROOT_PATH);
+                dirComboBox->setCurrentText( eCod_TOP_ROOT_PATH);
+            }
+        #endif
+        _completerTimer.start(33);
+    }
+    else if (newText.isEmpty()) {
+        if (timeDiff < 40 || timeDiff > 120) {
+            fileSystemModel->setRootPath("");
+            dirComboBox->completer()->setCompletionPrefix("");
             _completerTimer.start(33);
         }
-        else if (newText.isEmpty()) {
-            if (timeDiff < 40 || timeDiff > 120) {
-                fileSystemModel->setRootPath("");
-                dirComboBox->completer()->setCompletionPrefix("");
-                _completerTimer.start(33);
-            }
-        }
-        else { // newText is not empty
-            if (dirComboBox->completer()->completionPrefix().isEmpty() && timeDiff < 30) {
-                dirComboBox->completer()->setCompletionPrefix(newText);
-            }
-        }
-        _editTextTimeDiff.restart();
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    else { // newText is not empty
+        if (dirComboBox->completer()->completionPrefix().isEmpty() && timeDiff < 30) {
+            dirComboBox->completer()->setCompletionPrefix(newText);
+        }
+    }
+    _editTextTimeDiff.restart();
 }
 
 void MainWindow::completerTimeout()
 {
-    try
-    {
-        if (dirComboBox->completer())
-            dirComboBox->completer()->complete(); // shows the popup if the completion count > 0
-    }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    if (dirComboBox->completer())
+        dirComboBox->completer()->complete(); // shows the popup if the completion count > 0
 }
 
 QFileSystemModel * MainWindow::newFileSystemModel(QCompleter * completer, const QString & currentDir)
@@ -1105,8 +1071,6 @@ void MainWindow::flushItemBuffer() {
 
 void MainWindow::createFilesTable()
 {
-  try
-  {
     filesTable = new QTableWidget(0, N_COL, this);
     filesTable->setParent(this);
     filesTable->setColumnCount(N_COL);
@@ -1173,11 +1137,6 @@ void MainWindow::createFilesTable()
     filesTable->setContextMenuPolicy(Qt::CustomContextMenu);
     const auto conn = connect(filesTable, &QTableWidget::customContextMenuRequested,
                               this, &MainWindow::showContextMenu);
-    //c = connect(filesTable, SIGNAL(customContextMenuRequested(const QPoint &)),
-    //            this,         SLOT(showContextMenu(const QPoint &)));  Q_ASSERT(c);
-  }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void MainWindow::openFileOfItem( int row, int /* column */)
@@ -1195,238 +1154,196 @@ void MainWindow::itemSelectionChanged()
 
 void MainWindow::createContextMenu()
 {
-    try
-    {
-        contextMenu = new QMenu(this);  // Set parent to ensure proper cleanup
+    contextMenu = new QMenu(this);  // Set parent to ensure proper cleanup
 
-        openRunAct = contextMenu->addAction(OvSk_FsOp_OPENRUN_ACT_TXT);
-        openContaingFolderAct = contextMenu->addAction(eCod_OPEN_CONT_FOLDER_ACT_TXT);
-        copyPathAct = contextMenu->addAction(eCod_COPY_PATH_ACT_TXT);
-        #if !defined(Q_OS_MAC)
-            contextMenu->addSeparator();
-            getSizeAct = contextMenu->addAction(eCod_GET_SIZE_ACT_TXT);      // Not available on Mac
-            propertiesAct = contextMenu->addAction(eCod_PROPERTIES_ACT_TXT); // ditto
-        #else
-            getSizeAct = nullptr;
-            propertiesAct = nullptr;
-        #endif
+    openRunAct = contextMenu->addAction(OvSk_FsOp_OPENRUN_ACT_TXT);
+    openContaingFolderAct = contextMenu->addAction(eCod_OPEN_CONT_FOLDER_ACT_TXT);
+    copyPathAct = contextMenu->addAction(eCod_COPY_PATH_ACT_TXT);
+    #if !defined(Q_OS_MAC)
+        contextMenu->addSeparator();
+        getSizeAct = contextMenu->addAction(eCod_GET_SIZE_ACT_TXT);      // Not available on Mac
+        propertiesAct = contextMenu->addAction(eCod_PROPERTIES_ACT_TXT); // ditto
+    #else
+        getSizeAct = nullptr;
+        propertiesAct = nullptr;
+    #endif
 
-        // Connect using new syntax
-        connect(openRunAct, &QAction::triggered, this, &MainWindow::openRunSlot);
-        connect(openContaingFolderAct, &QAction::triggered, this, &MainWindow::openContainingFolderSlot);
-        connect(copyPathAct, &QAction::triggered, this, &MainWindow::copyPathSlot);
-        #if !defined(Q_OS_MAC)
-            connect(getSizeAct, &QAction::triggered, this, &MainWindow::getSizeSlot);
-            connect(propertiesAct, &QAction::triggered, this, &MainWindow::propertiesSlot);
-        #endif
-    }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    // Connect using new syntax
+    connect(openRunAct, &QAction::triggered, this, &MainWindow::openRunSlot);
+    connect(openContaingFolderAct, &QAction::triggered, this, &MainWindow::openContainingFolderSlot);
+    connect(copyPathAct, &QAction::triggered, this, &MainWindow::copyPathSlot);
+    #if !defined(Q_OS_MAC)
+        connect(getSizeAct, &QAction::triggered, this, &MainWindow::getSizeSlot);
+        connect(propertiesAct, &QAction::triggered, this, &MainWindow::propertiesSlot);
+    #endif
 }
 
 void MainWindow::showContextMenu(const QPoint& point)
 {
-    try
-    {
-        if (!contextMenu) {
-            qDebug() << "Context menu not created, nullptr.";
-            return;
-        }
-        // Get the item at the click position
-        QTableWidgetItem* item = filesTable->itemAt(point);
-        if (!item) {
-            qDebug() << "No item at click position.";
-            return;
-        }
-
-        // Enable/disable actions based on selection
-        bool hasSelection = !filesTable->selectedItems().empty();
-        openRunAct->setEnabled(hasSelection);
-        openContaingFolderAct->setEnabled(hasSelection);
-        copyPathAct->setEnabled(hasSelection);
-        #if !defined(Q_OS_MAC)
-            getSizeAct->setEnabled(hasSelection && _stopped);
-            propertiesAct->setEnabled(hasSelection);
-        #endif
-
-        // Show the menu at the correct global position
-        contextMenu->popup(filesTable->viewport()->mapToGlobal(point));
+    if (!contextMenu) {
+        qDebug() << "Context menu not created, nullptr.";
+        return;
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    // Get the item at the click position
+    QTableWidgetItem* item = filesTable->itemAt(point);
+    if (!item) {
+        qDebug() << "No item at click position.";
+        return;
+    }
+
+    // Enable/disable actions based on selection
+    bool hasSelection = !filesTable->selectedItems().empty();
+    openRunAct->setEnabled(hasSelection);
+    openContaingFolderAct->setEnabled(hasSelection);
+    copyPathAct->setEnabled(hasSelection);
+    #if !defined(Q_OS_MAC)
+        getSizeAct->setEnabled(hasSelection && _stopped);
+        propertiesAct->setEnabled(hasSelection);
+    #endif
+
+    // Show the menu at the correct global position
+    contextMenu->popup(filesTable->viewport()->mapToGlobal(point));
 }
 
 void MainWindow::openRunSlot() {
-    try {
-        const auto selectedItems = filesTable->selectedItems();
-        if (selectedItems.empty()) {
-            return;
-        }
-        const auto item = selectedItems.first();
-        const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
-        // absoluteFilePath() is good for both files and folders
-        const auto url = QUrl::fromLocalFile(finfo.absoluteFilePath());
-        QDesktopServices::openUrl(url);
+    const auto selectedItems = filesTable->selectedItems();
+    if (selectedItems.empty()) {
+        return;
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    const auto item = selectedItems.first();
+    const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
+    // absoluteFilePath() is good for both files and folders
+    const auto url = QUrl::fromLocalFile(finfo.absoluteFilePath());
+    QDesktopServices::openUrl(url);
 }
 
 void MainWindow::openContainingFolderSlot() {
-    try {
-        const auto selectedItems = filesTable->selectedItems();
-        if (selectedItems.empty()) {
-            return;
-        }
-        const auto item = selectedItems.first();
-        const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
-        // absolutePath() is the containing folder (i.e. absolute path
-        // without the file/folder name)
-        const auto url = QUrl::fromLocalFile(finfo.absolutePath());
-        QDesktopServices::openUrl(url);
+    const auto selectedItems = filesTable->selectedItems();
+    if (selectedItems.empty()) {
+        return;
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    const auto item = selectedItems.first();
+    const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
+    // absolutePath() is the containing folder (i.e. absolute path
+    // without the file/folder name)
+    const auto url = QUrl::fromLocalFile(finfo.absolutePath());
+    QDesktopServices::openUrl(url);
 }
 
 void MainWindow::copyPathSlot() {
-    try {
-        const auto selectedItems = filesTable->selectedItems();
-        if (selectedItems.empty()) {
-            return;
-        }
-        auto clipboard = QApplication::clipboard();
-        if (!clipboard) {
-            qDebug() << "copyPathSlot: Clipboard not available.";
-            return;
-        }
-        const auto item = selectedItems.first();
-        const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
-        clipboard->setText(QDir::toNativeSeparators(finfo.absoluteFilePath()));
+    const auto selectedItems = filesTable->selectedItems();
+    if (selectedItems.empty()) {
+        return;
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    auto clipboard = QApplication::clipboard();
+    if (!clipboard) {
+        qDebug() << "copyPathSlot: Clipboard not available.";
+        return;
+    }
+    const auto item = selectedItems.first();
+    const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
+    clipboard->setText(QDir::toNativeSeparators(finfo.absoluteFilePath()));
 }
 
 void MainWindow::getSizeSlot() {
-    try {
-        const auto selectedItems = filesTable->selectedItems();
-        _gettingSize = true;
-        filesFoundLabel->setText("");
-        setStopped(false);
-        IntQStringMap itemList;
-        getSelectedItems(itemList);
-        getSizeOnThread(itemList);
-    }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    const auto selectedItems = filesTable->selectedItems();
+    _gettingSize = true;
+    filesFoundLabel->setText("");
+    setStopped(false);
+    IntQStringMap itemList;
+    getSelectedItems(itemList);
+    getSizeOnThread(itemList);
 }
 
 void MainWindow::getSizeImpl(const IntQStringMap& itemList)
 {
-    {
-        uint64pair countNsize;
-        const auto nbrItems = itemList.size();
-        QString filePath;
-        for (const auto& item : itemList) {
-            filePath = item.second;
-            const auto info = QFileInfo(filePath);
-            // Do not follow symlinks
-            if (info.isDir() && !isSymbolic(info)) {
-                const auto [count, dirSize] = scanner->deepCountSize(filePath);
-                countNsize.first += count;
-                countNsize.second += dirSize;
-            }
-            else {
-                countNsize.first++;
-                countNsize.second += (quint64)info.size();
-            }
+    uint64pair countNsize;
+    const auto nbrItems = itemList.size();
+    QString filePath;
+    for (const auto& item : itemList) {
+        filePath = item.second;
+        const auto info = QFileInfo(filePath);
+        // Do not follow symlinks
+        if (info.isDir() && !isSymbolic(info)) {
+            const auto [count, dirSize] = scanner->deepCountSize(filePath);
+            countNsize.first += count;
+            countNsize.second += dirSize;
         }
-        emit scanner->scanComplete();
-
-        // Use QMetaObject::invokeMethod to safely update UI from background thread
-        QMetaObject::invokeMethod(this, [this, nbrItems, filePath, countNsize]() {
-            // Update UI here
-            const QString text = (nbrItems > 1) ? "Multiple files/folders" : filePath;
-            const auto sizeStr = sizeToHumanReadable(countNsize.second);
-            QMessageBox::information(this, OvSk_FsOp_APP_NAME_TXT,
-                tr("%1\n\nItem count: %2\nTotal size: %3")
-                .arg(text)
-                .arg(countNsize.first)
-                .arg(sizeStr));
-        }, Qt::QueuedConnection);
+        else {
+            countNsize.first++;
+            countNsize.second += (quint64)info.size();
+        }
     }
+    emit scanner->scanComplete();
+
+    // Use QMetaObject::invokeMethod to safely update UI from background thread
+    QMetaObject::invokeMethod(this, [this, nbrItems, filePath, countNsize]() {
+        // Update UI here
+        const QString text = (nbrItems > 1) ? "Multiple files/folders" : filePath;
+        const auto sizeStr = sizeToHumanReadable(countNsize.second);
+        QMessageBox::information(this, OvSk_FsOp_APP_NAME_TXT,
+            tr("%1\n\nItem count: %2\nTotal size: %3")
+            .arg(text)
+            .arg(countNsize.first)
+            .arg(sizeStr));
+    }, Qt::QueuedConnection);
 }
 
 void MainWindow::propertiesSlot() {
-    try
-    {
-        auto selectedItems = filesTable->selectedItems();
-        if (selectedItems.empty()) {
-            return;
-        }
-        const auto item = selectedItems.first();
-        const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
-        const auto filePath = QDir::toNativeSeparators(finfo.absoluteFilePath());
-#if defined(Q_OS_LINUX)
-        QProcess::startDetached("xdg-open", QStringList() << filePath);
-#elif defined(Q_OS_MACOS)
-        showFileProperties(filePath.toUtf8().constData());
-#elif defined(Q_OS_WIN)
-        LPCWSTR file = (const wchar_t*)filePath.utf16();
-        SHELLEXECUTEINFO sei = { sizeof(sei) };
-        sei.lpVerb = L"properties";
-        sei.lpFile = file;
-        sei.nShow = SW_SHOW;
-        sei.fMask = SEE_MASK_INVOKEIDLIST;
-        if (!ShellExecuteEx(&sei)) {
-            qDebug() << "propertiesSlot: Failed to open properties dialog";
-        }
-#endif
+    auto selectedItems = filesTable->selectedItems();
+    if (selectedItems.empty()) {
+        return;
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    const auto item = selectedItems.first();
+    const auto finfo = QFileInfo(item->data(Qt::UserRole).toString());
+    const auto filePath = QDir::toNativeSeparators(finfo.absoluteFilePath());
+#if defined(Q_OS_LINUX)
+    QProcess::startDetached("xdg-open", QStringList() << filePath);
+#elif defined(Q_OS_MACOS)
+    showFileProperties(filePath.toUtf8().constData());
+#elif defined(Q_OS_WIN)
+    LPCWSTR file = (const wchar_t*)filePath.utf16();
+    SHELLEXECUTEINFO sei = { sizeof(sei) };
+    sei.lpVerb = L"properties";
+    sei.lpFile = file;
+    sei.nShow = SW_SHOW;
+    sei.fMask = SEE_MASK_INVOKEIDLIST;
+    if (!ShellExecuteEx(&sei)) {
+        qDebug() << "propertiesSlot: Failed to open properties dialog";
+    }
+#endif
 }
 
 void MainWindow::keyReleaseEvent(QKeyEvent* ev) {
-    try
-    {
-        if (ev->key() == Qt::Key_Enter || ev->key() == Qt::Key_Return) {
-            findBtnClicked();
-            ev->accept();
-        }
-        else if (ev->key() == Qt::Key_Escape) {
-            cancelBtnClicked();
-            ev->accept();
-        }
-        else
-            QMainWindow::keyReleaseEvent(ev);
+    if (ev->key() == Qt::Key_Enter || ev->key() == Qt::Key_Return) {
+        findBtnClicked();
+        ev->accept();
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    else if (ev->key() == Qt::Key_Escape) {
+        cancelBtnClicked();
+        ev->accept();
+    }
+    else
+        QMainWindow::keyReleaseEvent(ev);
 }
 
 void MainWindow::unlimSubDirDepthToggled(bool /*checked*/)
 {
-    try {
-        _unlimSubDirDepth = unlimSubDirDepthBtn->isChecked();
-        if (_unlimSubDirDepth) {
-            bool maxValid = false;
-            _maxSubDirDepth =  maxSubDirDepthEdt->text().toInt(&maxValid);
-            if (!maxValid) {
-                _maxSubDirDepth = 0;
-                maxSubDirDepthEdt->setText("0");
-            }
-            maxSubDirDepthEdt->setEnabled(false);
-            maxSubDirDepthEdt->setText("");
+    _unlimSubDirDepth = unlimSubDirDepthBtn->isChecked();
+    if (_unlimSubDirDepth) {
+        bool maxValid = false;
+        _maxSubDirDepth =  maxSubDirDepthEdt->text().toInt(&maxValid);
+        if (!maxValid) {
+            _maxSubDirDepth = 0;
+            maxSubDirDepthEdt->setText("0");
         }
-        else {
-            maxSubDirDepthEdt->setEnabled(true);
-            maxSubDirDepthEdt->setText(QString("%1").arg(_maxSubDirDepth));
-        }
+        maxSubDirDepthEdt->setEnabled(false);
+        maxSubDirDepthEdt->setText("");
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    else {
+        maxSubDirDepthEdt->setEnabled(true);
+        maxSubDirDepthEdt->setText(QString("%1").arg(_maxSubDirDepth));
+    }
 }
 
 void MainWindow::showAboutDialog() {

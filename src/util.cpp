@@ -24,60 +24,52 @@ namespace Devonline
 
     QString sizeToHumanReadable(quint64 size)
     {
-        try
-        {
-            if (size == 0) {
-                return QString("0 Bytes");
-            }
-            static const quint64 KILO = 1024;
-            static const quint64 MEGA = 1024 * KILO;
-            static const quint64 GIGA = 1024 * MEGA;
-            static const quint64 TERA = 1024 * GIGA;
-            static const quint64 PETA = 1024 * TERA;
-            double sz = (double) size;
-            QString unit = "Bytes";
-
-            if      (size >= PETA) {
-                sz /= (double) PETA;
-                unit = "PB";
-            }
-            else if (size >= TERA) {
-                sz /= (double) TERA;
-                unit = "TB";
-            }
-            else if (size >= GIGA) {
-                sz /= (double) GIGA;
-                unit = "GB";
-            }
-            else if (size >= MEGA) {
-                sz /= (double) MEGA;
-                unit = "MB";
-            }
-            else if (size >= KILO) {
-                sz /= (double) KILO;
-                unit = "KB";
-            }
-
-            int precision = 3;
-            if (unit.startsWith("B")) {
-                precision = 0;
-            }
-            else if (sz >= 100) {
-                precision = 1;
-            }
-            else if (sz >= 10) {
-                precision = 2;
-            }
-            else {
-                precision = 3;
-            }
-            return QString("%1 %2").arg(sz, 1, 'f', precision).arg(unit);
+        if (size == 0) {
+            return QString("0 Bytes");
         }
-        catch (...)
-        {
-            indicateErrorDbg("Exception");
-            return QString("");
+        static const quint64 KILO = 1024;
+        static const quint64 MEGA = 1024 * KILO;
+        static const quint64 GIGA = 1024 * MEGA;
+        static const quint64 TERA = 1024 * GIGA;
+        static const quint64 PETA = 1024 * TERA;
+        double sz = (double) size;
+        QString unit = "Bytes";
+
+        if      (size >= PETA) {
+            sz /= (double) PETA;
+            unit = "PB";
         }
+        else if (size >= TERA) {
+            sz /= (double) TERA;
+            unit = "TB";
+        }
+        else if (size >= GIGA) {
+            sz /= (double) GIGA;
+            unit = "GB";
+        }
+        else if (size >= MEGA) {
+            sz /= (double) MEGA;
+            unit = "MB";
+        }
+        else if (size >= KILO) {
+            sz /= (double) KILO;
+            unit = "KB";
+        }
+
+        int precision = 3;
+        if (unit.startsWith("B")) {
+            precision = 0;
+        }
+        else if (sz >= 100) {
+            precision = 1;
+        }
+        else if (sz >= 10) {
+            precision = 2;
+        }
+        else {
+            precision = 3;
+        }
+        return QString("%1 %2").arg(sz, 1, 'f', precision).arg(unit);
     }
 
     QString elapsedTimeToStr( qint64 elapsedMilSec)
@@ -110,17 +102,10 @@ namespace Devonline
 
     void indicateErrorDbg(const QString& text)
     {
-        (void) text;
-        #ifndef NDEBUG
-            try {
-                #if !defined(Q_OS_MAC)
-                    QMessageBox::warning( 0, text, text);
-                #endif
-            }
-            catch (...) {
-            }
+        #ifndef NDEBUG && !defined(Q_OS_MAC)
+            QMessageBox::warning( 0, text, text);
         #else
-            (void) text;
+            (void)text;
         #endif
     }
 

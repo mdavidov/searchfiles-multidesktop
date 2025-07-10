@@ -48,19 +48,15 @@ FolderScanner::FolderScanner(QObject* parent)
 }
 
 void FolderScanner::reportProgress(const QString& path, bool doit /*= false*/) {
-    try {
-        const auto elapsed = progressTimer.elapsed();
-        const auto diff = elapsed - prevProgress;
-        if (doit || diff >= 500) {  // msec
-            prevProgress = elapsed;
-            if (!stopped)
-                emit progressUpdate(path, totCount, totSize);
-            else
-                qDebug() << "FolderScanner::reportProgress STOPPING";
-        }
+    const auto elapsed = progressTimer.elapsed();
+    const auto diff = elapsed - prevProgress;
+    if (doit || diff >= 500) {  // msec
+        prevProgress = elapsed;
+        if (!stopped)
+            emit progressUpdate(path, totCount, totSize);
+        else
+            qDebug() << "FolderScanner::reportProgress STOPPING";
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
 }
 
 void FolderScanner::processEvents()
@@ -74,12 +70,8 @@ void FolderScanner::processEvents()
 }
 
 void FolderScanner::stop() {
-    try {
-        std::unique_lock<std::shared_mutex> lock(mutex);
-        stopped = true;
-    }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    std::unique_lock<std::shared_mutex> lock(mutex);
+    stopped = true;
 }
 
 bool FolderScanner::isStopped() const {
@@ -89,51 +81,46 @@ bool FolderScanner::isStopped() const {
 
 bool FolderScanner::appendOrExcludeItem(const QString& /*dirPath*/, const QFileInfo& info)
 {
-    try {
-        const auto filePath = QDir::fromNativeSeparators(info.absoluteFilePath());
-        const auto isSymlink = isSymbolic(info);
-        const auto isDir = info.isDir() && !isSymlink;
-        const auto isFile = info.isFile() && !isSymlink;
-        if (!params.exclFolderPatterns.empty() &&
-                stringContainsAnyWord(filePath, params.exclFolderPatterns)) {
+    const auto filePath = QDir::fromNativeSeparators(info.absoluteFilePath());
+    const auto isSymlink = isSymbolic(info);
+    const auto isDir = info.isDir() && !isSymlink;
+    const auto isFile = info.isFile() && !isSymlink;
+    if (!params.exclFolderPatterns.empty() &&
+            stringContainsAnyWord(filePath, params.exclFolderPatterns)) {
+        return false;
+    }
+    if (isFile) {
+        if (!params.exclFilePatterns.empty() &&
+                stringContainsAnyWord(info.fileName(), params.exclFilePatterns)) {
             return false;
         }
-        if (isFile) {
-            if (!params.exclFilePatterns.empty() &&
-                    stringContainsAnyWord(info.fileName(), params.exclFilePatterns)) {
-                return false;
-            }
-            if (!params.exclusionWords.empty() &&
-                    fileContainsAnyWordChunked(filePath, params.exclusionWords)) {
-                return false;
-            }
+        if (!params.exclusionWords.empty() &&
+                fileContainsAnyWordChunked(filePath, params.exclusionWords)) {
+            return false;
         }
-        auto toAppend = false;
-        if (params.searchWords.empty()) {
-            if (isSymlink)
-                toAppend = params.inclSymlinks;
-            else if (isDir)
-                toAppend = params.inclFolders;
-        }
-        if (isFile && params.inclFiles) {
-            toAppend = params.searchWords.empty() ||
-                fileContainsAllWordsChunked(filePath, params.searchWords);
-        }
-        if (toAppend) {
-            if (isSymlink)
-                symlinkCount++;
-            else if (isDir)
-                dirCount++;
-            else if (isFile) {
-                foundCount++;
-                foundSize += (quint64)info.size();
-            }
-        }
-        return toAppend;
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
-    return false;
+    auto toAppend = false;
+    if (params.searchWords.empty()) {
+        if (isSymlink)
+            toAppend = params.inclSymlinks;
+        else if (isDir)
+            toAppend = params.inclFolders;
+    }
+    if (isFile && params.inclFiles) {
+        toAppend = params.searchWords.empty() ||
+            fileContainsAllWordsChunked(filePath, params.searchWords);
+    }
+    if (toAppend) {
+        if (isSymlink)
+            symlinkCount++;
+        else if (isDir)
+            dirCount++;
+        else if (isFile) {
+            foundCount++;
+            foundSize += (quint64)info.size();
+        }
+    }
+    return toAppend;
 }
 
 void FolderScanner::zeroCounters()
@@ -193,14 +180,6 @@ quint64 FolderScanner::combinedSize(const QFileInfoList& infos)
     }
     return size;
 }
-
-// Not necessary: void FolderScanner::updateTotals(const QString& path)
-//{
-//    QFileInfoList infos;
-//    getAllItems(path, infos);
-//    totCount += quint64(infos.count());
-//    totSize += combinedSize(infos);
-//}
 
 bool FolderScanner::stringContainsAllWords(const QString& str, const QStringList& words)
 {
@@ -278,115 +257,107 @@ bool FolderScanner::fileContainsAnyWordChunked(const QString& filePath, const QS
 
 void FolderScanner::deepScan(const QString& startPath, const int maxDepth)
 {
-    try {
-        stopped = false;
-        zeroCounters();
-        QString lastPath;
+    stopped = false;
+    zeroCounters();
+    QString lastPath;
         
-        QQueue<QPair<QString, int>> dirQ;
-        dirQ.enqueue({ startPath, 0 });
+    QQueue<QPair<QString, int>> dirQ;
+    dirQ.enqueue({ startPath, 0 });
         
-        while (!dirQ.empty()) {
+    while (!dirQ.empty()) {
+        if (stopped) {
+            return;
+        }
+        processEvents();
+        const auto [dirPath, currDepth] = dirQ.dequeue();
+        reportProgress(dirPath + QDir::separator());
+        QFileInfoList dirInfos;
+        getAllDirs(dirPath, dirInfos);
+        for (const auto& dir : dirInfos) {
+            lastPath = dirPath;
             if (stopped) {
                 return;
             }
             processEvents();
-            const auto [dirPath, currDepth] = dirQ.dequeue();
-            reportProgress(dirPath + QDir::separator());
-            QFileInfoList dirInfos;
-            getAllDirs(dirPath, dirInfos);
-            for (const auto& dir : dirInfos) {
-                lastPath = dirPath;
-                if (stopped) {
-                    return;
-                }
-                processEvents();
-                const auto dPath = dir.absoluteFilePath();
-                if ((maxDepth < 0 || currDepth < maxDepth) &&
-                    (params.exclFolderPatterns.empty() || !stringContainsAnyWord(dPath, params.exclFolderPatterns))) {
-                        dirQ.enqueue({ dPath, currDepth + 1 });
-                }
-                reportProgress(dPath + QDir::separator());
+            const auto dPath = dir.absoluteFilePath();
+            if ((maxDepth < 0 || currDepth < maxDepth) &&
+                (params.exclFolderPatterns.empty() || !stringContainsAnyWord(dPath, params.exclFolderPatterns))) {
+                    dirQ.enqueue({ dPath, currDepth + 1 });
             }
-            // Not necessary: updateTotals(dirPath);
+            reportProgress(dPath + QDir::separator());
+        }
+        // Not necessary: updateTotals(dirPath);
             
-            QFileInfoList infos;
-            getFileInfos(dirPath, infos);
-            for (const auto& info : infos) {
-                if (stopped) {
-                    return;
-                }
-                processEvents();
-                const auto filePath = info.absoluteFilePath();
-                if (appendOrExcludeItem(filePath, info)) {
-                    emit itemFound(filePath, info);
-                }
-                reportProgress(filePath);
-                lastPath = filePath;
+        QFileInfoList infos;
+        getFileInfos(dirPath, infos);
+        for (const auto& info : infos) {
+            if (stopped) {
+                return;
             }
+            processEvents();
+            const auto filePath = info.absoluteFilePath();
+            if (appendOrExcludeItem(filePath, info)) {
+                emit itemFound(filePath, info);
+            }
+            reportProgress(filePath);
+            lastPath = filePath;
         }
-        if (!stopped) {
-            reportProgress(lastPath, true);
-            emit scanComplete();
-        }
-        stopped = true;
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    if (!stopped) {
+        reportProgress(lastPath, true);
+        emit scanComplete();
+    }
+    stopped = true;
 }
 
 uint64pair FolderScanner::deepCountSize(const QString& startPath)
 {
     quint64 count = 0;
     quint64 size = 0;
-    try {
-        stopped = false;
-        QQueue<QString> dirQ;
-        dirQ.enqueue(startPath);
-        zeroCounters();
-        QString lastPath;
+    stopped = false;
+    QQueue<QString> dirQ;
+    dirQ.enqueue(startPath);
+    zeroCounters();
+    QString lastPath;
 
-        while (!dirQ.empty() && !stopped) {
-            processEvents();
-            const auto dirPath = dirQ.dequeue();
-            lastPath = dirPath;
-            QFileInfoList dirInfos;
-            getAllDirs(dirPath, dirInfos);
-            for (const auto& info : dirInfos) {
-                //processEvents();
-                if (stopped) {
-                    emit scanCancelled();
-                    return{ count, size };
-                }
-                if (info.isDir() && !isSymbolic(info)) {
-                    dirQ.enqueue(info.absoluteFilePath());
-                }
+    while (!dirQ.empty() && !stopped) {
+        processEvents();
+        const auto dirPath = dirQ.dequeue();
+        lastPath = dirPath;
+        QFileInfoList dirInfos;
+        getAllDirs(dirPath, dirInfos);
+        for (const auto& info : dirInfos) {
+            //processEvents();
+            if (stopped) {
+                emit scanCancelled();
+                return{ count, size };
             }
-
-            QFileInfoList infos;
-            getAllItems(dirPath, infos);
-            for (const auto& info : infos) {
-                processEvents();
-                if (stopped) {
-                    emit scanCancelled();
-                    return{ count, size };
-                }
-                ++count;
-                size += (quint64)info.size();
-                foundCount = count;
-                foundSize = size;
-                const auto filePath = info.absoluteFilePath();
-                reportProgress(filePath);
-                emit itemSized(filePath, info);
-                lastPath = filePath;
+            if (info.isDir() && !isSymbolic(info)) {
+                dirQ.enqueue(info.absoluteFilePath());
             }
         }
-        if (!stopped) {
-            reportProgress(lastPath, true);
+
+        QFileInfoList infos;
+        getAllItems(dirPath, infos);
+        for (const auto& info : infos) {
+            processEvents();
+            if (stopped) {
+                emit scanCancelled();
+                return{ count, size };
+            }
+            ++count;
+            size += (quint64)info.size();
+            foundCount = count;
+            foundSize = size;
+            const auto filePath = info.absoluteFilePath();
+            reportProgress(filePath);
+            emit itemSized(filePath, info);
+            lastPath = filePath;
         }
     }
-    catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-    catch (...) { qDebug() << "caught ... EXCEPTION"; }
+    if (!stopped) {
+        reportProgress(lastPath, true);
+    }
     return{ count, size };
 }
 
@@ -442,24 +413,20 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
     
     // Get all selected files and dirs; remove files and empty dirs; add still existing dirs to deque
     for (const auto& rowNpath : rowPathMap) {
-        try {
-            processEvents();
-            if (stopped) {
-                qDebug() << "deepRemoveLimited: emit removalCancelled; STOPPED";
-                emit removalCancelled();
-                return;
-            }
-            const auto path = rowNpath.second;
-            const auto info = QFileInfo(path);
-            if (!doRemoveOneFileOrDir(info, rowNpath.first, nbrDeleted)) {
-                res = false;
-            }
-            if (info.isDir() && !isSymbolic(info) && QFileInfo::exists(path)) {
-                dirPaths.push_back(path);
-            }
+        processEvents();
+        if (stopped) {
+            qDebug() << "deepRemoveLimited: emit removalCancelled; STOPPED";
+            emit removalCancelled();
+            return;
         }
-        catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-        catch (...) { qDebug() << "caught ... EXCEPTION"; }
+        const auto path = rowNpath.second;
+        const auto info = QFileInfo(path);
+        if (!doRemoveOneFileOrDir(info, rowNpath.first, nbrDeleted)) {
+            res = false;
+        }
+        if (info.isDir() && !isSymbolic(info) && QFileInfo::exists(path)) {
+            dirPaths.push_back(path);
+        }
     }
 
     // For each dir that was selected (i.e. it's in rowPathMap):
@@ -482,45 +449,41 @@ bool FolderScanner::deepRemLimitedImpl(const QString& startPath, const int maxDe
     auto res = true;
 
     while (!dirQ.empty() && !stopped) {
-        try {
-            processEvents();
-            const auto [dirPath, currDepth] = dirQ.front();
-            dirQ.pop();
-            QFileInfoList dirInfos;
-            getAllDirs(dirPath, dirInfos);
-            for (const auto& dir : dirInfos) {
-                if (stopped) {
-                    qDebug() << "deepRemLimitedImpl: STOPPED @ line 445";
-                    emit removalCancelled();
-                    return res;
-                }
-                if (maxDepth < 0 || currDepth < maxDepth) {
-                    dirQ.push({ dir.absoluteFilePath(), currDepth + 1 });
-                    qDebug() << "deepRemLimitedImpl: dirQ.push" << dir.absoluteFilePath() << "currDepth" << currDepth << "maxDepth" << maxDepth;
-                }
+        processEvents();
+        const auto [dirPath, currDepth] = dirQ.front();
+        dirQ.pop();
+        QFileInfoList dirInfos;
+        getAllDirs(dirPath, dirInfos);
+        for (const auto& dir : dirInfos) {
+            if (stopped) {
+                qDebug() << "deepRemLimitedImpl: STOPPED @ line 445";
+                emit removalCancelled();
+                return res;
             }
-            
-            QFileInfoList infos;
-            getFileInfos(dirPath, infos);
-            for (const auto& info : infos) {
-                processEvents();
-                if (stopped) {
-                    qDebug() << "deepRemLimitedImpl: STOPPED @ line 458";
-                    emit removalCancelled();
-                    return res;
-                }
-                if (!doRemoveOneFileOrDir(info, -1, nbrDeleted)) {  // not in the files table, so row = -1
-                    res = false;
-                }
-            }
-            // If the containing folder is empty, then remove it.
-            const auto dir = QDir(dirPath);
-            if (dir.isEmpty()) {
-                dir.rmdir(dirPath);
+            if (maxDepth < 0 || currDepth < maxDepth) {
+                dirQ.push({ dir.absoluteFilePath(), currDepth + 1 });
+                qDebug() << "deepRemLimitedImpl: dirQ.push" << dir.absoluteFilePath() << "currDepth" << currDepth << "maxDepth" << maxDepth;
             }
         }
-        catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-        catch (...) { qDebug() << "caught ... EXCEPTION"; }
+            
+        QFileInfoList infos;
+        getFileInfos(dirPath, infos);
+        for (const auto& info : infos) {
+            processEvents();
+            if (stopped) {
+                qDebug() << "deepRemLimitedImpl: STOPPED @ line 458";
+                emit removalCancelled();
+                return res;
+            }
+            if (!doRemoveOneFileOrDir(info, -1, nbrDeleted)) {  // not in the files table, so row = -1
+                res = false;
+            }
+        }
+        // If the containing folder is empty, then remove it.
+        const auto dir = QDir(dirPath);
+        if (dir.isEmpty()) {
+            dir.rmdir(dirPath);
+        }
     }
     return res;
 }
