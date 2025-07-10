@@ -429,10 +429,9 @@ void MainWindow::deleteBtnClicked()
     filesFoundLabel->setText("");
     _opType = Devonline::Op::deletePerm;
     if (filesTable->selectedItems().empty()) {
+        setFilesFoundLabel(OvSk_FsOp_SELECT_FOUNDFILES_TXT);
         #if !defined(Q_OS_MAC)
             QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
-        #else
-            qDebug() << OvSk_FsOp_SELECT_FOUNDFILES_TXT;
         #endif
         return;
     }
@@ -488,10 +487,9 @@ void MainWindow::shredBtnClicked()
     filesFoundLabel->setText("");
     _opType = Devonline::Op::shredPerm;
     if (filesTable->selectedItems().empty()) {
+        setFilesFoundLabel(OvSk_FsOp_SELECT_FOUNDFILES_TXT);
         #if !defined(Q_OS_MAC)
             QMessageBox::warning( this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_FOUNDFILES_TXT);
-        #else
-            qDebug() << OvSk_FsOp_SELECT_FOUNDFILES_TXT;
         #endif
         // return;
     }
@@ -669,12 +667,12 @@ bool MainWindow::findFilesPrep()
 
     const auto dirComboCurrent = dirComboBox->currentText().trimmed();
     if (dirComboCurrent.length() == 0) {
-        qDebug() << "Select a folder to search please.";
+        const auto msg = QString("Select a folder to search please.");
+        qDebug() << msg;
+        setFilesFoundLabel(msg);
         #if !defined(Q_OS_MAC)
-            QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, QString("Select a folder to search please."));
-        #else
-            qDebug() << "Select a folder to search please.";
-	    #endif
+            QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, msg);
+        #endif
         setStopped(true);
         return false;
     }
@@ -688,13 +686,12 @@ bool MainWindow::findFilesPrep()
     }
     QDir origDir = QDir(_origDirPath);
     if (_origDirPath.isEmpty() || !origDir.exists()) {
-        const QString msg = OvSk_FsOp_DIR_NOT_EXISTS_TXT + _origDirPath;
+        const auto msg = OvSk_FsOp_DIR_NOT_EXISTS_TXT + _origDirPath;
         qDebug() << msg;
+        setFilesFoundLabel(msg);
         #if !defined(Q_OS_MAC)
             QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, msg);
-        #else
-            qDebug() << msg;
-	    #endif
+        #endif
         setFilesFoundLabel("SEARCH FOLDER NOT FOUND: " + _origDirPath, false);
         setStopped(true);
         return false;
@@ -746,11 +743,10 @@ void MainWindow::findBtnClicked()
     }
     opStart = steady_clock::now();
     if (!filesCheck->isChecked() && !foldersCheck->isChecked() && !symlinksCheck->isChecked()) {
+        setFilesFoundLabel(OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
         #if !defined(Q_OS_MAC)
             QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, OvSk_FsOp_SELECT_ITEM_TYPE_TXT);
-        #else
-            qDebug() << OvSk_FsOp_SELECT_ITEM_TYPE_TXT;
-	    #endif
+        #endif
         return;
     }
     Cfg::St().setValue(Cfg::origDirPathKey, QDir::toNativeSeparators(dirComboBox->currentText()));
