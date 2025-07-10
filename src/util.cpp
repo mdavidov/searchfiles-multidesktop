@@ -102,11 +102,11 @@ namespace Devonline
 
     void indicateErrorDbg(const QString& text)
     {
-        #ifndef NDEBUG && !defined(Q_OS_MAC)
+        #if !defined(NDEBUG)
+        #if !defined(Q_OS_MAC)
             QMessageBox::warning( 0, text, text);
-        #else
-            (void)text;
         #endif
+        #endif
+        (void)text; // to avoid unused parameter warning in release builds
     }
-
 }

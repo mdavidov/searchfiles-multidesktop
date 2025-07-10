@@ -20,8 +20,8 @@
 #endif
 
 #include "precompiled.h"
-#include "fileremover-amzq.hpp"
-#include "fileremover-claude.hpp"
+#include "fileremover-v2.hpp"
+#include "fileremover-v3.hpp"
 #include "foldersearch.hpp"
 #include "scanparams.hpp"
 #include "aboutdialog.h"
@@ -83,12 +83,12 @@ void MainWindow::stopAllThreads() {
         }
         scanThread->wait();
     }
-    if (removerAmzQ) {
-        removerAmzQ->stop();
+    if (removerFrv2) {
+        removerFrv2->stop();
         std::this_thread::sleep_for(sleepLen);
     }
-    if (removerClaude) {
-        removerClaude->stop();
+    if (removerFrv3) {
+        removerFrv3->stop();
         std::this_thread::sleep_for(sleepLen);
     }
 }
@@ -453,9 +453,9 @@ void MainWindow::deleteBtnClicked()
     // REMOVE ITEMS
     if (maxDepth < 0) {
         // UNLIMITED
-        deepRemoveFilesOnThread_Claude(itemList);
+        // different impl: deepRemoveFilesOnThread_Frv3(itemList);
         // old impl: removeItems(itemList);
-        // different impl: deepRemoveFilesOnThread_AmzQ(itemList);
+        deepRemoveFilesOnThread_Frv2(itemList);
     }
     else {
         // LIMITED
@@ -1456,15 +1456,9 @@ void MainWindow::itemSized(const QString& path, const QFileInfo& info) {
         filesFoundLabel->setText(path + " " + sizeToHumanReadable((quint64)info.size()));
 }
 
-void MainWindow::itemRemoved(int row, quint64 count, quint64 size, quint64 nbrDeleted) {
+void MainWindow::itemRemoved(int row, quint64 /*count*/, quint64 /*size*/, quint64 /*nbrDeleted*/) {
     if (!_stopped) {
         filesTable->removeRow(row);
-        // Too expensive for performance to call filesTable->update() on each removal.
-        _foundCount -= count;
-        _foundSize -= size;
-        //_totCount -= count;
-        //_totSize -= size;
-        _nbrDeleted = nbrDeleted;
     }
 }
 
@@ -1505,12 +1499,13 @@ void MainWindow::removeRows()
 
 void MainWindow::removalProgress(int row, const QString& /*path*/, uint64_t /*size*/, bool rmOk, uint64_t nbrDel) {
     _nbrDeleted = nbrDel;
+    qDebug() << "removalProgress: row" << row << "rmOk" << rmOk << "_nbrDeleted" << _nbrDeleted;
     const auto elapsed = progressTimer.elapsed();
     const auto diff = elapsed - prevProgress;
     if (diff >= 1'000) {  // msec
         prevProgress = elapsed;
-        const QString text = rmOk ? QString("Removed %1 items").arg(nbrDel) :
-                                    QString("Failed to remove some items. Removed %1 items").arg(nbrDel);
+        const QString text = rmOk ? QString("Removed %1 items").arg(_nbrDeleted) :
+                                    QString("Failed to remove some items. Removed %1 items").arg(_nbrDeleted);
         filesFoundLabel->setText(text);
     }
     //itemRemoved(row, 1, size, nbrDeleted);
@@ -1520,7 +1515,7 @@ void MainWindow::removalProgress(int row, const QString& /*path*/, uint64_t /*si
 void MainWindow::removalComplete(bool success) {
     removeRows(); // files that failed to delete will not be removed from the table
     const QString prefix = "COMPLETED | ";
-    QString suffix = success ? "DELETE SUCCESS" : "SOME FAILED to DELETE";
+    QString suffix = success ? "DELETE SUCCESSFUL" : "SOME FAILED to DELETE";
     const auto maxDepth = unlimSubDirDepthBtn->isChecked() ? -1 : _maxSubDirDepth;
     const auto filesStr = (maxDepth < 0) ? " files/folders" : " files";
     if (_nbrDeleted == 0) {
@@ -1537,23 +1532,23 @@ void MainWindow::removalComplete(bool success) {
     setStopped(true);
 }
 
-void MainWindow::deepRemoveFilesOnThread_AmzQ(const IntQStringMap& rowPathMap)
+void MainWindow::deepRemoveFilesOnThread_Frv2(const IntQStringMap& rowPathMap)
 {
     _removal = true;
-    removerAmzQ = std::make_unique<AmzQ::FileRemover>(this);
+    removerFrv2 = std::make_unique<Frv2::FileRemover>(this);
     auto msg = "Removing files and folders...";
     filesFoundLabel->setText(msg);
     qDebug() << msg;
 
     // NOTE: QMetaObject::invokeMethod with Qt::QueuedConnection
-    //  is done in AmzQ::FileRemover::removeFilesAndFolders02()
+    //  is done in Frv2::FileRemover::removeFilesAndFolders02()
 
     // DO IT NOW
-    removerAmzQ->removeFilesAndFolders02(
+    removerFrv2->removeFilesAndFolders02(
         rowPathMap,
         // Progress callback
-        [this](int row, const QString& path, uint64_t size, bool rmOk) {
-            removalProgress(row, path, size, rmOk, 0);
+        [this](int row, const QString& path, uint64_t size, bool rmOk, uint64_t nbrDel) {
+            removalProgress(row, path, size, rmOk, nbrDel);
         },
         // Completion callback
         [this](bool success) {
@@ -1562,23 +1557,23 @@ void MainWindow::deepRemoveFilesOnThread_AmzQ(const IntQStringMap& rowPathMap)
     );
 }
 
-void MainWindow::deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap)
+void MainWindow::deepRemoveFilesOnThread_Frv3(const IntQStringMap& rowPathMap)
 {
     _removal = true;
-    removerClaude = std::make_unique<Claude::FileRemover>();
+    removerFrv3 = std::make_unique<Frv3::FileRemover>();
     auto msg = "Removing files and folders...";
     filesFoundLabel->setText(msg);
     qDebug() << msg;
 
     // Set up progress callback (can update UI)
-    removerClaude->setProgressCallback([this](int row, const QString& path, uint64_t size, bool rmOk, uint64_t nbrDel)
+    removerFrv3->setProgressCallback([this](int row, const QString& path, uint64_t size, bool rmOk, uint64_t nbrDel)
     {
         // Since this callback runs in a different thread, use Qt::QueuedConnection
         QMetaObject::invokeMethod(this, [this, row, path, size, rmOk, nbrDel]() {
             removalProgress(row, path, size, rmOk, nbrDel);
         }, Qt::QueuedConnection);
     });
-    removerClaude->setCompletionCallback([this](bool success)
+    removerFrv3->setCompletionCallback([this](bool success)
     {
         // Same as above: different thread, Qt::QueuedConnection
         QMetaObject::invokeMethod(this, [this, success]() {
@@ -1587,6 +1582,6 @@ void MainWindow::deepRemoveFilesOnThread_Claude(const IntQStringMap& rowPathMap)
     });
 
     // DO IT NOW
-    removerClaude->removeFiles(rowPathMap);
+    removerFrv3->removeFiles(rowPathMap);
 }
 }

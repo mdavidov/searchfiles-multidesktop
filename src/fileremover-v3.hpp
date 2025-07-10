@@ -27,7 +27,7 @@
 namespace fs = std::filesystem;
 class QString;
 
-namespace Claude
+namespace Frv3
 {
 using ProgressCallback = std::function<void(int, const QString&, uint64_t, bool, uint64_t)>;
 using CompletionCallback = std::function<void(bool)>;
@@ -43,12 +43,12 @@ class FileRemover
 {
 public:
     FileRemover() {
-        //qDebug() << "Claude::FileRemover CTOR";
+        //qDebug() << "Frv3::FileRemover CTOR";
         stop_req = false;
     }
 
     ~FileRemover() {
-        //qDebug() << "Claude::FileRemover DTOR";
+        //qDebug() << "Frv3::FileRemover DTOR";
     }
 
     void removeFiles(const IntQStringMap& rowPathMap)
@@ -84,23 +84,13 @@ public:
 
     DeepDirCount deepCount(const fs::path& path) {
         DeepDirCount count;
-        try {
-            for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
-                if (stop_req)
-                    return count;
-                try {
-                    if (entry.is_directory())
-                        count.folders++;
-                    else
-                        count.files++;
-                }
-                catch (const fs::filesystem_error& ex) {
-                    cout << "ERROR: "  << ex.what() << "  " << entry.path() << endl;
-                }
-            }
-        }
-        catch (const fs::filesystem_error& ex) {
-            cout << "ERROR: " << ex.what() << "  " << path << endl;
+        for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
+            if (stop_req)
+                return count;
+            if (entry.is_directory())
+                count.folders++;
+            else
+                count.files++;
         }
         return count;
     }
@@ -158,9 +148,9 @@ public:
 private:
     void rmFilesAndDirs(const IntQStringMap& rowPathMap)
     {
-        set_thread_name("ClaudeFileRemover");
+        set_thread_name("Frv3FileRemover");
         const auto tid = std::hash<std::thread::id>{}(std::this_thread::get_id());
-        qDebug() << "Claude: rmFilesAndDirs: my thread id:" << get_readable_thread_id() << " hash:" << tid;
+        qDebug() << "Frv3: rmFilesAndDirs: my thread id:" << get_readable_thread_id() << " hash:" << tid;
         auto success = true;
         auto nbrDel = uint64_t(0);
         auto size = (uint64_t)0;
@@ -168,6 +158,7 @@ private:
             if (stop_req)
                 break;
             const auto path = pathQstr.toStdString();
+            auto rmOk = false;
             try {
                 // Remove all files in all subdirs
                 if (!deepRemoveFiles(row, path, nbrDel, size)) {
@@ -177,9 +168,15 @@ private:
                     break;
                 // Dirs are now empty, it's going to be fast to remove all
                 if (fs::is_directory(path)) {
-                    const auto ndel = fs::remove_all(path);
-                    nbrDel += ndel;
-                    if (ndel <= 0)
+                    const auto nd = fs::remove_all(path);
+                    rmOk = (nd > 0);
+                    nbrDel += nd;
+                    std::lock_guard<std::mutex> lock(mutex_);
+                    if (progressCallback_) {
+                        progressCallback_(row, QString::fromStdString(path), size, rmOk, nbrDel);
+                        qDebug() << "rmOk:" << rmOk << "removed dir:" << path.c_str() << "nd:" << nd << "nbrDel:" << nbrDel;
+                    }
+                    if (nd <= 0)
                         success = false;
                 }
             }
@@ -191,7 +188,7 @@ private:
         if (completionCallback_) {
             completionCallback_(success);
         }
-        qDebug() << "Claude: thread FUNCTION finished, NBR DELETED:" << nbrDel;
+        qDebug() << "Frv3: thread FUNCTION finished, NBR DELETED:" << nbrDel;
     }
 
     std::jthread worker_;

@@ -44,8 +44,8 @@ set(PROJECT_SOURCES
     src/set_thread_name.cpp
     src/set_thread_name.hpp
     src/set_thread_name_win.h
-    src/fileremover-amzq.hpp
-    src/fileremover-claude.hpp
+    src/fileremover-v2.hpp
+    src/fileremover-v3.hpp
     src/folderscanner.hpp
     src/folderscanner.cpp
     src/foldersearch.hpp

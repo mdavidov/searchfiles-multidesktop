@@ -22,21 +22,21 @@
 
 namespace fs = std::filesystem;
 
-namespace AmzQ
+namespace Frv2
 {
 
     class FileRemover
     {
     public:
         // Callback types for progress and completion
-        using ProgressCallback = std::function<void(int row, const QString&, uint64_t size, bool success)>;
+        using ProgressCallback = std::function<void(int row, const QString&, uint64_t size, bool success, uint64_t nbrDel)>;
         using CompletionCallback = std::function<void(bool)>;
 
         explicit FileRemover(QObject* uiObject) : m_uiObject(uiObject) {
-            //qDebug() << "AmzQ::FileRemover CTOR";
+            //qDebug() << "Frv2::FileRemover CTOR";
         }
         ~FileRemover() {
-            //qDebug() << "AmzQ::FileRemover DTOR";
+            //qDebug() << "Frv2::FileRemover DTOR";
         }
 
         void removeFilesAndFolders02(
@@ -53,9 +53,10 @@ namespace AmzQ
             m_worker = std::jthread(
                 [this](std::stop_token stoken)
                 {
-                    qDebug() << "AmzQ::FileRemover: worker thread FUNCTION started";
-                    bool success = true;
-                    set_thread_name("AmzQFileRemover");
+                    qDebug() << "Frv2::FileRemover: worker thread function STARTED";
+                    auto success = true;
+                    auto nbrDel = uint64_t(0);
+                    set_thread_name("Frv2FileRemover");
                     const auto tid = std::hash<std::thread::id>{}(std::this_thread::get_id());
                     qDebug() << "removeFilesAndFolders02: my thread id:" << get_readable_thread_id() << " hash:" << tid;
 
@@ -69,14 +70,17 @@ namespace AmzQ
                             uint64_t size = 0;
                             const bool isDir = fs::is_directory(fsPath);
                             if (isDir) {
-                                rmOk = fs::remove_all(fsPath) > 0;
+                                const auto nd = fs::remove_all(fsPath);
+                                rmOk = (nd > 0);
+                                nbrDel += nd;
                             }
                             else {
                                 size = fs::file_size(fsPath); // MUST BE DONE BEFORE REMOVAL
                                 rmOk = fs::remove(fsPath);
+                                ++nbrDel;
                             }
-                            QMetaObject::invokeMethod(m_uiObject, [this, row, path, size, rmOk]() {
-                                m_progressCb(row, path, size, rmOk);
+                            QMetaObject::invokeMethod(m_uiObject, [this, row, path, size, rmOk, nbrDel]() {
+                                m_progressCb(row, path, size, rmOk, nbrDel);
                             }, Qt::QueuedConnection);
                         }
                         catch (const fs::filesystem_error& e) {
@@ -85,14 +89,14 @@ namespace AmzQ
                             const QString errMsg = "Remove ERROR: " + QString(e.what());
                             qDebug() << errMsg;
                             QMetaObject::invokeMethod(m_uiObject, [this, errMsg]() {
-                                m_progressCb(0, errMsg, 0, false);
+                                m_progressCb(0, errMsg, 0, false, 0);
                             }, Qt::QueuedConnection);
                         }
                     }
                     QMetaObject::invokeMethod(m_uiObject, [this, success]() {
                         m_completionCb(success);
                     }, Qt::QueuedConnection);
-                    qDebug() << "AmzQ::FileRemover: worker thread FUNCTION finished";
+                    qDebug() << "Frv2::FileRemover: worker thread function FINISHED";
                 });
         }
 
