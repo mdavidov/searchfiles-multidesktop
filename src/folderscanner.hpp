@@ -26,6 +26,7 @@
 #include <QElapsedTimer>
 
 using uint64pair = std::pair<uint64_t, uint64_t>;
+class TestFolderScanner;
 
 namespace Devonline
 {
@@ -40,6 +41,8 @@ public:
     bool isStopped() const;
     ScanParams params{};
     quint64 combinedSize(const QFileInfoList& items);
+
+    friend class TestFolderScanner;
 
 signals:
     void itemFound(const QString& path, const QFileInfo& info);
@@ -61,7 +64,7 @@ public slots:
     bool doRemoveOneFileOrDir(const QFileInfo& info, int row, quint64& nbrDeleted);
     bool rmEmptyDir(const QString& dirPath, int row, quint64& nbrDeleted);
 
-private:
+public:
     void zeroCounters();
     bool appendOrExcludeItem(const QString& dirPath, const QFileInfo& info);
     void getAllDirs(const QString& path, QFileInfoList& infos);
