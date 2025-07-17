@@ -1275,6 +1275,7 @@ void MainWindow::getSizeImpl(const IntQStringMap& itemList)
     // Use QMetaObject::invokeMethod to safely update UI from background thread
     QMetaObject::invokeMethod(this, [this, nbrItems, filePath, countNsize]() {
         // Update UI here
+        this->setFilesFoundLabel("");
         const QString text = (nbrItems > 1) ? "Multiple files/folders" : filePath;
         const auto sizeStr = sizeToHumanReadable(countNsize.second);
         QMessageBox::information(this, OvSk_FsOp_APP_NAME_TXT,
@@ -1282,7 +1283,6 @@ void MainWindow::getSizeImpl(const IntQStringMap& itemList)
             .arg(text)
             .arg(countNsize.first)
             .arg(sizeStr));
-        this->setFilesFoundLabel("");
     }, Qt::QueuedConnection);
 }
 
