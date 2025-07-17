@@ -21,7 +21,9 @@ namespace Devonline
         Q_OBJECT
 
     public:
-        explicit EventFilter(QObject* parent = nullptr) : QObject(parent) {}
+        explicit EventFilter(QObject* parent = nullptr) : QObject(parent) {
+            qRegisterMetaType<Devonline::EventFilter>("Devonline::EventFilter");
+        }
 
     protected:
         bool eventFilter(QObject* obj, QEvent* event) override

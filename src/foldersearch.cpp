@@ -114,6 +114,7 @@ MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
     , _removal(false)
     , _gettingSize(false)
 {
+    qRegisterMetaType<Devonline::MainWindow>("Devonline::MainWindow");
     prevEvents = 0;
     eventsTimer.start();
     prevProgress = 0;
@@ -1275,7 +1276,7 @@ void MainWindow::getSizeImpl(const IntQStringMap& itemList)
     // Use QMetaObject::invokeMethod to safely update UI from background thread
     QMetaObject::invokeMethod(this, [this, nbrItems, filePath, countNsize]() {
         // Update UI here
-        this->setFilesFoundLabel("");
+        this->setFilesFoundLabel(" ");
         const QString text = (nbrItems > 1) ? "Multiple files/folders" : filePath;
         const auto sizeStr = sizeToHumanReadable(countNsize.second);
         QMessageBox::information(this, OvSk_FsOp_APP_NAME_TXT,

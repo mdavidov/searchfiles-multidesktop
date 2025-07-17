@@ -50,6 +50,7 @@
 ClearButton::ClearButton(QWidget *parent)
   : QAbstractButton(parent)
 {
+    qRegisterMetaType<ClearButton>("ClearButton");
 #ifndef QT_NO_CURSOR
     setCursor(Qt::ArrowCursor);
 #endif // QT_NO_CURSOR
@@ -165,9 +166,10 @@ void SearchButton::paintEvent(QPaintEvent *event)
     - When there is no text and doesn't have focus an "inactive text" is displayed
     - When there is text a clear button is displayed on the right hand side
  */
-SearchLineEdit::SearchLineEdit(QWidget *parent) : ExLineEdit(parent),
+SearchLineEdit::SearchLineEdit(QWidget* parent) : ExLineEdit(parent),
     m_searchButton(new SearchButton(this))
 {
+    qRegisterMetaType<SearchLineEdit>("SearchLineEdit");
     connect(lineEdit(), SIGNAL(textChanged(QString)),
             this, SIGNAL(textChanged(QString)));
     setLeftWidget(m_searchButton);

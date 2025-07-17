@@ -41,6 +41,7 @@ bool isSymbolic(const QFileInfo& info)
 FolderScanner::FolderScanner(QObject* parent)
 : QObject(parent), stopped(false), dirCount(0), foundCount(0), foundSize(0), symlinkCount(0), totCount(0), totSize(0)
 {
+    qRegisterMetaType<Devonline::FolderScanner>("Devonline::FolderScanner");
     prevEvents = 0;
     eventsTimer.start();
     prevProgress = 0;
