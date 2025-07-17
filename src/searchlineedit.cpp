@@ -92,15 +92,15 @@ void ClearButton::textChanged(const QString &text)
  */
 class SearchButton : public QAbstractButton {
 public:
-    SearchButton(QWidget *parent = 0);
-    void paintEvent(QPaintEvent *event);
+    SearchButton(QWidget* parent = 0);
+    void paintEvent(QPaintEvent* event);
     QMenu *m_menu;
 
 protected:
-    void mousePressEvent(QMouseEvent *event);
+    void mousePressEvent(QMouseEvent*event);
 };
 
-SearchButton::SearchButton(QWidget *parent)
+SearchButton::SearchButton(QWidget* parent)
   : QAbstractButton(parent),
     m_menu(0)
 {
@@ -223,7 +223,7 @@ void SearchLineEdit::setInactiveText(const QString &text)
     m_inactiveText = text;
 }
 
-void SearchLineEdit::setMenu(QMenu *menu)
+void SearchLineEdit::setMenu(QMenu* menu)
 {
     if (m_searchButton->m_menu)
         m_searchButton->m_menu->deleteLater();
@@ -231,7 +231,7 @@ void SearchLineEdit::setMenu(QMenu *menu)
     updateGeometries();
 }
 
-QMenu *SearchLineEdit::menu() const
+QMenu* SearchLineEdit::menu() const
 {
     if (!m_searchButton->m_menu) {
         m_searchButton->m_menu = new QMenu(m_searchButton);

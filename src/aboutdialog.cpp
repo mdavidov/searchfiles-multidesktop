@@ -22,7 +22,7 @@ AboutDialog::AboutDialog(QWidget* parent /*= nullptr*/) : QDialog(parent) {
 
     QVBoxLayout* layout = new QVBoxLayout(this);
 
-    QTextBrowser* htmlBrowser = new QTextBrowser;
+    QTextBrowser* htmlBrowser = new QTextBrowser(this);
     htmlBrowser->setOpenExternalLinks(true);
     htmlBrowser->setHtml(R"(
         <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -73,7 +73,7 @@ AboutDialog::AboutDialog(QWidget* parent /*= nullptr*/) : QDialog(parent) {
         </html>
     )");
 
-    QPushButton* closeButton = new QPushButton("Close");
+    QPushButton* closeButton = new QPushButton("Close", this);
 
     layout->addWidget(htmlBrowser);
     layout->addWidget(closeButton);

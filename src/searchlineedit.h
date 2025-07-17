@@ -90,7 +90,7 @@ protected:
 private:
     void updateGeometries();
 
-    SearchButton *m_searchButton;
+    SearchButton* m_searchButton;
     QString m_inactiveText;
 };
 

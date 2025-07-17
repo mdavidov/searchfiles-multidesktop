@@ -22,7 +22,7 @@ HelpDialog::HelpDialog(QWidget* parent /*= nullptr*/) : QDialog(parent) {
 
     QVBoxLayout* layout = new QVBoxLayout(this);
 
-    QTextBrowser* helpBrowser = new QTextBrowser;
+    QTextBrowser* helpBrowser = new QTextBrowser(this);
     helpBrowser->setOpenExternalLinks(true);
     helpBrowser->setHtml(R"(
         <h2>Application Help</h2>
@@ -36,7 +36,7 @@ HelpDialog::HelpDialog(QWidget* parent /*= nullptr*/) : QDialog(parent) {
         <p>Description of features...</p>
     )");
 
-    QPushButton* closeButton = new QPushButton("Close");
+    QPushButton* closeButton = new QPushButton("Close", this);
 
     layout->addWidget(helpBrowser);
     layout->addWidget(closeButton);

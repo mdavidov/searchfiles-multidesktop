@@ -148,11 +148,11 @@ private:
     bool isHidden(const QFileInfo& finfo) const;
     QString FsItemType(bool isFile, bool isDir, bool isSymlink, bool isHidden) const;
 
-    QPushButton *createButton(const QString &text, const char *member);
-    QComboBox * createComboBoxFSys(const QString & text, bool setCompleter = false);
-    QComboBox * createComboBoxText();
+    QPushButton* createButton(const QString& text, const char* member, QWidget* parent);
+    QComboBox* createComboBoxFSys(const QString& text, bool setCompleter, QWidget* parent);
+    QComboBox* createComboBoxText(QWidget* parent);
     void createFilesTable();
-    void appendItemToTable(const QString filePath, const QFileInfo & finfo);
+    void appendItemToTable(const QString& filePath, const QFileInfo & finfo);
 
     void deepScanFolderOnThread(const QString& startPath, const int maxDepth);
     void scanThreadFinished();
@@ -172,7 +172,7 @@ private:
     void showMoreOptions(bool show);
 
     static void modifyFont(QWidget * widget, qreal ptSzDelta, bool bold, bool italic, bool underline);
-    QFileSystemModel * newFileSystemModel(QCompleter* completer, const QString & currentDir);
+    QFileSystemModel* newFileSystemModel(QCompleter* completer, const QString& currentDir);
     void setAllTips(QWidget * widget, const QString & text);
 
     void createSubDirLayout();

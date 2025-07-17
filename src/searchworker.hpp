@@ -14,6 +14,8 @@
 #include <QString>
 #include <QDir>
 #include <QFileInfo>
+#include <QtWidgets>
+#include <QtWidgets/QMainWindow>
 
 class SearchWorker : public QObject {
     Q_OBJECT
@@ -71,6 +73,14 @@ public slots:
 };
 
 class MainWindow : public QMainWindow {
+    Q_OBJECT
+public:
+    MainWindow(QWidget* parent = nullptr) : QMainWindow(parent) {
+        // Initialize UI components
+        // Connect signals to slots
+    }
+    void startSearch();
+
 private slots:
     void handleResult(const QString& file, const QFileInfo& finfo) {
         // Update UI with found file
@@ -88,8 +98,8 @@ private slots:
 // In main window:
 void MainWindow::startSearch()
 {
-    auto qthread = new QThread;
-    auto worker = new SearchWorker;
+    auto qthread = new QThread(this);
+    auto worker = new SearchWorker(this);
     worker->moveToThread(qthread);
 
     connect(qthread, &QThread::started, worker, &SearchWorker::doSearch);

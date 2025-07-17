@@ -166,15 +166,15 @@ MainWindow::~MainWindow()
 
 void MainWindow::createSubDirLayout()
 {
-    maxSubDirDepthLbl = new QLabel(tr("Max subfolder depth: "));
+    maxSubDirDepthLbl = new QLabel(tr("Max subfolder depth: "), this);
     setAllTips(maxSubDirDepthLbl, tr("Specify unlimited or maximum sub-folder depth."));
-    unlimSubDirDepthBtn = new QRadioButton(tr("Unlimited "));
+    unlimSubDirDepthBtn = new QRadioButton(tr("Unlimited "), this);
     unlimSubDirDepthBtn->setChecked(true);
-    limSubDirDepthBtn = new QRadioButton(tr("Limited to: "));
-    maxSubDirDepthEdt = new QLineEdit();
+    limSubDirDepthBtn = new QRadioButton(tr("Limited to: "), this);
+    maxSubDirDepthEdt = new QLineEdit(this);
     maxSubDirDepthEdt->setEnabled(false);
     maxSubDirDepthEdt->setFixedWidth(60);
-    QIntValidator* intValidator = new QIntValidator();
+    QIntValidator* intValidator = new QIntValidator(this);
     intValidator->setBottom(0);
     maxSubDirDepthEdt->setValidator(intValidator);
     QButtonGroup* subDirDepthGrp = new QButtonGroup(this);
@@ -182,7 +182,7 @@ void MainWindow::createSubDirLayout()
     subDirDepthGrp->addButton(unlimSubDirDepthBtn, 1);
     subDirDepthGrp->addButton(limSubDirDepthBtn,   1);
 
-    subDirDepthLout = new QHBoxLayout();
+    subDirDepthLout = new QHBoxLayout(this);
     subDirDepthLout->addWidget( maxSubDirDepthLbl);
     subDirDepthLout->addWidget( unlimSubDirDepthBtn);
     subDirDepthLout->addWidget( limSubDirDepthBtn);
@@ -193,16 +193,16 @@ void MainWindow::createSubDirLayout()
 
 void MainWindow::createItemTypeCheckLayout()
 {
-    itmTypeLbl = new QLabel(tr("Types:"));
+    itmTypeLbl = new QLabel(tr("Types:"), this);
     setAllTips(itmTypeLbl, eCod_SEARCH_BY_TYPE_TIP);
-    filesCheck    = new QCheckBox(tr("&Files"));
-    foldersCheck  = new QCheckBox(tr("Folders"));
-    symlinksCheck = new QCheckBox(OvSk_FsOp_SYMLINKS_TXT);
+    filesCheck    = new QCheckBox(tr("&Files"), this);
+    foldersCheck  = new QCheckBox(tr("Folders"), this);
+    symlinksCheck = new QCheckBox(OvSk_FsOp_SYMLINKS_TXT, this);
     filesCheck->setChecked( true);
     foldersCheck->setChecked( true);
     symlinksCheck->setChecked( true);
 
-    itmTypeCheckLout = new QHBoxLayout();
+    itmTypeCheckLout = new QHBoxLayout(this);
     itmTypeCheckLout->addWidget( filesCheck);
     itmTypeCheckLout->addWidget( foldersCheck);
     itmTypeCheckLout->addWidget( symlinksCheck);
@@ -213,45 +213,45 @@ void MainWindow::createItemTypeCheckLayout()
 
 void MainWindow::createNavigLayout()
 {
-    browseButton = new QToolButton();
+    browseButton = new QToolButton(this);
     browseButton->setText(tr("Browse..."));
     setAllTips(browseButton, eCod_BROWSE_FOLDERS_TIP);
     bool c = connect(browseButton, SIGNAL(clicked()), this, SLOT(browseBtnClicked())); Q_ASSERT(c);
 
-    goUpButton = new QToolButton();
+    goUpButton = new QToolButton(this);
     goUpButton->setText(tr("^"));
     setAllTips(goUpButton, eCod_BROWSE_GO_UP_TIP);
     c = connect(goUpButton, SIGNAL(clicked()), this, SLOT(goUpBtnClicked())); Q_ASSERT(c);
 
-    navigLout = new QHBoxLayout();
+    navigLout = new QHBoxLayout(this);
     navigLout->addWidget( browseButton);
     navigLout->addWidget( goUpButton);
     navigLout->addStretch();
 
-    findButton   = createButton(tr("&Search"),    SLOT(findBtnClicked()));
-    deleteButton = createButton(tr("&Delete"),    SLOT(deleteBtnClicked()));
-    shredButton  = createButton(tr("S&hred"),     SLOT(shredBtnClicked()));
-    cancelButton = createButton(tr("S&top"),      SLOT(cancelBtnClicked()));
+    findButton   = createButton(tr("&Search"),    SLOT(findBtnClicked()), this);
+    deleteButton = createButton(tr("&Delete"),    SLOT(deleteBtnClicked()), this);
+    shredButton  = createButton(tr("S&hred"),     SLOT(shredBtnClicked()), this);
+    cancelButton = createButton(tr("S&top"),      SLOT(cancelBtnClicked()), this);
     modifyFont(findButton, +1.0, true, false, false);
 
-    dirComboBox = createComboBoxFSys( _origDirPath, true);
+    dirComboBox = createComboBoxFSys( _origDirPath, true, this);
     setAllTips(dirComboBox, OvSk_FsOp_TOP_DIR_TIP);
     modifyFont(dirComboBox, +0.0, true, false, false);
     c = connect( dirComboBox,    SIGNAL(editTextChanged(const QString &)),
                  this,           SLOT(dirPathEditTextChanged(const QString &))); Q_ASSERT(c);
 
-    wordsLineEdit = new QLineEdit(); //createComboBoxText();
+    wordsLineEdit = new QLineEdit(this); //createComboBoxText();
     wordsLineEdit->setPlaceholderText("Search words");
     setAllTips(wordsLineEdit, OvSk_FsOp_CONTAINING_TEXT_TIP);
     modifyFont(wordsLineEdit, +0.0, true, false, false);
-    matchCaseCheck = new QCheckBox(tr("&Match case"));
+    matchCaseCheck = new QCheckBox(tr("&Match case"), this);
     setAllTips(matchCaseCheck, "Match or ignore the case of letters in search words. Does not affect file/folder names. ");
 
-    wordsLout = new QHBoxLayout();
+    wordsLout = new QHBoxLayout(this);
     wordsLout->addWidget(wordsLineEdit);
     wordsLout->addWidget(matchCaseCheck);
 
-    namesLineEdit = new QLineEdit(); //createComboBoxText();
+    namesLineEdit = new QLineEdit(this); //createComboBoxText();
     namesLineEdit->setPlaceholderText("File/Folder names");
     setAllTips(namesLineEdit, OvSk_FsOp_NAME_FILTERS_TIP);
     modifyFont(namesLineEdit, +0.0, true, false, false);
@@ -259,27 +259,27 @@ void MainWindow::createNavigLayout()
 
 void MainWindow::createExclLayout()
 {
-    toggleExclBtn = new QToolButton();
+    toggleExclBtn = new QToolButton(this);
     toggleExclBtn->setText(tr("-"));
     setAllTips(toggleExclBtn, eCod_SHOW_EXCL_OPTS_TIP);
     bool c = connect(toggleExclBtn, SIGNAL(clicked()), this, SLOT(toggleExclClicked())); Q_ASSERT(c); (void)c;
 
-    exclFilesByTextCombo = new QLineEdit(); //createComboBoxText();
+    exclFilesByTextCombo = new QLineEdit(this); //createComboBoxText();
     exclFilesByTextCombo->setPlaceholderText("Exclude files with words");
     setAllTips(exclFilesByTextCombo, eCod_EXCL_FILES_BY_CONTENT_TIP);
     modifyFont(exclFilesByTextCombo, +0.0, false, false, false);
 
-    exclByFileNameCombo = new QLineEdit(); //createComboBoxText();
+    exclByFileNameCombo = new QLineEdit(this); //createComboBoxText();
     exclByFileNameCombo->setPlaceholderText("Exclude by partial file names");
     setAllTips(exclByFileNameCombo, eCod_EXCL_FILES_BY_NAME_TIP);
     modifyFont(exclByFileNameCombo, +0.0, false, false, false);
 
-    exclByFolderNameCombo = new QLineEdit(); //createComboBoxText();
+    exclByFolderNameCombo = new QLineEdit(this); //createComboBoxText();
     exclByFolderNameCombo->setPlaceholderText("Exclude by partial folder names");
     setAllTips(exclByFolderNameCombo, eCod_EXCL_FOLDERS_BY_NAME_TIP);
     modifyFont(exclByFolderNameCombo, +0.0, false, false, false);
 
-    exclHiddenCheck = new QCheckBox();
+    exclHiddenCheck = new QCheckBox(this);
     exclHiddenCheck->setChecked(false);
     exclHiddenCheck->setText("Exclude hidden");
     setAllTips(exclHiddenCheck, eCod_EXCL_HIDDEN_ITEMS);
@@ -288,26 +288,26 @@ void MainWindow::createExclLayout()
 
 void MainWindow::createMainLayout()
 {
-    filesFoundLabel = new QLabel;
+    filesFoundLabel = new QLabel(this);
     modifyFont(filesFoundLabel, +0.0, true, false, false);
 
-    QScrollArea* filesFoundScroll = new QScrollArea();
+    QScrollArea* filesFoundScroll = new QScrollArea(this);
     filesFoundScroll->setWidget(filesFoundLabel);
     filesFoundScroll->setWidgetResizable(true);
     filesFoundScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     filesFoundScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     filesFoundScroll->setMaximumHeight(40);
 
-    searchFolderLbl = new QLabel("Search folder {SF}:");
+    searchFolderLbl = new QLabel("Search folder {SF}:", this);
     searchFolderLbl->setToolTip("Folder to deeply search, a.k.a. {SF}");
     modifyFont(searchFolderLbl, +0.0, true, false, false);
 
-    auto dirComboLayout = new QHBoxLayout;
+    auto dirComboLayout = new QHBoxLayout(this);
     dirComboLayout->addWidget(searchFolderLbl);
     dirComboLayout->addWidget(dirComboBox);
     dirComboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-    QHBoxLayout *buttonsLayout = new QHBoxLayout();
+    QHBoxLayout *buttonsLayout = new QHBoxLayout(this);
     buttonsLayout->addStretch();
     //buttonsLayout->addWidget(shredButton);
     buttonsLayout->addWidget(deleteButton);
@@ -317,7 +317,7 @@ void MainWindow::createMainLayout()
     buttonsLayout->addWidget(findButton);
 
     int gridRowIdx = 0;
-    QGridLayout *mainLayout = new QGridLayout;
+    QGridLayout *mainLayout = new QGridLayout(this);
     mainLayout->addLayout(navigLout,        gridRowIdx, 0);
     ++gridRowIdx;
     mainLayout->addLayout(dirComboLayout,   gridRowIdx, 0, 1, 3);
@@ -345,7 +345,7 @@ void MainWindow::createMainLayout()
     mainLayout->addLayout(buttonsLayout,        gridRowIdx, 0, 1, 4);
     ++gridRowIdx;
 
-    centralWgt = new QWidget();
+    centralWgt = new QWidget(this);
     setCentralWidget(centralWgt);
     centralWgt->setLayout(mainLayout);
     resize(1200, 700);
@@ -777,9 +777,9 @@ inline void MainWindow::processEvents()
     }
 }
 
-QPushButton * MainWindow::createButton(const QString & text, const char *member)
+QPushButton* MainWindow::createButton(const QString& text, const char* member, QWidget* parent)
 {
-    QPushButton *button = new QPushButton(text);
+    QPushButton *button = new QPushButton(text, parent);
     const bool c = connect(button, SIGNAL(clicked()), this, member); Q_ASSERT(c); (void)c;
     return button;
 }
@@ -834,7 +834,7 @@ void MainWindow::completerTimeout()
         dirComboBox->completer()->complete(); // shows the popup if the completion count > 0
 }
 
-QFileSystemModel * MainWindow::newFileSystemModel(QCompleter * completer, const QString & currentDir)
+QFileSystemModel* MainWindow::newFileSystemModel(QCompleter* completer, const QString& currentDir)
 {
     fileSystemModel = new QFileSystemModel(completer);
     fileSystemModel->setReadOnly( true);
@@ -845,12 +845,12 @@ QFileSystemModel * MainWindow::newFileSystemModel(QCompleter * completer, const 
     return fileSystemModel;
 }
 
-QComboBox * MainWindow::createComboBoxFSys(const QString & text, bool setCompleter)
+QComboBox * MainWindow::createComboBoxFSys(const QString& text, bool setCompleter, QWidget* parent)
 {
     QCompleter * completer = NULL;
     if (setCompleter)
     {
-        completer = new QCompleter();
+        completer = new QCompleter(parent);
         #if defined(Q_OS_WIN)
         {
             completer->setCaseSensitivity( Qt::CaseInsensitive);
@@ -867,7 +867,7 @@ QComboBox * MainWindow::createComboBoxFSys(const QString & text, bool setComplet
         completer->setWrapAround( false);
     }
 
-    QComboBox *comboBox = new QComboBox;
+    QComboBox *comboBox = new QComboBox(parent);
     comboBox->setEditable(true);
     comboBox->addItem(text);
     comboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -882,16 +882,16 @@ QComboBox * MainWindow::createComboBoxFSys(const QString & text, bool setComplet
     return comboBox;
 }
 
-QComboBox* MainWindow::createComboBoxText()
+QComboBox* MainWindow::createComboBoxText(QWidget* parent)
 {
-    QCompleter* completer = new QCompleter();
+    QCompleter* completer = new QCompleter(parent);
     completer->setCaseSensitivity( Qt::CaseSensitive);
     completer->setModelSorting( QCompleter::CaseSensitivelySortedModel);
     completer->setCompletionMode( QCompleter::InlineCompletion);
     completer->setMaxVisibleItems( 16);
     completer->setWrapAround( false);
 
-    QComboBox* comboBox = new QComboBox;
+    QComboBox* comboBox = new QComboBox(parent);
     comboBox->setEditable( true);
     comboBox->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Preferred);
 
@@ -930,7 +930,7 @@ QString MainWindow::FsItemType(bool isFile, bool isDir, bool isSymlink, bool isH
     return fsType;
 }
 
-void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finfo)
+void MainWindow::appendItemToTable(const QString& filePath, const QFileInfo& finfo)
 {
     if (_stopped)
         return;
@@ -948,7 +948,7 @@ void MainWindow::appendItemToTable(const QString filePath, const QFileInfo& finf
         _foundCount++;
         _foundSize += fsize;
     }
-    auto fileNameItem = new QTableWidgetItem;
+    auto fileNameItem = new QTableWidgetItem();
     auto fileName = finfo.fileName();
     if (isSymlink && !finfo.symLinkTarget().isEmpty())
         fileName += " -> " + finfo.symLinkTarget();
