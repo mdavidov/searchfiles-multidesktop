@@ -267,3 +267,5 @@ private:
 };
 
 }
+
+Q_DECLARE_METATYPE(Devonline::MainWindow)

@@ -57,7 +57,6 @@ class SearchButton;
 class ClearButton : public QAbstractButton
 {
     Q_OBJECT
-
 public:
     ClearButton(QWidget *parent = 0);
     void paintEvent(QPaintEvent *event);
@@ -94,3 +93,6 @@ private:
     SearchButton *m_searchButton;
     QString m_inactiveText;
 };
+
+Q_DECLARE_METATYPE(ClearButton)
+Q_DECLARE_METATYPE(SearchLineEdit)

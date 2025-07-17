@@ -1282,6 +1282,7 @@ void MainWindow::getSizeImpl(const IntQStringMap& itemList)
             .arg(text)
             .arg(countNsize.first)
             .arg(sizeStr));
+        this->setFilesFoundLabel("");
     }, Qt::QueuedConnection);
 }
 

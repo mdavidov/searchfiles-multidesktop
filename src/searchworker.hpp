@@ -18,7 +18,7 @@
 class SearchWorker : public QObject {
     Q_OBJECT
 public:
-    explicit SearchWorker(QObject* parent = nullptr);
+    explicit SearchWorker(QObject* parent = nullptr) : QObject(parent) {}
 
 signals:
     void resultFound(const QString& file);

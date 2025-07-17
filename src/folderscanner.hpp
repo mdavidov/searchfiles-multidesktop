@@ -42,8 +42,6 @@ public:
     ScanParams params{};
     quint64 combinedSize(const QFileInfoList& items);
 
-    friend class TestFolderScanner;
-
 signals:
     void itemFound(const QString& path, const QFileInfo& info);
     void itemSized(const QString& path, const QFileInfo& info);
@@ -97,3 +95,5 @@ private:
 };
 
 }
+
+Q_DECLARE_METATYPE(Devonline::FolderScanner)

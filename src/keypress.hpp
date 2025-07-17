@@ -46,3 +46,6 @@ namespace Devonline
         void escapeKeyReleased();
     };
 }
+
+Q_DECLARE_METATYPE(Devonline::EventFilter)
+
