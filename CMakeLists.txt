@@ -21,7 +21,7 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     "${Qt6_DIR}/lib/cmake/Qt6Quick"
     "${Qt6_DIR}/lib/cmake/Qt6Controls")
 
-FIND_PACKAGE(Qt6 REQUIRED COMPONENTS
+FIND_PACKAGE(Qt6 6.8.1 REQUIRED COMPONENTS
     Core
     Gui
     Widgets

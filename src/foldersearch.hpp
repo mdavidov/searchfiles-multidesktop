@@ -124,10 +124,10 @@ private slots:
     void showHelpDialog();
 
 private:
-    std::unique_ptr<QThread> scanThread;
-    std::unique_ptr<FolderScanner> scanner;
-    std::unique_ptr<Frv2::FileRemover> removerFrv2;
-    std::unique_ptr<Frv3::FileRemover> removerFrv3;
+    std::shared_ptr<QThread> scanThread;
+    std::shared_ptr<FolderScanner> scanner;
+    std::shared_ptr<Frv2::FileRemover> removerFrv2;
+    std::shared_ptr<Frv3::FileRemover> removerFrv3;
 
     // We need to remove rows in decreasing order of row indices,
     // so we use a map sorted in descending (std::greater<int>) order.
@@ -142,7 +142,7 @@ private:
     QElapsedTimer eventsTimer;
     inline void processEvents();
 
-    std::unique_ptr<QElapsedTimer> runningTimer;
+    std::shared_ptr<QElapsedTimer> runningTimer;
     std::chrono::steady_clock::time_point opStart;
     std::chrono::steady_clock::time_point opEnd;
     bool isHidden(const QFileInfo& finfo) const;

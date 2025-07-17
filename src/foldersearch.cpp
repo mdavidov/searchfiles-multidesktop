@@ -656,7 +656,7 @@ bool MainWindow::findFilesPrep()
     if (!exclHiddenCheck->isChecked())
         _itemTypeFilter |= QDir::Hidden;
 
-    scanner = std::make_unique<FolderScanner>();
+    scanner = std::make_shared<FolderScanner>();
     scanner->params.itemTypeFilter = _itemTypeFilter;
     scanner->params.inclFiles = filesCheck->isChecked();
     scanner->params.inclFolders = foldersCheck->isChecked();
@@ -728,7 +728,7 @@ bool MainWindow::findFilesPrep()
     _unlimSubDirDepth = unlimSubDirDepthBtn->isChecked();
 
     // Create scan thread (QThread) and FolderScanner
-    scanThread = std::make_unique<QThread>(this);
+    scanThread = std::make_shared<QThread>(this);
     scanThread->setObjectName("FolderScannerThread");
 
     // Moving worker object pointer to thread (scanner pointer below)
@@ -1382,12 +1382,12 @@ void MainWindow::getSizeOnThread(const IntQStringMap& itemList)
     if (!_stopped) {
         stopAllThreads();
     }
-    scanThread = std::make_unique<QThread>(this);
+    scanThread = std::make_shared<QThread>(this);
     scanThread->setObjectName("GetFolderSizeThread");
 
     // Moving worker object pointer to thread (scanner pointer below)
     // only sets which thread (scanThread) will execute worker's slots.
-    scanner = std::make_unique<FolderScanner>();
+    scanner = std::make_shared<FolderScanner>();
     scanner->moveToThread(scanThread.get());
 
     connect(scanThread.get(), &QThread::started, [this, itemList]() {
@@ -1409,12 +1409,12 @@ void MainWindow::getSizeOnThread(const IntQStringMap& itemList)
 
 void MainWindow::deepRemoveLimitedOnThread(const IntQStringMap& itemList, const int maxDepth)
 {
-    scanThread = std::make_unique<QThread>(this);
+    scanThread = std::make_shared<QThread>(this);
     scanThread->setObjectName("RemoveLimitedThread");
 
     // Moving worker object pointer to thread (scanner pointer below)
     // only sets which thread (scanThread) will execute worker's slots.
-    scanner = std::make_unique<FolderScanner>();
+    scanner = std::make_shared<FolderScanner>();
     scanner->moveToThread(scanThread.get());
 
     connect(scanThread.get(), &QThread::started, [this, itemList, maxDepth]() {
@@ -1537,7 +1537,7 @@ void MainWindow::removalComplete(bool success) {
 void MainWindow::deepRemoveFilesOnThread_Frv2(const IntQStringMap& rowPathMap)
 {
     _removal = true;
-    removerFrv2 = std::make_unique<Frv2::FileRemover>(this);
+    removerFrv2 = std::make_shared<Frv2::FileRemover>(this);
     auto msg = "Removing files and folders...";
     filesFoundLabel->setText(msg);
     qDebug() << msg;
@@ -1562,7 +1562,7 @@ void MainWindow::deepRemoveFilesOnThread_Frv2(const IntQStringMap& rowPathMap)
 void MainWindow::deepRemoveFilesOnThread_Frv3(const IntQStringMap& rowPathMap)
 {
     _removal = true;
-    removerFrv3 = std::make_unique<Frv3::FileRemover>();
+    removerFrv3 = std::make_shared<Frv3::FileRemover>();
     auto msg = "Removing files and folders...";
     filesFoundLabel->setText(msg);
     qDebug() << msg;
