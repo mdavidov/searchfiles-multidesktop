@@ -26,7 +26,8 @@ int main(int argc, char* argv[])
         Q_INIT_RESOURCE(foldersearch);
         app.setWindowIcon(QIcon(":/images/foldersearch.png"));
 
-        Devonline::MainWindow wnd(QDir::currentPath());
+        QWidget qw;
+        Devonline::MainWindow wnd(QDir::currentPath(), &qw);
         wnd.show();
 
         return app.exec();

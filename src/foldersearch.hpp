@@ -80,7 +80,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(const QString& dirPath, QWidget* parent = nullptr);
+    explicit MainWindow(const QString& dirPath, QWidget* parent);
     ~MainWindow();
 
     void SetDirPath( const QString & dirPath);

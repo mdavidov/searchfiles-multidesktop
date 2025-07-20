@@ -104,7 +104,7 @@ void MainWindow::closeEvent(QCloseEvent* event) {
     }
 }
 
-MainWindow::MainWindow( const QString & /*dirPath*/, QWidget * parent)
+MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
     : QMainWindow(parent)
     , _ignoreDirPathChange(false)
     , _origDirPath( QDir::toNativeSeparators( QStandardPaths::locate( QStandardPaths::HomeLocation, "", QStandardPaths::LocateDirectory)))
