@@ -15,7 +15,7 @@ elseif(WIN32)
     set(CMAKE_PREFIX_PATH "C:/Qt/6.8.1/msvc2022_64")
 endif()
 
-find_package(Qt6 6.8.1 REQUIRED COMPONENTS
+find_package(Qt6 REQUIRED COMPONENTS
     Core
     Gui
     Widgets
