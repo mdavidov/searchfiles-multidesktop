@@ -7,16 +7,15 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-IF(APPLE)
-    SET(Qt6_DIR "/opt/Qt/6.8.1/macos")
-ELSEIF(UNIX)
-    SET(Qt6_DIR "/data/Qt/6.8.2/gcc_arm64")
-ELSEIF(WIN32)
-    SET(Qt6_DIR "C:/Qt/6.8.1/msvc2022_64")
-ENDIF()
-SET(CMAKE_PREFIX_PATH ${Qt6_DIR})
+if(APPLE)
+    set(CMAKE_PREFIX_PATH "/opt/Qt/6.8.1/macos")
+elseif(UNIX)
+    set(CMAKE_PREFIX_PATH "/data/Qt/6.8.2/gcc_arm64")
+elseif(WIN32)
+    set(CMAKE_PREFIX_PATH "C:/Qt/6.8.1/msvc2022_64")
+endif()
 
-FIND_PACKAGE(Qt6 6.8.1 REQUIRED COMPONENTS
+find_package(Qt6 6.8.1 REQUIRED COMPONENTS
     Core
     Gui
     Widgets
