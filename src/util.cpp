@@ -16,6 +16,7 @@
 #include <QObject>
 #include <QtGui>
 #include <QtWidgets>
+#include <QDebug>
 
 namespace Devonline
 {

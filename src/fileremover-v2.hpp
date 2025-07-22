@@ -16,6 +16,7 @@
 #include <filesystem>
 #include <functional>
 #include <thread>
+#include <QDebug>
 #include <QMetaObject>
 #include <QString>
 #include <QStringList>

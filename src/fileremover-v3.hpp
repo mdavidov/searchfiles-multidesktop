@@ -23,6 +23,7 @@
 #include <queue>
 #include <iostream>
 #include <string>
+#include <QDebug>
 
 namespace fs = std::filesystem;
 class QString;

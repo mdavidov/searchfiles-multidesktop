@@ -6,16 +6,25 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 
-if(APPLE)
-    set(CMAKE_PREFIX_PATH "/opt/Qt/6.8.1/macos")
-elseif(UNIX)
-    set(CMAKE_PREFIX_PATH "/data/Qt/6.8.2/gcc_arm64")
-elseif(WIN32)
-    set(CMAKE_PREFIX_PATH "C:/Qt/6.8.1/msvc2022_64")
-endif()
+IF(APPLE)
+    SET(Qt6_DIR "/opt/Qt/6.8.1/macos")
+ELSEIF(UNIX)
+    SET(Qt6_DIR "/data/Qt/6.8.2/gcc_arm64")
+ELSEIF(WIN32)
+    SET(Qt6_DIR "C:/Qt/6.8.1/msvc2022_64")
+    SET(CMAKE_PREFIX_PATH "C:/Qt/6.8.1/msvc2022_64")
+ENDIF()
+SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${Qt6_DIR})
+# SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
+#     "${Qt6_DIR}/lib/cmake/Qt6"
+#     "${Qt6_DIR}/lib/cmake/Qt6Gui"
+#     "${Qt6_DIR}/lib/cmake/Qt6Widgets"
+# )
 
-find_package(Qt6 REQUIRED COMPONENTS
+FIND_PACKAGE(Qt6 REQUIRED COMPONENTS
     Core
     Gui
     Widgets
@@ -74,6 +83,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Widgets
 )
 
+# Doxygen: generate docs during build!!!
+# doxygen_add_docs(docs src/)
+
 # add_subdirectory(tests)
 
 # Set target properties
@@ -88,6 +100,17 @@ if(APPLE)
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_GUI_IDENTIFIER au.devonline.${PROJECT_NAME}
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/images/Info.plist
+    )
+    include_directories(
+        /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1
+        ${Qt6_DIR}/include
+        ${Qt6_DIR}/lib/QtCore.framework/Headers
+        ${Qt6_DIR}/lib/QtGui.framework/Headers
+        ${Qt6_DIR}/lib/QtWidgets.framework/Headers
+        ${CMAKE_SOURCE_DIR}/src
+    )
+    link_directories(
+        ${Qt6_DIR}/lib
     )
 elseif(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused -Wdouble-promotion -Wundef -Wcast-align" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)

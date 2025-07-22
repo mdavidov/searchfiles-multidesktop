@@ -12,16 +12,6 @@
 
 #undef QT_NO_CONTEXTMENU
 
-#include <algorithm>
-#include <ctime>
-#include <fstream>
-#include <iostream>
-#include <numeric>
-#include <sstream>
-#include <stack>
-#include <string>
-#include <vector>
-
 #include <QApplication>
 #include <QDateTime>
 #include <QDebug>
@@ -37,6 +27,4 @@
 #include <QString>
 #include <QtCore/QRegularExpression>
 #include <QTextStream>
-#include <QtGui>
 #include <QTimer>
-#include <QtWidgets>

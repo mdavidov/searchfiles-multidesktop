@@ -14,6 +14,7 @@
 #include "foldersearch.hpp"
 #include "version.h"
 #include <QApplication>
+#include <QDebug>
 
 int main(int argc, char* argv[])
 {

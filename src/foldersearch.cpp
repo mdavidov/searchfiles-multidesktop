@@ -44,10 +44,9 @@
 #include <QThread>
 #include <QProcess>
 #include <QDesktopServices>
-#include <QtGui>
-#include <QtWidgets>
 #include <QStandardPaths>
 #include <QtCore/QRegularExpression>
+#include <QDebug>
 
 #if defined(Q_OS_MAC)
 extern "C" void showFileProperties(const char* filePath);
@@ -193,8 +192,8 @@ void MainWindow::createSubDirLayout()
 
 void MainWindow::createItemTypeCheckLayout()
 {
-    itmTypeLbl = new QLabel(tr("Types:"), this);
-    setAllTips(itmTypeLbl, eCod_SEARCH_BY_TYPE_TIP);
+    // itmTypeLbl = new QLabel(tr("Types:"), this);
+    // setAllTips(itmTypeLbl, eCod_SEARCH_BY_TYPE_TIP);
     filesCheck    = new QCheckBox(tr("&Files"), this);
     foldersCheck  = new QCheckBox(tr("Folders"), this);
     symlinksCheck = new QCheckBox(OvSk_FsOp_SYMLINKS_TXT, this);
@@ -230,7 +229,7 @@ void MainWindow::createNavigLayout()
 
     findButton   = createButton(tr("&Search"),    SLOT(findBtnClicked()), this);
     deleteButton = createButton(tr("&Delete"),    SLOT(deleteBtnClicked()), this);
-    shredButton  = createButton(tr("S&hred"),     SLOT(shredBtnClicked()), this);
+    // shredButton  = createButton(tr("Shred"),     SLOT(shredBtnClicked()), this);
     cancelButton = createButton(tr("S&top"),      SLOT(cancelBtnClicked()), this);
     modifyFont(findButton, +1.0, true, false, false);
 
@@ -555,12 +554,12 @@ void MainWindow::setStopped(bool stopped)
 
     findButton->setEnabled(     _stopped);
     deleteButton->setEnabled(   _stopped && filesTable->selectedItems().count() > 0);
-    shredButton->setEnabled(    _stopped && filesTable->selectedItems().count() > 0);
+    // shredButton->setEnabled(    _stopped && filesTable->selectedItems().count() > 0);
     cancelButton->setEnabled(  !_stopped);
     searchFolderLbl->setEnabled(_stopped);
     namesLineEdit->setEnabled(  _stopped);
     dirComboBox->setEnabled(    _stopped);
-    itmTypeLbl->setEnabled(     _stopped);
+    // itmTypeLbl->setEnabled(     _stopped);
     filesCheck->setEnabled(     _stopped);
     foldersCheck->setEnabled(   _stopped);
     symlinksCheck->setEnabled(  _stopped);
@@ -1146,7 +1145,7 @@ void MainWindow::openFileOfItem( int row, int /* column */)
 void MainWindow::itemSelectionChanged()
 {
     deleteButton->setEnabled(_stopped && filesTable->selectedItems().count() > 0);
-    shredButton->setEnabled( _stopped && filesTable->selectedItems().count() > 0);
+    // shredButton->setEnabled( _stopped && filesTable->selectedItems().count() > 0);
 }
 
 void MainWindow::createContextMenu()

@@ -24,6 +24,7 @@
 #include <QFileInfo>
 #include <QQueue>
 #include <QTimer>
+#include <QDebug>
 
 namespace Devonline
 {

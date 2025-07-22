@@ -46,6 +46,7 @@
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QStyleOptionFrame>
+#include <QDebug>
 
 ClearButton::ClearButton(QWidget *parent)
   : QAbstractButton(parent)
