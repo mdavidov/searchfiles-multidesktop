@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.22)
 project(foldersearch VERSION 5.8 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -11,8 +11,9 @@ set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 
 IF(APPLE)
     SET(Qt6_DIR "/opt/Qt/6.8.1/macos")
+    SET(CMAKE_MAKE_PROGRAM /opt/homebrew/bin/ninja)
 ELSEIF(UNIX)
-    SET(Qt6_DIR "/data/Qt/6.8.2/gcc_arm64")
+    # SET(Qt6_DIR "/opt/Qt/6.8.2/gcc_arm64")
 ELSEIF(WIN32)
     SET(Qt6_DIR "C:/Qt/6.8.1/msvc2022_64")
     SET(CMAKE_PREFIX_PATH "C:/Qt/6.8.1/msvc2022_64")

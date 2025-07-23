@@ -35,7 +35,7 @@ bool isSymbolic(const QFileInfo& info)
            //isWindowsSymlink(info.absoluteFilePath()) ||
            info.isShortcut() || info.isSymbolicLink() || info.isJunction();
 #else
-    return info.isAlias() || info.isSymLink() || info.isSymbolicLink();
+    return /*info.isAlias() ||*/ info.isSymLink() || info.isSymbolicLink();
 #endif
 }
 
