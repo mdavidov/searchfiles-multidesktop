@@ -54,4 +54,4 @@ ENV DISPLAY=:0
 # EXPOSE 8080
 
 # Command to run your application when the container starts
-CMD ["./build/Debug/foldersearch.app/Contents/MacOS/foldersearch"]
+CMD ["./build/Debug/foldersearch"]
