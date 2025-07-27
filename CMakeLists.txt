@@ -75,7 +75,7 @@ elseif(WIN32)
 endif()
 message(STATUS "PROJECT_SOURCES: ${PROJECT_SOURCES}")
 
-qt_add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+qt6_add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
 # Link Qt6 libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
