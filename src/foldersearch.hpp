@@ -36,11 +36,13 @@ class QLineEdit;
 QT_END_NAMESPACE
 #pragma endregion
 
+#pragma region
 #if defined(Q_OS_WIN)
 #define eCod_MIN_PATH_LEN 3
 #else
 #define eCod_MIN_PATH_LEN 1
 #endif
+#pragma endregion
 
 namespace Frv2 {
     class FileRemover;

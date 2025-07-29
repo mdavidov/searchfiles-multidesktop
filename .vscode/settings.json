@@ -1,0 +1,15 @@
+{
+    "files.associations": {
+        "*.hpp": "cpp",
+        "*.hxx": "cpp",
+        "*.h": "cpp",
+        "*.cxx": "cpp",
+        "*.cpp": "cpp",
+        "*.qml": "qml",
+        "*.ui.qml": "qml",
+        "*.js": "javascript",
+        "*.ts": "typescript",
+        "*.json": "jsonc",
+        "*.md": "markdown"
+    }
+}
