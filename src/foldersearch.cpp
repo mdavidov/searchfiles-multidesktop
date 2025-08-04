@@ -9,6 +9,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
+#pragma region
 #ifdef Q_OS_WIN
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
@@ -18,7 +19,9 @@
 #undef min
 #undef max
 #endif
+#pragma endregion
 
+#pragma region
 #include "precompiled.h"
 #include "fileremover-v2.hpp"
 #include "fileremover-v3.hpp"
@@ -51,6 +54,7 @@
 #if defined(Q_OS_MAC)
 extern "C" void showFileProperties(const char* filePath);
 #endif
+#pragma endregion
 
 namespace Devonline
 {
