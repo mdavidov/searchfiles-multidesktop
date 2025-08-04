@@ -2,66 +2,69 @@
 FROM ubuntu:25.10
 
 # Install necessary dependencies for a Qt QML application
-RUN apt update && apt install -y \
-    build-essential \
-    gdb valgrind \
-    git \
-    cmake \
-    ninja-build \
-    pkg-config \
-    qt6-base-dev \
-    qt6-base-dev-tools \
-    qt6-tools-dev \
-    qt6-tools-dev-tools \
-    qt6-declarative-dev \
-    qt6-wayland \
-    qml-module-qtquick-* \
-    libqt6gui6 \
-    libqt6core6 \
-    libqt6widgets6 \
-    libwayland-client0 \
-    libqt6opengl6-dev \
-    libqt6quickwidgets6 \
-    libqt6quickcontrols2-6 \
-    libxkbcommon-x11-0 \
-    libpulse0 \
-    libopengl-dev \
-    libgl1-mesa-dev \
-    libglu1-mesa-dev \
-    libgl1-mesa-dri \
-    # libgl1-mesa-glx \
-    # libegl1-mesa \
-    libxext-dev \
-    libxrender-dev \
-    libxtst-dev \
-    libwayland-dev \
-    libwayland-egl1 \
-    libegl1-mesa-dev \
-    libgbm-dev \
-    libxkbcommon-dev \
-    libdrm-dev \
-    libgl1-mesa-dev \
-    libgles2-mesa-dev \
-    wayland-protocols \
-    libxkbcommon0 \
-    libxcb1 \
-    libx11-xcb1 \
-    libx11-dev \
-    libxcb-util1 \
-    libxcb-xinerama0 \
-    libxcb-icccm4 \
-    libxcb-image0 \
-    libxcb-keysyms1 \
-    libxcb-render0 \
-    libxcb-shape0 \
-    libxcb-shm0 \
-    libxcb-sync1 \
-    libxcb-xfixes0 \
-    libxcb-randr0 \
-    libxcb-glx0 \
-    libxcb-xkb1 \
-    libxkbcommon-x11-0 \
-    libxkbcommon0
+RUN apt update
+RUN apt install -y build-essential
+RUN apt install -y gdb
+RUN apt install -y valgrind
+RUN apt install -y git
+RUN apt install -y cmake
+RUN apt install -y ninja-build
+RUN apt install -y pkg-config
+RUN apt install -y qt6-base-dev
+RUN apt install -y qt6-base-dev-tools
+RUN apt install -y qt6-tools-dev
+RUN apt install -y qt6-tools-dev-tools
+RUN apt install -y qt6-declarative-dev
+RUN apt install -y qt6-wayland
+RUN apt install -y qml-module-qtquick-*
+RUN apt install -y libqt6gui6
+RUN apt install -y libqt6core6
+RUN apt install -y libqt6widgets6
+RUN apt install -y libwayland-client0
+RUN apt install -y libqt6opengl6-dev
+RUN apt install -y libqt6quickwidgets6
+RUN apt install -y libqt6quickcontrols2-6
+RUN apt install -y libxkbcommon-x11-0
+RUN apt install -y libpulse0
+RUN apt install -y libopengl-dev
+RUN apt install -y libgl1-mesa-dev
+RUN apt install -y libglu1-mesa-dev
+RUN apt install -y libgl1-mesa-dri
+# RUN apt install -y libgl1-mesa-glx
+# RUN apt install -y libegl1-mesa
+RUN apt install -y libxext-dev
+RUN apt install -y libxrender-dev
+RUN apt install -y libxtst-dev
+RUN apt install -y libwayland-dev
+RUN apt install -y libwayland-egl1
+RUN apt install -y libegl1-mesa-dev
+RUN apt install -y libgbm-dev
+RUN apt install -y libxkbcommon-dev
+RUN apt install -y libdrm-dev
+RUN apt install -y libgl1-mesa-dev
+RUN apt install -y libgles2-mesa-dev
+RUN apt install -y wayland-protocols
+RUN apt install -y libxkbcommon0
+RUN apt install -y libxcb1
+RUN apt install -y libx11-xcb1
+RUN apt install -y libx11-dev
+RUN apt install -y libxcb-util1
+RUN apt install -y libxcb-xinerama0
+RUN apt install -y libxcb-icccm4
+RUN apt install -y libxcb-image0
+RUN apt install -y libxcb-keysyms1
+RUN apt install -y libxcb-render0
+RUN apt install -y libxcb-shape0
+RUN apt install -y libxcb-shm0
+RUN apt install -y libxcb-sync1
+RUN apt install -y libxcb-xfixes0
+RUN apt install -y libxcb-randr0
+RUN apt install -y libxcb-glx0
+RUN apt install -y libxcb-xkb1
+RUN apt install -y libxcb-cursor0
+RUN apt install -y libxkbcommon-x11-0
+RUN apt install -y libxkbcommon0
+RUN apt install -y libpulse0
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -79,8 +82,8 @@ RUN cmake --build build --config Debug
 ENV XDG_RUNTIME_DIR=/tmp/xdg-runtime
 RUN mkdir -p /tmp/xdg-runtime && chmod 700 /tmp/xdg-runtime
 ENV DISPLAY=:0
-# ENV QT_QPA_PLATFORM=wayland
-ENV QT_QPA_PLATFORM=offscreen
+ENV QT_QPA_PLATFORM=wayland;xcb
+# ENV QT_QPA_PLATFORM=offscreen
 ENV QT_DEBUG_PLUGINS=1
 
 # Expose any necessary ports if your application has network features
