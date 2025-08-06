@@ -20,7 +20,11 @@ RUN apt install -y qml-module-qtquick-*
 RUN apt install -y libqt6gui6
 RUN apt install -y libqt6core6
 RUN apt install -y libqt6widgets6
+RUN apt install -y libqt6waylandclient6
+RUN apt install -y libqt6waylandcompositor6
 RUN apt install -y libwayland-client0
+RUN apt install -y libwayland-cursor0
+RUN apt install -y libwayland-server0
 RUN apt install -y libqt6opengl6-dev
 RUN apt install -y libqt6quickwidgets6
 RUN apt install -y libqt6quickcontrols2-6
@@ -32,6 +36,7 @@ RUN apt install -y libglu1-mesa-dev
 RUN apt install -y libgl1-mesa-dri
 # RUN apt install -y libgl1-mesa-glx
 # RUN apt install -y libegl1-mesa
+RUN apt install -y libfontconfig1
 RUN apt install -y libxext-dev
 RUN apt install -y libxrender-dev
 RUN apt install -y libxtst-dev
@@ -44,6 +49,9 @@ RUN apt install -y libdrm-dev
 RUN apt install -y libgl1-mesa-dev
 RUN apt install -y libgles2-mesa-dev
 RUN apt install -y wayland-protocols
+RUN apt install -y wayland-utils
+RUN apt install -y xwayland
+RUN apt install -y libxcb1-dev
 RUN apt install -y libxkbcommon0
 RUN apt install -y libxcb1
 RUN apt install -y libx11-xcb1
@@ -65,6 +73,9 @@ RUN apt install -y libxcb-cursor0
 RUN apt install -y libxkbcommon-x11-0
 RUN apt install -y libxkbcommon0
 RUN apt install -y libpulse0
+RUN apt install -y weston
+RUN apt install -y sudo
+# RUN apt install -y getent
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -78,13 +89,21 @@ RUN rm -rf build && mkdir build
 RUN cmake -S . -B build -G "Ninja Multi-Config"
 RUN cmake --build build --config Debug
 
-# Set environment variables
 ENV XDG_RUNTIME_DIR=/tmp/xdg-runtime
-RUN mkdir -p /tmp/xdg-runtime && chmod 700 /tmp/xdg-runtime
-ENV DISPLAY=:0
+RUN mkdir -p $XDG_RUNTIME_DIR
+RUN chmod 700 $XDG_RUNTIME_DIR
+# RUN sudo usermod -aG input $USER
+# RUN sudo usermod -aG video $USER
+# RUN sudo chmod 666 /var/run/docker.sock
+
+# Start Weston in background (offscreen/headless mode)
+ENV WAYLAND_DISPLAY=wayland-0
+ENV XDG_SESSION_TYPE=wayland
 ENV QT_QPA_PLATFORM=wayland;xcb
+ENV DISPLAY=:0
 # ENV QT_QPA_PLATFORM=offscreen
 ENV QT_DEBUG_PLUGINS=1
+RUN weston --backend=headless-backend.so --width=1920 --height=1080 &
 
 # Expose any necessary ports if your application has network features
 # EXPOSE 8080
