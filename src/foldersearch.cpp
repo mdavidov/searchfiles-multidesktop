@@ -114,6 +114,7 @@ MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
     , _stopped(true)
     , _removal(false)
     , _gettingSize(false)
+    , filesTable(nullptr)
 {
     qRegisterMetaType<Devonline::MainWindow>("Devonline::MainWindow");
     prevEvents = 0;
@@ -130,7 +131,7 @@ MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
     createItemTypeCheckLayout();
     createNavigLayout();
     createExclLayout();
-    createFilesTable();
+    reCreateFilesTable();
     createMainLayout();
 
     showMoreOptions(true);
@@ -753,12 +754,13 @@ void MainWindow::findBtnClicked()
     }
     Cfg::St().setValue(Cfg::origDirPathKey, QDir::toNativeSeparators(dirComboBox->currentText()));
 
+    reCreateFilesTable();
+
     // Will only start the thread if preparation succeeds
     if (!findFilesPrep()) {
         return;
     }
 
-    filesTable->setSortingEnabled(false);
     setStopped(false);
 
     // Moving worker object pointer to thread (scanner pointer below)
@@ -1067,8 +1069,10 @@ void MainWindow::flushItemBuffer() {
     //processEvents();
 }
 
-void MainWindow::createFilesTable()
+void MainWindow::reCreateFilesTable()
 {
+    if (filesTable)
+        delete filesTable;
     filesTable = new QTableWidget(0, N_COL, this);
     filesTable->setParent(this);
     filesTable->setColumnCount(N_COL);
@@ -1484,12 +1488,16 @@ void MainWindow::removeRows()
     {
         UpdateBlocker ub{ filesTable };
         if (rowsToRemove_.size() == size_t(filesTable->rowCount())) {  // Qt row count is int
-            filesTable->clearContents();
+            // filesTable->clearContents();
+            reCreateFilesTable();
         }
         else {
-            for (const auto rowNresult : rowsToRemove_) {
-                if (rowNresult.first >= 0 && rowNresult.second)
-                    filesTable->removeRow(rowNresult.first);
+            for (const auto rowRes : rowsToRemove_) {
+                if (rowRes.first >= 0 && rowRes.second) {
+                    auto item = filesTable->item(rowRes.first, RELPATH_COL_IDX);
+                    delete item;
+                    filesTable->removeRow(rowRes.first);
+                }
             }
         }
     } // ub goes OUT OF SCOPE here, table updates and signals are enabled

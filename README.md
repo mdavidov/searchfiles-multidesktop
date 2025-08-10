@@ -17,6 +17,14 @@ Multi-platform desktop GUI app (C++ Qt 6) with the following features:
 * Mac
 * Windows
 
+## Install
+
+TODO
+
+### Uninstall
+
+This app can be uninstalled by running the __maintenancetool__ app which is located in the same folder where foldersearch app is installed.
+
 ## Build from source
 
 ### Prerequisites
@@ -27,12 +35,28 @@ Ensure the following dependencies are installed:
 * CMake (>= 3.20)
 * Ninja
 
-#### C++ compiler
+C++ compiler:
 
 * Linux: GCC 14.2 or Clang
-* macOS: Xcode (clang)
+* macOS: Xcode (Clang) or GCC 14.2
 * Windows: MSVC or MinGW
 
-## Uninstallation
+### Get source
 
-This app can be uninstalled by running the __maintenancetool__ app which is located in the same folder where foldersearch app is installed.
+```bash
+git clone https://github.com/mdavidov/searchfiles-multidesktop
+cd searchfiles-multidesktop
+```
+
+### Build
+
+NOTE: On Windows you need to open "Developer PowerShell for VS 2022" or "Developer Command Prompt for VS 2022". Visual Studio Community Edition is free for non-comm ercial use.
+
+While still in the root directory (searchfiles-multidesktop) do this:
+
+```bash
+cmake -S . -B build -G "Ninja Multi-Config"
+cmake --build build --config Debug
+# or:
+cmake --build build --config Release
+```

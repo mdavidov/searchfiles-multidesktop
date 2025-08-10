@@ -155,7 +155,7 @@ private:
     QPushButton* createButton(const QString& text, const char* member, QWidget* parent);
     QComboBox* createComboBoxFSys(const QString& text, bool setCompleter, QWidget* parent);
     QComboBox* createComboBoxText(QWidget* parent);
-    void createFilesTable();
+    void reCreateFilesTable();
     void appendItemToTable(const QString& filePath, const QFileInfo & finfo);
 
     void deepScanFolderOnThread(const QString& startPath, const int maxDepth);

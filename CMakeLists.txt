@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
-project(foldersearch.bin VERSION 5.8 LANGUAGES CXX)
+if(WIN32)
+    project(foldersearch VERSION 8.5 LANGUAGES CXX)
+else()
+    project(foldersearch.bin VERSION 8.5 LANGUAGES CXX)
+endif()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,7 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 
 if(APPLE)
-    set(CMAKE_PREFIX_PATH "/opt/Qt/6.8.1/macos")
+    set(CMAKE_PREFIX_PATH "/opt/Qt/6.9.1/macos")
     set(CMAKE_MAKE_PROGRAM /opt/homebrew/bin/ninja)  # this is for Qt Creator
 elseif(UNIX)
     set(CMAKE_MAKE_PROGRAM "/opt/Qt/6.8.1/gcc_arm64")
