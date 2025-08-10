@@ -10,7 +10,6 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-#include "precompiled.h"
 #include "config.h"
 #include <QtGlobal>
 #include <QString>
@@ -20,12 +19,15 @@ QT_END_NAMESPACE
 
 namespace Devonline
 {
-    /// @brief Formats the string (@p humanReadable) with human readable value of @p size in B, KB, MB, GB, or TB.
+    /// @brief Formats the string with easily readable value
+    /// of @p size in B, KiB, MiB, GiB, or TiB (depending on the size).
     QString sizeToHumanReadable(quint64 size);
 
-    ///
+    /// @brief Converts elapsed time in milliseconds to a human-readable string.
+    /// The string is formatted as "X hr Y min Z sec" or "Y min Z sec" or "Z sec".
     QString elapsedTimeToStr(qint64 elapsedMilSec);
 
-    ///
-    void indicateErrorDbg(const QString & text);
+    /// @brief In Debug build on Mac it pops up a message box
+    /// with the @p text.
+    void indicateErrorDbg(const QString& text);
 }

@@ -22,7 +22,6 @@
 #pragma endregion
 
 #pragma region
-#include "precompiled.h"
 #include "fileremover-v2.hpp"
 #include "fileremover-v3.hpp"
 #include "foldersearch.hpp"
@@ -30,7 +29,6 @@
 #include "aboutdialog.h"
 #include "helpdialog.h"
 #include "config.h"
-#include "keypress.hpp"
 #include "util.h"
 #include "version.h"
 

@@ -9,7 +9,6 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-#include "precompiled.h"
 #include "config.h"
 #include "foldersearch.hpp"
 #include "version.h"

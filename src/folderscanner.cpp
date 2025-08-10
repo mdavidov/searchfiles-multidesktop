@@ -9,7 +9,6 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-#include "precompiled.h"
 #include "folderscanner.hpp"
 #include "scanparams.hpp"
 #include <mutex>

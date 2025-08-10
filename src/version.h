@@ -10,8 +10,8 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-#define OvSk_FsOp_APP_VERSION_STR       "5.8"
-#define OvSk_FsOp_APP_BUILD_NBR_STR     " 20250727 "
+#define OvSk_FsOp_APP_VERSION_STR       "8.5"
+#define OvSk_FsOp_APP_BUILD_NBR_STR     " 20250810 "
 
 #define OvSk_FsOp_APP_NAME_TXT          "foldersearch"
 #define OvSk_FsOp_APP_NM_TXT            "foldersearch"

@@ -57,6 +57,8 @@ class MainWindow;
 class FolderScanner;
 
 
+/// @brief Blocks updates to the QTableWidget table in the constructor,
+/// unblocks them in destructor.
 class UpdateBlocker {
 public:
     explicit UpdateBlocker(QTableWidget* table) : _table(table) {
