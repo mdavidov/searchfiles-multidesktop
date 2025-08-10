@@ -125,7 +125,7 @@ QT_END_NAMESPACE
 #define OvSk_FsOp_SYMLINK_TXT           "Symlink"
 #define OvSk_FsOp_SYMLINKS_TXT          "Symlinks"
 #define OvSk_FsOp_SYMLINKS_LOW          "symlinks"
-#elif defined(Q_OS_WIN)
+#elif defined(_WIN32) || defined(_WIN64)
 #define OvSk_DEL2TRASH_ACT_TXT          tr("&Recycle")
 #define OvSk_DEL2TRASH_STS_TIP          tr("Move selected items to the Recycle Bin.")
 #define OvSk_CONFIRM_DEL2TRASH1_TXT     tr("Are you sure you want to move the selected item to the Recycle Bin?\n%1")

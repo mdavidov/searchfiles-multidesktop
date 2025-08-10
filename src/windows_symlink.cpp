@@ -11,7 +11,7 @@
 
 #include "windows_symlink.hpp"
 
-#ifdef Q_OS_WIN
+#if defined(_WIN32) || defined(_WIN64)
 
 namespace Devonline
 {
@@ -141,7 +141,7 @@ namespace Devonline
 {
 
 bool isWindowsSymlink(const QString& path) {
-#ifdef Q_OS_WIN
+#if defined(_WIN32) || defined(_WIN64)
     return _isWindowsSymlink(path);
 #else
     (void)path;
@@ -150,7 +150,7 @@ bool isWindowsSymlink(const QString& path) {
 }
 
 bool isAppExecutionAlias(const QString& path) {
-#ifdef Q_OS_WIN
+#if defined(_WIN32) || defined(_WIN64)
     return _isAppExecutionAlias(path);
 #else
     (void)path;
@@ -159,7 +159,7 @@ bool isAppExecutionAlias(const QString& path) {
 }
 
 QString getWindowsSymlinkTarget(const QString& path) {
-#ifdef Q_OS_WIN
+#if defined(_WIN32) || defined(_WIN64)
     if (_isWindowsSymlink(path) || _isAppExecutionAlias(path)) {
         auto target = _getAppExecLinkTarget(path);;
         if (target.isEmpty()) {

@@ -36,13 +36,11 @@ class QLineEdit;
 QT_END_NAMESPACE
 #pragma endregion
 
-#pragma region
-#if defined(Q_OS_WIN)
+#if defined(_WIN32) || defined(_WIN64)
 #define eCod_MIN_PATH_LEN 3
 #else
 #define eCod_MIN_PATH_LEN 1
 #endif
-#pragma endregion
 
 namespace Frv2 {
     class FileRemover;
@@ -155,7 +153,7 @@ private:
     QPushButton* createButton(const QString& text, const char* member, QWidget* parent);
     QComboBox* createComboBoxFSys(const QString& text, bool setCompleter, QWidget* parent);
     QComboBox* createComboBoxText(QWidget* parent);
-    void reCreateFilesTable();
+    void createFilesTable();
     void appendItemToTable(const QString& filePath, const QFileInfo & finfo);
 
     void deepScanFolderOnThread(const QString& startPath, const int maxDepth);

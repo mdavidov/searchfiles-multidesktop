@@ -9,8 +9,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-#pragma region
-#ifdef Q_OS_WIN
+#if defined(_WIN32)|| defined(_WIN64)
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -19,9 +18,7 @@
 #undef min
 #undef max
 #endif
-#pragma endregion
 
-#pragma region
 #include "fileremover-v2.hpp"
 #include "fileremover-v3.hpp"
 #include "foldersearch.hpp"
@@ -52,7 +49,6 @@
 #if defined(Q_OS_MAC)
 extern "C" void showFileProperties(const char* filePath);
 #endif
-#pragma endregion
 
 namespace Devonline
 {
@@ -131,7 +127,7 @@ MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
     createItemTypeCheckLayout();
     createNavigLayout();
     createExclLayout();
-    reCreateFilesTable();
+    createFilesTable();
     createMainLayout();
 
     showMoreOptions(true);
@@ -754,7 +750,7 @@ void MainWindow::findBtnClicked()
     }
     Cfg::St().setValue(Cfg::origDirPathKey, QDir::toNativeSeparators(dirComboBox->currentText()));
 
-    reCreateFilesTable();
+    //createFilesTable();
 
     // Will only start the thread if preparation succeeds
     if (!findFilesPrep()) {
@@ -787,7 +783,7 @@ QPushButton* MainWindow::createButton(const QString& text, const char* member, Q
     return button;
 }
 
-#if defined(Q_OS_WIN)
+#if defined(_WIN32) || defined(_WIN64)
     #define eCod_TOP_ROOT_PATH "C:\\"
 #else
     #define eCod_TOP_ROOT_PATH "/"
@@ -806,7 +802,7 @@ void MainWindow::dirPathEditTextChanged(const QString& newText)
     if (newText.endsWith(QDir::separator())) {
         fileSystemModel->setRootPath(newText);
         dirComboBox->completer()->setCompletionPrefix(newText);
-        #if defined(Q_OS_WIN)
+        #if defined(_WIN32) || defined(_WIN64)
             if (newText.length() == 1) {
                 _ignoreDirPathChange = true;
                 fileSystemModel->setRootPath(eCod_TOP_ROOT_PATH);
@@ -854,7 +850,7 @@ QComboBox * MainWindow::createComboBoxFSys(const QString& text, bool setComplete
     if (setCompleter)
     {
         completer = new QCompleter(parent);
-        #if defined(Q_OS_WIN)
+        #if defined(_WIN32) || defined(_WIN64)
         {
             completer->setCaseSensitivity( Qt::CaseInsensitive);
             completer->setModelSorting( QCompleter::CaseSensitivelySortedModel);
@@ -1069,10 +1065,10 @@ void MainWindow::flushItemBuffer() {
     //processEvents();
 }
 
-void MainWindow::reCreateFilesTable()
+void MainWindow::createFilesTable()
 {
-    if (filesTable)
-        delete filesTable;
+    //if (filesTable)
+    //    delete filesTable;
     filesTable = new QTableWidget(0, N_COL, this);
     filesTable->setParent(this);
     filesTable->setColumnCount(N_COL);
@@ -1108,7 +1104,7 @@ void MainWindow::reCreateFilesTable()
     filesTable->setColumnWidth(col++, 130);
     filesTable->setColumnWidth(col,    60);
     // filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
-#elif defined (Q_OS_WIN)
+#elif defined(_WIN32) || defined(_WIN64)
     filesTable->setColumnWidth(col++, 320);
     filesTable->setColumnWidth(col++, 140);
     filesTable->setColumnWidth(col++,  70);
@@ -1304,7 +1300,7 @@ void MainWindow::propertiesSlot() {
     QProcess::startDetached("xdg-open", QStringList() << filePath);
 #elif defined(Q_OS_MACOS)
     showFileProperties(filePath.toUtf8().constData());
-#elif defined(Q_OS_WIN)
+#elif defined(_WIN32) || defined(_WIN64)
     LPCWSTR file = (const wchar_t*)filePath.utf16();
     SHELLEXECUTEINFO sei = { sizeof(sei) };
     sei.lpVerb = L"properties";
@@ -1488,8 +1484,8 @@ void MainWindow::removeRows()
     {
         UpdateBlocker ub{ filesTable };
         if (rowsToRemove_.size() == size_t(filesTable->rowCount())) {  // Qt row count is int
-            // filesTable->clearContents();
-            reCreateFilesTable();
+             filesTable->clearContents();
+            //createFilesTable();
         }
         else {
             for (const auto rowRes : rowsToRemove_) {

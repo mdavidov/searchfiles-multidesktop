@@ -29,7 +29,7 @@ namespace Devonline
 {
 bool isSymbolic(const QFileInfo& info)
 {
-#ifdef Q_OS_WIN
+#if defined(_WIN32) || defined(_WIN64)
     return //isAppExecutionAlias(info.absoluteFilePath()) ||
            //isWindowsSymlink(info.absoluteFilePath()) ||
            info.isShortcut() || info.isSymbolicLink() || info.isJunction();
