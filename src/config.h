@@ -176,7 +176,6 @@ QT_END_NAMESPACE
 
 #define OvSk_FsOp_HELPLOCAL_ACT_TXT     tr("User manual")
 #define OvSk_FsOp_HELPLOCAL_STS_TIP     tr("Open the locally installed or online user manual.")
-#define OvSk_FsOp_HELPLOCAL_DOC         QString("UserManual.pdf")
 #define OvSk_FsOp_HELPONLINE_DOC        QString("http://") + QString(OvSk_FsOp_COPMANY_DOMAIN_TXT) + QString("/")
 
 #define OvSk_FsOp_REFRESH_ACT_TXT       tr("Refresh")

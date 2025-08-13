@@ -61,7 +61,7 @@ Component.prototype.createOperations = function()
        // MacOS-specific operations
        component.addOperation("CreateDesktopEntry",
                              "@HomeDir@/Desktop/FolderSearch.desktop",
-                             "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch.bin\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.icns");
+                             "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.icns");
 
        // Optional: Create application symlink in /Applications
        component.addOperation("Execute", "ln", "-sf",
@@ -70,22 +70,22 @@ Component.prototype.createOperations = function()
 
        // Set executable permissions
        component.addOperation("Execute", "chmod", "+x",
-                             "@TargetDir@/foldersearch.bin");
+                             "@TargetDir@/foldersearch");
     }
     else if (systemInfo.productType === "x11") {
        // Linux-specific operations
        component.addOperation("CreateDesktopEntry",
                              "@HomeDir@/Desktop/FolderSearch.desktop",
-                             "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch.bin\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.png");
+                             "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.png");
 
        // Create menu entry
        component.addOperation("CreateDesktopEntry",
                              "/usr/share/applications/FolderSearch.desktop",
-                             "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch.bin\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.png\nCategories=Utility;");
+                             "Type=Application\nTerminal=false\nExec=@TargetDir@/foldersearch\nName=FolderSearch\nIcon=@TargetDir@/icons/foldersearch.png\nCategories=Utility;");
 
        // Set executable permissions
        component.addOperation("Execute", "chmod", "+x",
-                             "@TargetDir@/foldersearch.bin");
+                             "@TargetDir@/foldersearch");
    }
 }
 

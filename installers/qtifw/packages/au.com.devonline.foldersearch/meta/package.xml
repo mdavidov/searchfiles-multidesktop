@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Package>
-    <DisplayName>foldersearch</DisplayName>
-    <Description>Main component of the foldersearch utility</Description>
-    <Version>5.8</Version>
-    <ReleaseDate>2025-01-27</ReleaseDate>
-    <RequiredDiskSpace>39845888</RequiredDiskSpace>
+    <DisplayName>FolderSearch</DisplayName>
+    <Description>Binary executable of the FolderSearch utility</Description>
+    <Version>8.5</Version>
+    <ReleaseDate>2025-08-13</ReleaseDate>
+    <RequiredDiskSpace>95000000</RequiredDiskSpace>
     <Default>true</Default>
     <Script>installscript.qs</Script>
     <UserInterfaces>

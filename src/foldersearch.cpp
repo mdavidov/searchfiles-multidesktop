@@ -110,7 +110,6 @@ MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
     , _stopped(true)
     , _removal(false)
     , _gettingSize(false)
-    , filesTable(nullptr)
 {
     qRegisterMetaType<Devonline::MainWindow>("Devonline::MainWindow");
     prevEvents = 0;

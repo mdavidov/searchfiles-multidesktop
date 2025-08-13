@@ -1,9 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-if(WIN32)
-    project(foldersearch VERSION 8.5 LANGUAGES CXX)
-else()
-    project(foldersearch.bin VERSION 8.5 LANGUAGES CXX)
-endif()
+project(foldersearch VERSION 8.5 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,18 +7,23 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 
-if(APPLE)
-    set(CMAKE_PREFIX_PATH "/opt/Qt/6.9.1/macos")
-    set(CMAKE_MAKE_PROGRAM /opt/homebrew/bin/ninja)  # this is for Qt Creator
-elseif(UNIX)
-    set(CMAKE_MAKE_PROGRAM "/opt/Qt/6.8.1/gcc_arm64")
-elseif(WIN32)
-    set(CMAKE_PREFIX_PATH "C:/Qt/6.8.1/msvc2022_64")
+if(NOT DEFINED CMAKE_PREFIX_PATH)
+    message(WARNING "\nWARNING: CMAKE_PREFIX_PATH must be defined "
+            "as path to your Qt installation, "
+            "e.g. 'cmake .. -DCMAKE_PREFIX_PATH=C:/Qt/6.9.1/msvc2022_64 ...' "
+            "(or /opt/Qt/6.9.1/macos). Using DEFAULTS for Qt 6.9.1.")
+    if(APPLE)
+        set(CMAKE_PREFIX_PATH "/opt/Qt/6.9.1/macos")
+        set(CMAKE_MAKE_PROGRAM /opt/homebrew/bin/ninja)  # this isfor Qt Creator
+    elseif(UNIX)
+        set(CMAKE_MAKE_PROGRAM "/opt/Qt/6.8.1/gcc_arm64")
+    elseif(WIN32)
+        set(CMAKE_PREFIX_PATH "C:/Qt/6.8.1/msvc2022_64")
+    endif()
 endif()
 
-FIND_PACKAGE(Qt6 REQUIRED COMPONENTS
+find_package(Qt6 REQUIRED COMPONENTS
     Core
     Gui
     Widgets
