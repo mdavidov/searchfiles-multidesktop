@@ -13,9 +13,9 @@
 #define OvSk_FsOp_APP_VERSION_STR       "8.5"
 #define OvSk_FsOp_APP_BUILD_NBR_STR     " 20250813 "
 
-#define OvSk_FsOp_APP_NAME_TXT          "foldersearch"
-#define OvSk_FsOp_APP_NM_TXT            "foldersearch"
-#define OvSk_FsOp_APP_EXE_TXT           "foldersearch.exe"
+#define OvSk_FsOp_APP_NAME_TXT          "FolderSearch"
+#define OvSk_FsOp_APP_NM_TXT            "FolderSearch"
+#define OvSk_FsOp_APP_EXE_TXT           "foldersearch"
 
 #define OvSk_FsOp_COPMANY_NAME_TXT      "DevOnline"
 #define OvSk_FsOp_COPYRIGHT_TXT         "Copyright (c) Milivoj (Mike) DAVIDOV. All rights reserved."
