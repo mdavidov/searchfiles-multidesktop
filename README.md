@@ -19,13 +19,18 @@ Multi-platform desktop GUI app (C++ Qt 6) with the following features:
 
 ## Install
 
-TODO
+Visit https://github.com/mdavidov/searchfiles-multidesktop/releases/,
+click the latest release name and select an installer.
+
+* Windows: installer-windows-intel-x86_64.exe
+* Apple Mac: installer-mac-apple-arm64.app.zip
+* Linux: TODO (can build from source in the meantime, see below)
 
 ## Uninstall
 
 This app can be uninstalled by running the "__maintenancetool__"
-app which is located in the same folder where foldersearch app
-is installed.
+app which is located in the same folder where foldersearch executable
+is installed; by default it's $HOME/DevOnline/foldersearch folder.
 
 ## Build from source
 
@@ -36,16 +41,13 @@ Ensure the following dependencies are installed:
 * Qt 6
 * CMake (>= 3.20)
 * Ninja
+* Optionally install VS Code (highly recommended).
 
 C++ compiler:
 
-* Windows: MSVC (or MinGW). Best is to install Visual Studio.
-* Linux: GCC 14.2 or Clang
-* macOS: Xcode (Clang) or GCC 14.2
-
-Optionally install VS Code (highly recommended).
-
-### Qt installation directory
+* Windows: MSVC is recommended (or MinGW).
+* Linux: GCC 14 (g++-14) or Clang
+* macOS: Xcode (Clang) or GCC 14
 
 ### Get source
 
@@ -77,7 +79,7 @@ Otherwise follow the below instructions.
 #### Windows
 
 It's best to have Visual Studio (e.g. 2022) installed.
-Open "Developer PowerShell for VS 2022" or "Developer Command Prompt for VS 2022". 
+Open "Developer PowerShell for VS 2022" or "Developer Command Prompt for VS 2022".
 __NOTE__: Visual Studio Community Edition is free (for non-commercial use).
 
 Assuming you changed dir to searchfiles-multidesktop do this:
