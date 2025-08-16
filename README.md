@@ -17,6 +17,21 @@ Multi-platform desktop GUI app (C++ Qt 6) with the following features:
 * Mac
 * Linux
 
+## Install app binaries
+
+Visit https://github.com/mdavidov/searchfiles-multidesktop/releases/,
+click the latest release name and select the installer for your platform.
+
+* Windows: installer-windows-intel-x86_64.exe
+* Mac: installer-mac-apple-arm64.app.zip
+* Linux: TODO (can build from source in the meantime, see below)
+
+## Uninstall
+
+This app can be uninstalled by running the maintenancetool.app.
+It's located in the same folder where foldersearch.app is installed;
+by default it's $HOME/DevOnline/foldersearch.
+
 ## Build from source
 
 ### Prerequisites
