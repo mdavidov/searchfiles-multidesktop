@@ -37,9 +37,8 @@ AboutDialog::AboutDialog(QWidget* parent /*= nullptr*/) : QDialog(parent) {
         <div id="content"  align="center">
         <!--<p><img src="images/foldersearch.png"</img></p>-->
         <br/>
-        <h2><a href="http://devonline.au">devonline.au</a></h2>
         <br/>
-        <p align="center"><strong>Copyright &copy; 2012-2025 Milivoj (Mike) Davidov. All rights reserved. </strong></p>
+        <p align="center"><strong>Copyright &copy; 2025 Milivoj (Mike) Davidov. All rights reserved. </strong></p>
         <br/>
         <p align="left">
         This software application was developed with best intentions; the author believes it functions correctly.
@@ -58,7 +57,6 @@ AboutDialog::AboutDialog(QWidget* parent /*= nullptr*/) : QDialog(parent) {
         USE OR OTHER DEALINGS IN THE SOFTWARE.
         <br/>
         <br/>
-        WARNING: This computer program is protected by copyright law and international treaties.
         </p>
         <!--
         <p align="center">Favourite quote or slogan.</p>

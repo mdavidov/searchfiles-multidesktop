@@ -1,0 +1,99 @@
+
+QWidget {
+    background-color: #121212;
+    color: #e0e0e0;
+    font-family: Segoe UI, sans-serif;
+    font-size: 12pt;
+}
+
+QLabel, QCheckBox, QRadioButton {
+    color: #e0e0e0;
+}
+
+QPushButton {
+    background-color: #1f1f1f;
+    color: #ffffff;
+    border: 1px solid #444;
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+QPushButton:hover {
+    background-color: #2a2a2a;
+}
+
+QPushButton:pressed {
+    background-color: #333333;
+}
+
+QLineEdit, QTextEdit, QPlainTextEdit {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    border: 1px solid #555;
+    selection-background-color: #444;
+    selection-color: #ffffff;
+}
+
+QComboBox {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    border: 1px solid #555;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    selection-background-color: #333;
+}
+
+QProgressBar {
+    background-color: #1e1e1e;
+    border: 1px solid #555;
+    text-align: center;
+    color: #ffffff;
+}
+
+QProgressBar::chunk {
+    background-color: #3a3a3a;
+}
+
+QTreeView, QListView {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    alternate-background-color: #2a2a2a;
+    selection-background-color: #333;
+    selection-color: #ffffff;
+}
+
+QTabWidget::pane {
+    border: 1px solid #444;
+}
+
+QTabBar::tab {
+    background-color: #1f1f1f;
+    color: #e0e0e0;
+    padding: 6px;
+    border: 1px solid #444;
+    border-bottom: none;
+}
+
+QTabBar::tab:selected {
+    background-color: #2a2a2a;
+    font-weight: bold;
+}
+
+QStatusBar {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border-top: 1px solid #444;
+}
+
+QStatusBar QLabel {
+    color: #e0e0e0;
+}
+
+QWidget#StatusBar {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border-top: 1px solid #444;
+}

@@ -6,4 +6,5 @@
     <Publisher>DevOnline</Publisher>
     <StartMenuDir>foldersearch</StartMenuDir>
     <TargetDir>@HomeDir@/DevOnline/foldersearch</TargetDir>
+    <StyleSheet>style.qss</StyleSheet>
 </Installer>

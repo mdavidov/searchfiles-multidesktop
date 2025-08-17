@@ -2,7 +2,9 @@
 
 Multi-platform desktop GUI app (C++ Qt 6) with the following features:
 
-1. Traditional file/folder search within a folder and its sub-folders
+1. Traditional file/folder search within a folder and its sub-folders.
+   This is useful in large, remote folder structures that are not indexed
+   by the local search indexer.
 1. Controlled maximum sub-folder depth
 1. Search by file/folder name (use wildcards)
 1. Search for files containing given words
