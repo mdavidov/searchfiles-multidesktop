@@ -145,11 +145,11 @@ MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
 
     // Menu bar
     {
-       QMenu* helpMenu = menuBar()->addMenu("&Help");
-       QAction* aboutAction = helpMenu->addAction("&About");
-       QAction* helpAction = helpMenu->addAction("&Help");
-       connect(aboutAction, &QAction::triggered, this, &MainWindow::showAboutDialog);
-       connect(helpAction,  &QAction::triggered, this, &MainWindow::showHelpDialog);
+        QMenu* helpMenu = menuBar()->addMenu("&Help");
+        QAction* aboutAction = helpMenu->addAction("&About");
+        QAction* helpAction = helpMenu->addAction("&Help");
+        connect(aboutAction, &QAction::triggered, this, &MainWindow::showAboutDialog);
+        connect(helpAction,  &QAction::triggered, this, &MainWindow::showHelpDialog);
     }
 
     findButton->setDefault(true);
@@ -1136,11 +1136,11 @@ void MainWindow::createFilesTable()
                               this, &MainWindow::showContextMenu);
 }
 
-void MainWindow::openFileOfItem( int row, int /* column */)
+void MainWindow::openFileOfItem(int row, int /* column */)
 {
-    QTableWidgetItem * item = filesTable->item(row, RELPATH_COL_IDX);
+    QTableWidgetItem* item = filesTable->item(row, RELPATH_COL_IDX);
 
-    QDesktopServices::openUrl( QUrl::fromLocalFile( item->data(Qt::UserRole).toString() )); //( item->text()));
+    QDesktopServices::openUrl(QUrl::fromLocalFile(item->data(Qt::UserRole).toString())); //( item->text()));
 }
 
 void MainWindow::itemSelectionChanged()
