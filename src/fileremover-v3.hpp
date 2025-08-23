@@ -39,17 +39,23 @@ using dir_opts = fs::directory_options;
 using std::cout;
 using std::endl;
 
-
+/// @brief FileRemover v3 class for removing files and folders.
+/// It uses a std::jthread (C++20) to perform the removal in a separate thread.
+/// It provides a callback mechanism for progress updates and completion.
+/// The progress callback is called for each file/folder removed,
+/// and the completion callback is called when the removal is complete.
+/// It uses std::filesystem and std::filesystem::recursive_directory_iterator
+/// for file and directory operations.
+/// @author Milivoj (Mike) DAVIDOV
+///
 class FileRemover
 {
 public:
     FileRemover() {
-        //qDebug() << "Frv3::FileRemover CTOR";
         stop_req = false;
     }
 
     ~FileRemover() {
-        //qDebug() << "Frv3::FileRemover DTOR";
     }
 
     void removeFiles(const IntQStringMap& rowPathMap)
@@ -60,13 +66,13 @@ public:
         });
     }
 
-    // Set callback for progress updates
+    /// Set progress updates callback
     void setProgressCallback(ProgressCallback callback) {
         std::lock_guard<std::mutex> lock(mutex_);
         progressCallback_ = std::move(callback);
     }
 
-    // Set callback for progress updates
+    /// Set completion callback
     void setCompletionCallback(CompletionCallback callback) {
         std::lock_guard<std::mutex> lock(mutex_);
         completionCallback_ = std::move(callback);

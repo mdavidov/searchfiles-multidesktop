@@ -26,6 +26,13 @@ namespace fs = std::filesystem;
 namespace Frv2
 {
 
+    /// @brief FileRemover v2 class for removing files and folders.
+    /// It uses a std::jthread (C++20) to perform the removal in a separate thread.
+    /// It provides a callback mechanism for progress updates and completion.
+    /// The progress callback is called for each file/folder removed,
+    /// and the completion callback is called when the removal is complete.
+    /// @author Milivoj (Mike) DAVIDOV
+    ///
     class FileRemover
     {
     public:
@@ -34,10 +41,8 @@ namespace Frv2
         using CompletionCallback = std::function<void(bool)>;
 
         explicit FileRemover(QObject* uiObject) : m_uiObject(uiObject) {
-            //qDebug() << "Frv2::FileRemover CTOR";
         }
         ~FileRemover() {
-            //qDebug() << "Frv2::FileRemover DTOR";
         }
 
         void removeFilesAndFolders02(

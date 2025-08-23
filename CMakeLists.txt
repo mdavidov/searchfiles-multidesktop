@@ -12,7 +12,7 @@ if(NOT DEFINED CMAKE_PREFIX_PATH)
     message(WARNING "\nWARNING: CMAKE_PREFIX_PATH must be defined "
             "as path to your Qt installation, "
             "e.g. 'cmake .. -DCMAKE_PREFIX_PATH=C:/Qt/6.9.1/msvc2022_64 ...' "
-            "(or /opt/Qt/6.9.1/macos). Using DEFAULTS for Qt 6.9.1.")
+            "(or /opt/Qt/6.9.1/macos). Using DEFAULT for Qt 6.9.1.")
     if(APPLE)
         set(CMAKE_PREFIX_PATH "/opt/Qt/6.9.1/macos")
         set(CMAKE_MAKE_PROGRAM /opt/homebrew/bin/ninja)  # this isfor Qt Creator
@@ -71,9 +71,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Widgets
 )
 
-# Doxygen: generate docs during build!!!
-# TODO: doxygen_add_docs(docs src/)
-
 if(APPLE)
     set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -fexperimental-library -fexceptions -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wcast-qual -Wformat=2 -Wunused" CACHE STRING "CMAKE_CXX_FLAGS" FORCE)
@@ -106,4 +103,31 @@ elseif(WIN32)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         WIN32_EXECUTABLE TRUE
     )
+endif()
+
+find_package(Doxygen OPTIONAL COMPONENTS dot)
+
+if(DOXYGEN_FOUND)
+    message(STATUS "Doxygen not found. Documentation will not be generated.")
+    set(DOXYGEN_PROJECT_NAME ${PROJECT_NAME})
+    set(DOXYGEN_PROJECT_VERSION ${PROJECT_VERSION})
+
+    set(DOXYGEN_INPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include")
+    set(DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/docs")
+
+    # doxygen_add_docs(
+    #     doxygen
+    #     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    #     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    #     COMMENT "Generating API documentation with Doxygen"
+    #     CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile"
+    # )
+    add_custom_target(doc
+        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Generating API documentation with Doxygen"
+        VERBATIM
+    )
+else()
+    message(STATUS "Doxygen not found. Documentation will not be re-generated.")
 endif()

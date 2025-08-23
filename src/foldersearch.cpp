@@ -91,7 +91,7 @@ void MainWindow::stopAllThreads() {
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
-    const auto shouldAllowClose = true; // TODO: review
+    const auto shouldAllowClose = true;
     if (shouldAllowClose) {
         stopAllThreads();
         event->accept();
@@ -143,7 +143,7 @@ MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
 
     createContextMenu();
 
-    // Menu bar
+    /// Menu bar
     {
         QMenu* helpMenu = menuBar()->addMenu("&Help");
         QAction* aboutAction = helpMenu->addAction("&About");
@@ -237,7 +237,7 @@ void MainWindow::createNavigLayout()
     c = connect( dirComboBox,    SIGNAL(editTextChanged(const QString &)),
                  this,           SLOT(dirPathEditTextChanged(const QString &))); Q_ASSERT(c);
 
-    wordsLineEdit = new QLineEdit(this); //createComboBoxText();
+    wordsLineEdit = new QLineEdit(this);
     wordsLineEdit->setPlaceholderText("Search words");
     setAllTips(wordsLineEdit, OvSk_FsOp_CONTAINING_TEXT_TIP);
     modifyFont(wordsLineEdit, +0.0, true, false, false);
@@ -248,7 +248,7 @@ void MainWindow::createNavigLayout()
     wordsLout->addWidget(wordsLineEdit);
     wordsLout->addWidget(matchCaseCheck);
 
-    namesLineEdit = new QLineEdit(this); //createComboBoxText();
+    namesLineEdit = new QLineEdit(this);
     namesLineEdit->setPlaceholderText("File/Folder names");
     setAllTips(namesLineEdit, OvSk_FsOp_NAME_FILTERS_TIP);
     modifyFont(namesLineEdit, +0.0, true, false, false);
@@ -261,17 +261,17 @@ void MainWindow::createExclLayout()
     setAllTips(toggleExclBtn, eCod_SHOW_EXCL_OPTS_TIP);
     bool c = connect(toggleExclBtn, SIGNAL(clicked()), this, SLOT(toggleExclClicked())); Q_ASSERT(c); (void)c;
 
-    exclFilesByTextCombo = new QLineEdit(this); //createComboBoxText();
+    exclFilesByTextCombo = new QLineEdit(this);
     exclFilesByTextCombo->setPlaceholderText("Exclude files with words");
     setAllTips(exclFilesByTextCombo, eCod_EXCL_FILES_BY_CONTENT_TIP);
     modifyFont(exclFilesByTextCombo, +0.0, false, false, false);
 
-    exclByFileNameCombo = new QLineEdit(this); //createComboBoxText();
+    exclByFileNameCombo = new QLineEdit(this);
     exclByFileNameCombo->setPlaceholderText("Exclude by partial file names");
     setAllTips(exclByFileNameCombo, eCod_EXCL_FILES_BY_NAME_TIP);
     modifyFont(exclByFileNameCombo, +0.0, false, false, false);
 
-    exclByFolderNameCombo = new QLineEdit(this); //createComboBoxText();
+    exclByFolderNameCombo = new QLineEdit(this);
     exclByFolderNameCombo->setPlaceholderText("Exclude by partial folder names");
     setAllTips(exclByFolderNameCombo, eCod_EXCL_FOLDERS_BY_NAME_TIP);
     modifyFont(exclByFolderNameCombo, +0.0, false, false, false);
@@ -420,7 +420,6 @@ static void updateComboBox(QComboBox *comboBox)
         comboBox->addItem(comboBox->currentText());
 }
 
-/////////////////////////////////////////////////
 
 void MainWindow::deleteBtnClicked()
 {
@@ -448,15 +447,15 @@ void MainWindow::deleteBtnClicked()
     const auto maxDepth = unlimSubDirDepthBtn->isChecked() ? -1 : _maxSubDirDepth;
     opStart = steady_clock::now();
 
-    // REMOVE ITEMS
+    /// REMOVE ITEMS
     if (maxDepth < 0) {
-        // UNLIMITED
-        // different impl: deepRemoveFilesOnThread_Frv3(itemList);
-        // old impl: removeItems(itemList);
+        // UNLIMITED SUBFOLDER DEPTH
+        /// different impl: deepRemoveFilesOnThread_Frv3(itemList);
+        /// old impl: removeItems(itemList);
         deepRemoveFilesOnThread_Frv2(itemList);
     }
     else {
-        // LIMITED
+        /// LIMITED SUBFOLDER DEPTH
         deepRemoveLimitedOnThread(itemList, maxDepth);
     }
 }
@@ -502,7 +501,7 @@ void MainWindow::shredBtnClicked()
 
 void MainWindow::cancelBtnClicked()
 {
-    // scanThreadFinished() does almost everything necessary, so we don't need to do much here
+    /// scanThreadFinished() does almost everything necessary, so we don't need to do much here
     stopAllThreads();
     if (_removal) {
         removalComplete(false);
@@ -1482,7 +1481,7 @@ void MainWindow::removeRows()
 {
     {
         UpdateBlocker ub{ filesTable };
-        if (rowsToRemove_.size() == size_t(filesTable->rowCount())) {  // Qt row count is int
+        if (rowsToRemove_.size() == size_t(filesTable->rowCount())) {  /// Qt row count is int for some reason
              filesTable->clearContents();
             //createFilesTable();
         }
@@ -1495,7 +1494,8 @@ void MainWindow::removeRows()
                 }
             }
         }
-    } // ub goes OUT OF SCOPE here, table updates and signals are enabled
+    } /// UpdateBlocker ub goes OUT OF SCOPE here, table updates and signals are enabled
+
     rowsToRemove_.clear();
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(true);

@@ -57,6 +57,10 @@ class FolderScanner;
 
 /// @brief Blocks updates to the QTableWidget table in the constructor,
 /// unblocks them in destructor.
+/// This is useful to prevent flickering and performance issues when
+/// updating the table in bulk.
+/// @author Milivoj (Mike) DAVIDOV
+///
 class UpdateBlocker {
 public:
     explicit UpdateBlocker(QTableWidget* table) : _table(table) {
@@ -77,6 +81,14 @@ private:
 };
 
 
+/// @brief A main window class for the folder search application.
+/// It contains the search form, the results table, and the buttons.
+/// It is a QMainWindow with a QTableWidget and various controls.
+/// It is responsible for scanning folders, removing files, and displaying results.
+/// It is responsible for displaying the search form, results table,
+/// and buttons for various operations like searching, deleting, shredding files.
+/// @author Milivoj (Mike) DAVIDOV
+///
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -131,10 +143,11 @@ private:
     std::shared_ptr<Frv2::FileRemover> removerFrv2;
     std::shared_ptr<Frv3::FileRemover> removerFrv3;
 
-    // We need to remove rows in decreasing order of row indices,
-    // so we use a map sorted in descending (std::greater<int>) order.
-    // Boolean value is the result of file/folder removal.
+    /// We need to remove rows in decreasing order of row indices,
+    /// so we use a map sorted in descending (std::greater<int>) order.
+    /// @param Boolean type is the result of file/folder removal.
     std::map<int, bool, std::greater<int>> rowsToRemove_;
+
     void removeRows();
     void removalProgress(int row, const QString& path, uint64_t size, bool rmOk, uint64_t nbrDel);
     qint64 prevProgress{ 0 };

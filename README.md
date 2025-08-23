@@ -30,8 +30,8 @@ click the latest release name and select the installer for your platform.
 
 ## Uninstall
 
-This app can be uninstalled by running the maintenancetool.app.
-It's located in the same folder where foldersearch.app is installed;
+This app can be uninstalled by running the maintenancetool.exe / maintenancetool.app.
+It's located in the same folder where foldersearch.exe / foldersearch.app is installed;
 by default it's $HOME/DevOnline/foldersearch.
 
 ## Build from source

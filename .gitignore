@@ -46,21 +46,18 @@ ipch/
 [Rr]elease*/
 Ankh.NoLoad
 
-#MonoDevelop
+# MonoDevelop
 *.pidb
 *.userprefs
 
-#Tooling
+# Tooling
 _ReSharper*/
 *.resharper
 [Tt]est[Rr]esult*
 *.sass-cache
 
-#Project files
+# Build files
 [Bb]uild/
-
-#Subversion files
-.svn
 
 # Office temp files
 ~$*
@@ -71,11 +68,7 @@ _ReSharper*/
 # NuGet
 *.nupkg
 
-# ncrunch
-*ncrunch*
-*crunch*.local.xml
-
-# visual studio database projects
+# Visual studio database projects
 *.dbmdl
 
 # Test files
@@ -86,8 +79,7 @@ _ReSharper*/
 *.user
 *.sln.docstates
 
-# Build results
-
+# Build dirs
 [Dd]ebug/
 [Rr]elease/
 x64/
@@ -98,7 +90,11 @@ qcbuild/
 [Bb]in/
 [Oo]bj/
 
-# build folder in the NuGet packages
+Doxygen
+doc/
+docs/
+
+# Build folder in the NuGet packages
 !packages/*/build/
 
 # MSTest test Results
