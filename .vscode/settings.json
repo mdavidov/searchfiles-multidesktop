@@ -13,6 +13,10 @@
         "*.js": "javascript",
         "*.ts": "typescript",
         "*.json": "jsonc",
-        "*.md": "markdown"
+        "*.md": "markdown",
+        "__bit_reference": "cpp",
+        "future": "cpp",
+        "ios": "cpp",
+        "string": "cpp"
     }
 }

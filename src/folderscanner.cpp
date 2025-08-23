@@ -23,9 +23,10 @@
 #include <QFileInfo>
 #include <QQueue>
 #include <QTimer>
+#include <QThread>
 #include <QDebug>
 
-namespace Devonline
+namespace mmd
 {
 bool isSymbolic(const QFileInfo& info)
 {
@@ -41,7 +42,7 @@ bool isSymbolic(const QFileInfo& info)
 FolderScanner::FolderScanner(QObject* parent)
 : QObject(parent), stopped(false), dirCount(0), foundCount(0), foundSize(0), symlinkCount(0), totCount(0), totSize(0)
 {
-    qRegisterMetaType<Devonline::FolderScanner>("Devonline::FolderScanner");
+    qRegisterMetaType<mmd::FolderScanner>("mmd::FolderScanner");
     prevEvents = 0;
     eventsTimer.start();
     prevProgress = 0;
@@ -258,6 +259,9 @@ bool FolderScanner::fileContainsAnyWordChunked(const QString& filePath, const QS
 
 void FolderScanner::deepScan(const QString& startPath, const int maxDepth)
 {
+    qDebug() << "FolderScanner: Thread function STARTED,  name:"
+             << QThread::currentThread()->objectName()
+             << "ID:" << QThread::currentThreadId();
     stopped = false;
     zeroCounters();
     QString lastPath;
@@ -267,7 +271,7 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth)
         
     while (!dirQ.empty()) {
         if (stopped) {
-            return;
+            break;
         }
         processEvents();
         const auto [dirPath, currDepth] = dirQ.dequeue();
@@ -277,7 +281,7 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth)
         for (const auto& dir : dirInfos) {
             lastPath = dirPath;
             if (stopped) {
-                return;
+                break;
             }
             processEvents();
             const auto dPath = dir.absoluteFilePath();
@@ -293,7 +297,7 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth)
         getFileInfos(dirPath, infos);
         for (const auto& info : infos) {
             if (stopped) {
-                return;
+                break;
             }
             processEvents();
             const auto filePath = info.absoluteFilePath();
@@ -309,6 +313,9 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth)
         emit scanComplete();
     }
     stopped = true;
+    qDebug() << "FolderScanner: Thread function FINISHED, name:"
+             << QThread::currentThread()->objectName()
+             << "ID:" << QThread::currentThreadId();
 }
 
 uint64pair FolderScanner::deepCountSize(const QString& startPath)

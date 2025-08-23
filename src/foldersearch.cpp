@@ -50,7 +50,7 @@
 extern "C" void showFileProperties(const char* filePath);
 #endif
 
-namespace Devonline
+namespace mmd
 {
 const int N_COL = 7;
 const int RELPATH_COL_IDX = 0;
@@ -111,7 +111,7 @@ MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
     , _removal(false)
     , _gettingSize(false)
 {
-    qRegisterMetaType<Devonline::MainWindow>("Devonline::MainWindow");
+    qRegisterMetaType<mmd::MainWindow>("mmd::MainWindow");
     prevEvents = 0;
     eventsTimer.start();
     prevProgress = 0;
@@ -424,7 +424,7 @@ static void updateComboBox(QComboBox *comboBox)
 void MainWindow::deleteBtnClicked()
 {
     filesFoundLabel->setText("");
-    _opType = Devonline::Op::deletePerm;
+    _opType = mmd::FsOpType::deletePerm;
     if (filesTable->selectedItems().empty()) {
         setFilesFoundLabel(OvSk_FsOp_SELECT_FOUNDFILES_TXT);
         #if !defined(Q_OS_MAC)
@@ -450,9 +450,7 @@ void MainWindow::deleteBtnClicked()
     /// REMOVE ITEMS
     if (maxDepth < 0) {
         // UNLIMITED SUBFOLDER DEPTH
-        /// different impl: deepRemoveFilesOnThread_Frv3(itemList);
-        /// old impl: removeItems(itemList);
-        deepRemoveFilesOnThread_Frv2(itemList);
+        deepRemoveFilesOnThread_Frv3(itemList);
     }
     else {
         /// LIMITED SUBFOLDER DEPTH
@@ -482,7 +480,7 @@ void MainWindow::getSelectedItems(IntQStringMap& itemList)
 void MainWindow::shredBtnClicked()
 {
     filesFoundLabel->setText("");
-    _opType = Devonline::Op::shredPerm;
+    _opType = mmd::FsOpType::shredPerm;
     if (filesTable->selectedItems().empty()) {
         setFilesFoundLabel(OvSk_FsOp_SELECT_FOUNDFILES_TXT);
         #if !defined(Q_OS_MAC)
@@ -615,7 +613,7 @@ void MainWindow::setFilesFoundLabel(const QString& prefix, bool appendCounts /*=
     if (appendCounts) {
         foundLabelText += " | ";
         foundLabelText =
-            foundLabelText + tr("%1 matching files (%2), %3 folders, %4 %5, total %6; took %7")
+            foundLabelText + tr("%1 matching files (%2), %3 folders, %4 %5, total items %6; took %7")
                                 .arg(_foundCount)
                                 .arg(foundItemsSizeStr)
                                 .arg(_dirCount)
@@ -1505,7 +1503,7 @@ void MainWindow::removeRows()
 
 void MainWindow::removalProgress(int row, const QString& /*path*/, uint64_t /*size*/, bool rmOk, uint64_t nbrDel) {
     _nbrDeleted = nbrDel;
-    qDebug() << "removalProgress: row" << row << "rmOk" << rmOk << "_nbrDeleted" << _nbrDeleted;
+    // qDebug() << "removalProgress: row" << row << "rmOk" << rmOk << "_nbrDeleted" << _nbrDeleted;
     const auto elapsed = progressTimer.elapsed();
     const auto diff = elapsed - prevProgress;
     if (diff >= 1'000) {  // msec
@@ -1521,21 +1519,25 @@ void MainWindow::removalProgress(int row, const QString& /*path*/, uint64_t /*si
 void MainWindow::removalComplete(bool success) {
     removeRows(); // files that failed to delete will not be removed from the table
     const QString prefix = "COMPLETED | ";
-    QString suffix = success ? "DELETE SUCCESSFUL" : "SOME FAILED to DELETE";
-    const auto maxDepth = unlimSubDirDepthBtn->isChecked() ? -1 : _maxSubDirDepth;
-    const auto filesStr = (maxDepth < 0) ? " files/folders" : " files";
-    if (_nbrDeleted == 0) {
-        suffix = "NO ITEMS DELETED (check the 'Max subfolder depth' setting)";
+    QString suffix = (success && _nbrDeleted > 0) ? "DELETE SUCCESSFUL" : "SOME FAILED to DELETE";
+    if (success && _nbrDeleted > 0) {
+        suffix += ", deleted " + QString::number(_nbrDeleted) + " items";
     }
-    else {
-        suffix += ", deleted " + QString::number(_nbrDeleted) + filesStr;
-    }
+    suffix += " | Please search again to see all changes.";
     opEnd = steady_clock::now();
     const auto text = prefix + suffix + ", took " + getElapsedTimeStr();
     filesFoundLabel->setText(text);
     qDebug() << text;
+    _removal = false;
     stopAllThreads();
     setStopped(true);
+
+    // Refresh the table to ensure it is up-to-date!
+    // const auto fut = std::async(std::launch::async, [this]() {
+    //     std::this_thread::sleep_for(300ms); // Give some time for the UI to update
+    //     QMetaObject::invokeMethod(this, "findBtnClicked", Qt::QueuedConnection);
+    // });
+    // (void)fut; // Avoid unused variable warning
 }
 
 void MainWindow::deepRemoveFilesOnThread_Frv2(const IntQStringMap& rowPathMap)
@@ -1550,7 +1552,7 @@ void MainWindow::deepRemoveFilesOnThread_Frv2(const IntQStringMap& rowPathMap)
     //  is done in Frv2::FileRemover::removeFilesAndFolders02()
 
     // DO IT NOW
-    removerFrv2->removeFilesAndFolders02(
+    removerFrv2->removeFilesAndFolders(
         rowPathMap,
         // Progress callback
         [this](int row, const QString& path, uint64_t size, bool rmOk, uint64_t nbrDel) {
@@ -1588,6 +1590,17 @@ void MainWindow::deepRemoveFilesOnThread_Frv3(const IntQStringMap& rowPathMap)
     });
 
     // DO IT NOW
-    removerFrv3->removeFiles(rowPathMap);
+    removerFrv3->removeFilesAndFolders(
+        rowPathMap,
+        // Progress callback
+        [this](int row, const QString& path, uint64_t size, bool rmOk, uint64_t nbrDel) {
+            removalProgress(row, path, size, rmOk, nbrDel);
+        },
+        // Completion callback
+        [this](bool success) {
+            removalComplete(success);
+        }
+    );
 }
-}
+
+} // namespace mmd

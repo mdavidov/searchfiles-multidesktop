@@ -17,7 +17,7 @@
 QT_BEGIN_NAMESPACE
 QT_END_NAMESPACE
 
-namespace Devonline
+namespace mmd
 {
     /// @brief Formats the string with easily readable value
     /// of @p size in B, KiB, MiB, GiB, or TiB (depending on the size).

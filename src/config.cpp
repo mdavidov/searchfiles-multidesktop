@@ -12,7 +12,7 @@
 #include <QObject>
 #include <QSettings>
 
-namespace Devonline
+namespace mmd
 {
     const int Cfg::productLevel = 1;
 

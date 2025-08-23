@@ -49,7 +49,7 @@ namespace Frv3 {
     class FileRemover;
 }
 
-namespace Devonline
+namespace mmd
 {
 class MainWindow;
 class FolderScanner;
@@ -98,7 +98,7 @@ public:
     ~MainWindow();
 
     void SetDirPath( const QString & dirPath);
-    Devonline::Op::Type GetOp() const { return _opType; }
+    mmd::FsOpType GetOp() const { return _opType; }
     void Clear();
 
 public slots:
@@ -275,7 +275,7 @@ private:
     quint64 _totSize;
     quint64 _nbrDeleted;
 
-    Devonline::Op::Type _opType;
+    mmd::FsOpType _opType;
     bool _stopped{ true };
     bool _removal{ false };
     bool _gettingSize{ false };
@@ -283,4 +283,4 @@ private:
 
 }
 
-Q_DECLARE_METATYPE(Devonline::MainWindow)
+Q_DECLARE_METATYPE(mmd::MainWindow)

@@ -14,7 +14,7 @@
 #include <QString>
 #include <QStringList>
 
-namespace Devonline
+namespace mmd
 {
 struct ScanParams
 {

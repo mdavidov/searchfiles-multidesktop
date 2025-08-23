@@ -29,66 +29,74 @@ inline QString FsPathToQStr(const std::filesystem::path& path)
 #endif
 }
 
-namespace Devonline
+namespace mmd
 {
     /// @brief Type of a file system operation
+    /// This enum defines the type of file system operation being performed.
+    /// It is used to report progress and completion of the operation.
+    /// @author Milivoj (Mike) DAVIDOV
     ///
-    namespace Op
+    enum class FsOpType
     {
-        enum Type
-        {
-            getInfo,
-            fastCopy,
-            simpleCopy,
-            duplicate,
-            move,
-            delete2Trash,
-            deletePerm,
-            shredPerm,
-        };
+        getInfo,
+        fastCopy,
+        simpleCopy,
+        duplicate,
+        move,
+        delete2Trash,
+        deletePerm,
+        shredPerm,
+    };
 
-        class Conv
+    /// @brief  Conversion utility for FsOpType
+    /// This struct provides a utility function to convert FsOpType to a QString.
+    /// It is used to display the operation type in the UI.
+    /// @author Milivoj (Mike) DAVIDOV
+    ///
+    struct Conv
+    {
+        static QString toString( FsOpType opType)
         {
-        public:
-            static QString toString( Type opType)
+            switch (opType)
             {
-                switch (opType)
-                {
-                case getInfo:
-                    return QObject::OvSk_FsOp_ANALYZING_TXT;
+            case FsOpType::getInfo:
+                return QObject::OvSk_FsOp_ANALYZING_TXT;
 
-                case duplicate:
-                    return QObject::OvSk_FsOp_DUPLICATING_TXT;
+            case FsOpType::duplicate:
+                return QObject::OvSk_FsOp_DUPLICATING_TXT;
 
-                case fastCopy:
-                case simpleCopy:
-                    return QObject::OvSk_FsOp_COPYING_TXT;
+            case FsOpType::fastCopy:
+            case FsOpType::simpleCopy:
+                return QObject::OvSk_FsOp_COPYING_TXT;
 
-                case move:
-                    return QObject::OvSk_FsOp_MOVING_TXT;
+            case FsOpType::move:
+                return QObject::OvSk_FsOp_MOVING_TXT;
 
-                case delete2Trash:
-                    return QObject::OvSk_FsOp_DELETING_2TRASH_TXT;
+            case FsOpType::delete2Trash:
+                return QObject::OvSk_FsOp_DELETING_2TRASH_TXT;
 
-                case deletePerm:
-                    return QObject::OvSk_FsOp_DELETING_PERM_TXT;
+            case FsOpType::deletePerm:
+                return QObject::OvSk_FsOp_DELETING_PERM_TXT;
 
-                case shredPerm:
-                    return QObject::OvSk_FsOp_SHREDDING_PERM_TXT;
+            case FsOpType::shredPerm:
+                return QObject::OvSk_FsOp_SHREDDING_PERM_TXT;
 
-                default:
-                    return "";
-                }
+            default:
+                return "";
             }
-        };
-    }
+        }
+    };
 
-    /// @brief Progress info
+    /// @brief Progress info structure
+    /// This is used to report progress of file system operations.
+    /// It contains the operation type, number of directories, files, symlinks,
+    /// file bytes, total bytes, and elapsed time in milliseconds.
+    /// It is used to update the UI with progress information.
+    /// @author Milivoj (Mike) DAVIDOV
     ///
-    class ProgressInfo
+    struct ProgressInfo
     {
-    public:
-        explicit ProgressInfo( Op::Type opType = Op::getInfo,
+        explicit ProgressInfo( FsOpType opType = FsOpType::getInfo,
                                quint64 nbrDirs = 0,
                                quint64 nbrFiles = 0,
                                quint64 nbrSymLinks = 0,
@@ -138,7 +146,7 @@ namespace Devonline
             return *this;
         }
 
-        Op::Type m_opType;
+        FsOpType m_opType;
         quint64 m_nbrDirs;
         quint64 m_nbrFiles;
         quint64 m_nbrSymlinks;

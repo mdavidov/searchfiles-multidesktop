@@ -146,7 +146,7 @@
 using uint64pair = std::pair<uint64_t, uint64_t>;
 class TestFolderScanner;
 
-namespace Devonline
+namespace mmd
 {
 bool isSymbolic(const QFileInfo& info);
 
@@ -223,4 +223,4 @@ private:
 
 }
 
-Q_DECLARE_METATYPE(Devonline::FolderScanner)
+Q_DECLARE_METATYPE(mmd::FolderScanner)

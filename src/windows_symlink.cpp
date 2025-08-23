@@ -13,7 +13,7 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 
-namespace Devonline
+namespace mmd
 {
 
 bool _isWindowsSymlink(const QString& path)
@@ -137,7 +137,7 @@ QString _getAppExecLinkTarget(const QString& path)
 }
 #endif
 
-namespace Devonline
+namespace mmd
 {
 
 bool isWindowsSymlink(const QString& path) {

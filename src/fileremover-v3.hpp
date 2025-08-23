@@ -10,6 +10,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
+#include "ifileremover.hpp"
 #include "common.h"
 #include "get_readable_thread_id.hpp"
 #include "set_thread_name.hpp"
@@ -30,9 +31,6 @@ class QString;
 
 namespace Frv3
 {
-using ProgressCallback = std::function<void(int, const QString&, uint64_t, bool, uint64_t)>;
-using CompletionCallback = std::function<void(bool)>;
-
 using rec_dir_it = fs::recursive_directory_iterator;
 using dir_opts = fs::directory_options;
 
@@ -48,32 +46,43 @@ using std::endl;
 /// for file and directory operations.
 /// @author Milivoj (Mike) DAVIDOV
 ///
-class FileRemover
+class FileRemover : public mmd::IFileRemover
 {
 public:
     FileRemover() {
         stop_req = false;
     }
 
-    ~FileRemover() {
+    ~FileRemover() override {
     }
 
-    void removeFiles(const IntQStringMap& rowPathMap)
+    void removeFilesAndFolders(
+        const IntQStringMap& rowPathMap,
+        mmd::ProgressCallback progressCb,
+        mmd::CompletionCallback completionCb
+    ) override
     {
-        worker_ = std::jthread([this, rowPathMap](const std::stop_token&) {
-            stop_req = false;
-            rmFilesAndDirs(rowPathMap);
-        });
+        // Store callbacks as member variables or use shared_ptr to extend lifetime
+        progressCallback_ = std::move(progressCb);
+        completionCallback_ = std::move(completionCb);
+
+        // Create jthread with captures by reference to class members
+        worker_ = std::jthread([this, rowPathMap](std::stop_token stoken) {
+                stop_token_ = stoken;
+                stop_req = false;
+                rmFilesAndDirs(rowPathMap);
+            }
+        );
     }
 
     /// Set progress updates callback
-    void setProgressCallback(ProgressCallback callback) {
+    void setProgressCallback(mmd::ProgressCallback callback) {
         std::lock_guard<std::mutex> lock(mutex_);
         progressCallback_ = std::move(callback);
     }
 
     /// Set completion callback
-    void setCompletionCallback(CompletionCallback callback) {
+    void setCompletionCallback(mmd::CompletionCallback callback) {
         std::lock_guard<std::mutex> lock(mutex_);
         completionCallback_ = std::move(callback);
     }
@@ -102,52 +111,67 @@ public:
         return count;
     }
 
+    bool removeFile(int row, const fs::path& path, uint64_t& nbrDel, uint64_t& size) {
+        auto rmOk = true;
+        std::error_code ec;
+        const auto sz = fs::file_size(path);  // do it BEFORE removal
+        if (fs::remove(path, ec)) {
+            nbrDel++;
+            size += sz;
+        }
+        else {
+            rmOk = false;
+            qDebug() << "RM FAILED:" << ec.message() << ". file:" << path.string().c_str() << "nbrDel:" << nbrDel;
+        }
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (progressCallback_) {
+            progressCallback_(row, QString::fromStdString(path.string()), size, rmOk, nbrDel);
+            // qDebug() << "rmOk:" << rmOk << "removed file:" << path.string().c_str() << "nbrDel:" << nbrDel;
+        }
+        return rmOk;
+    }
+
+    bool removeFilesInSubfolders(int row, const fs::path& path, uint64_t& nbrDel, uint64_t& size) {
+        auto rmOk = true;
+        std::error_code ec;
+        for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
+            if (stop_req)
+                return rmOk;
+            try {
+                if (!entry.exists(ec)) {
+                    qDebug() << "FS item does not exist:" << entry.path().string().c_str();
+                    continue; // It could have been already removed
+                }
+                if (!entry.is_directory(ec)) {
+                    rmOk = removeFile(row, entry.path(), nbrDel, size);
+                }
+            }
+            catch (const fs::filesystem_error& ex) {
+                rmOk = false;
+                cout << "[EXCEPTION] " << ex.what() << endl;
+            }
+        }
+        return rmOk;
+    }
+
     bool deepRemoveFiles(int row, const fs::path& path, uint64_t& nbrDel, uint64_t& size) {
         auto rmOk = true;
         try {
-            if (!fs::is_directory(path)) {
-                const auto sz = fs::file_size(path);  // do it BEFORE removal
-                if (fs::remove(path)) {
-                    nbrDel++;
-                    size += sz;
-                }
-                else
-                    rmOk = false;
-                std::lock_guard<std::mutex> lock(mutex_);
-                if (progressCallback_) {
-                    progressCallback_(row, QString::fromStdString(path.string()), size, rmOk, nbrDel);
-                    // qDebug() << "rmOk:" << rmOk << "removed file:" << path.string().c_str() << "nbrDel:" << nbrDel;
-                }
-                return rmOk;
+            std::error_code ec;
+            if (!fs::exists(path, ec)) {
+                qDebug() << "FS item does not exist:" << path.string().c_str();
+                return true; // It could have been already removed
             }
-            for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
-                if (stop_req)
-                    return rmOk;
-                try {
-                    if (!entry.is_directory()) {
-                        const auto sz = entry.file_size();  // do it BEFORE removal
-                        if (fs::remove(entry.path())) {
-                            nbrDel++;
-                            size += sz;
-                        }
-                        else
-                            rmOk = false;
-                        std::lock_guard<std::mutex> lock(mutex_);
-                        if (progressCallback_) {
-                            progressCallback_(row, QString::fromStdString(entry.path().string()), size, rmOk, nbrDel);
-                            // qDebug() << "rmOk:" << rmOk << "removed file:" << entry.path().string().c_str() << "nbrDel:" << nbrDel;
-                        }
-                    }
-                }
-                catch (const fs::filesystem_error& ex) {
-                    rmOk = false;
-                    cout << "[EXCEPTION] " << ex.what() << endl;
-                }
+            if (!fs::is_directory(path, ec)) {
+                rmOk = removeFile(row, path, nbrDel, size);
+            }
+            else {
+                rmOk = removeFilesInSubfolders(row, path, nbrDel, size);
             }
         }
         catch (const fs::filesystem_error& ex) {
             rmOk = false;
-            cout << "ERROR with " << path << " | " << ex.what() << endl;
+            cout << "EXCEPTION: " << ex.what() << endl;
         }
         return rmOk;
     }
@@ -157,7 +181,7 @@ private:
     {
         set_thread_name("Frv3FileRemover");
         const auto tid = std::hash<std::thread::id>{}(std::this_thread::get_id());
-        qDebug() << "Frv3: rmFilesAndDirs: my thread id:" << get_readable_thread_id() << " hash:" << tid;
+        qDebug() << "Frv3::FileRemover: Thread function STARTED;  name: Frv3FileRemover" << "id:" << get_readable_thread_id() << " hash:" << tid;
         auto success = true;
         auto nbrDel = uint64_t(0);
         auto size = (uint64_t)0;
@@ -166,6 +190,11 @@ private:
                 break;
             const auto path = pathQstr.toStdString();
             auto rmOk = false;
+            std::error_code ec;
+            if (!fs::exists(path, ec)) {
+                qDebug() << "FS item does not exist:" << path.c_str();
+                continue; // It could have been already removed
+            }
             try {
                 // Remove all files in all subdirs
                 if (!deepRemoveFiles(row, path, nbrDel, size)) {
@@ -174,14 +203,14 @@ private:
                 if (stop_req)
                     break;
                 // Dirs are now empty, it's going to be fast to remove all
-                if (fs::is_directory(path)) {
-                    const auto nd = fs::remove_all(path);
-                    rmOk = (nd > 0);
+                if (fs::is_directory(path, ec)) {
+                    const auto nd = fs::remove_all(path, ec);
+                    rmOk = (ec.value() == 0);
                     nbrDel += nd;
                     std::lock_guard<std::mutex> lock(mutex_);
                     if (progressCallback_) {
                         progressCallback_(row, QString::fromStdString(path), size, rmOk, nbrDel);
-                        qDebug() << "rmOk:" << rmOk << "removed dir:" << path.c_str() << "nd:" << nd << "nbrDel:" << nbrDel;
+                        // qDebug() << "rmOk:" << rmOk << "removed dir:" << path.c_str() << "nd:" << nd << "nbrDel:" << nbrDel;
                     }
                     if (nd <= 0)
                         success = false;
@@ -195,13 +224,14 @@ private:
         if (completionCallback_) {
             completionCallback_(success);
         }
-        qDebug() << "Frv3: thread FUNCTION finished, NBR DELETED:" << nbrDel;
+        qDebug() << "Frv3::FileRemover: Thread function FINISHED; name: Frv3FileRemover" << "id:" << get_readable_thread_id() << " hash:" << tid;
     }
 
     std::jthread worker_;
     std::mutex mutex_;
+    std::stop_token stop_token_;
     bool stop_req{ false };
-    ProgressCallback progressCallback_;
-    CompletionCallback completionCallback_;
+    mmd::ProgressCallback progressCallback_;
+    mmd::CompletionCallback completionCallback_;
 };
 }

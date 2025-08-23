@@ -208,7 +208,7 @@ QT_END_NAMESPACE
 #define OvSk_FsOp_SELECT_ITEM_TYPE_TXT  tr("Select at least one filesystem item type please: Files, Folders and/or Shortcuts.")
 
 
-namespace Devonline
+namespace mmd
 {
     class Cfg
     {

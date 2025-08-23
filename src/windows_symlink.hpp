@@ -22,7 +22,7 @@
 #include <QString>
 #include <vector>
 
-namespace Devonline
+namespace mmd
 {
 
 typedef struct _REPARSE_DATA_BUFFER {
@@ -57,7 +57,7 @@ typedef struct _REPARSE_DATA_BUFFER {
 
 #include <QString>
 
-namespace Devonline
+namespace mmd
 {
     bool isWindowsSymlink(const QString& path);
     bool isAppExecutionAlias(const QString& path);
