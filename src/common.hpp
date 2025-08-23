@@ -10,7 +10,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-#include "config.h"
+#include "config.hpp"
 #include <filesystem>
 #include <map>
 #include <utility>

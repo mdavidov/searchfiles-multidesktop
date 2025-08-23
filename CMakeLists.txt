@@ -31,17 +31,17 @@ find_package(Qt6 REQUIRED COMPONENTS
 
 set(PROJECT_SOURCES
     src/main.cpp
-    src/aboutdialog.h
+    src/aboutdialog.hpp
     src/aboutdialog.cpp
-    src/helpdialog.h
+    src/helpdialog.hpp
     src/helpdialog.cpp
-    src/common.h
-    src/config.h
+    src/common.hpp
+    src/config.hpp
     src/config.cpp
     src/get_readable_thread_id.hpp
     src/set_thread_name.cpp
     src/set_thread_name.hpp
-    src/set_thread_name_win.h
+    src/set_thread_name_win.hpp
     src/fileremover-v2.hpp
     src/fileremover-v3.hpp
     src/folderscanner.hpp
@@ -49,9 +49,9 @@ set(PROJECT_SOURCES
     src/foldersearch.hpp
     src/foldersearch.cpp
     src/scanparams.hpp
-    src/util.h
+    src/util.hpp
     src/util.cpp
-    src/version.h
+    src/version.hpp
     src/windows_symlink.hpp
     src/windows_symlink.cpp
     foldersearch.qrc

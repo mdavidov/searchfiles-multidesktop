@@ -9,7 +9,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-#include "aboutdialog.h"
+#include "aboutdialog.hpp"
 #include <QVBoxLayout>
 #include <QTextBrowser>
 #include <QPushButton>

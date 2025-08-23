@@ -1,13 +1,10 @@
-/////////////////////////////////////////////////////////////////////////////
 //
 // Copyright (c) Milivoj (Mike) DAVIDOV
-// All rights reserved.
 //
 // THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
 // EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 //
-/////////////////////////////////////////////////////////////////////////////
 
 #if defined(_WIN32)|| defined(_WIN64)
 #define NOMINMAX
@@ -23,11 +20,11 @@
 #include "fileremover-v3.hpp"
 #include "foldersearch.hpp"
 #include "scanparams.hpp"
-#include "aboutdialog.h"
-#include "helpdialog.h"
-#include "config.h"
-#include "util.h"
-#include "version.h"
+#include "aboutdialog.hpp"
+#include "helpdialog.hpp"
+#include "config.hpp"
+#include "util.hpp"
+#include "version.hpp"
 
 #include <algorithm>
 #include <chrono>

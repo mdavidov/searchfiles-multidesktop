@@ -9,8 +9,8 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-#include "config.h"
-#include "util.h"
+#include "config.hpp"
+#include "util.hpp"
 
 #include <QObject>
 #include <QtGui>

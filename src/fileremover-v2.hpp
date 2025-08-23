@@ -1,17 +1,14 @@
 #pragma once
-/////////////////////////////////////////////////////////////////////////////
 //
 // Copyright (c) Milivoj (Mike) DAVIDOV
-// All rights reserved.
 //
 // THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
 // EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 //
-/////////////////////////////////////////////////////////////////////////////
 
 #include "ifileremover.hpp"
-#include "common.h"
+#include "common.hpp"
 #include "get_readable_thread_id.hpp"
 #include "set_thread_name.hpp"
 #include <filesystem>

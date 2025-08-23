@@ -1,5 +1,5 @@
 
-#include "../../src/version.h"
+#include "../../src/version.hpp"
 
 #define APP_VERSION     OvSk_FsOp_APP_VERSION_STR
 #define APP_PUBLISHER   OvSk_FsOp_COPMANY_NAME_TXT

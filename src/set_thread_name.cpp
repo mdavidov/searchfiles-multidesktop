@@ -10,7 +10,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #ifdef _WIN32
-    #include "set_thread_name_win.h"
+    #include "set_thread_name_win.hpp"
 #elif defined(__linux__)
     #include <pthread.h>
 #elif defined(__APPLE__)

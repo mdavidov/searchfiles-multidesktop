@@ -8,7 +8,7 @@
 // WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 //
 /////////////////////////////////////////////////////////////////////////////
-#include "config.h"
+#include "config.hpp"
 #include <QObject>
 #include <QSettings>
 
