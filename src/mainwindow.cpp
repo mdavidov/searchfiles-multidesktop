@@ -18,7 +18,7 @@
 
 #include "fileremover-v2.hpp"
 #include "fileremover-v3.hpp"
-#include "foldersearch.hpp"
+#include "mainwindow.hpp"
 #include "scanparams.hpp"
 #include "aboutdialog.hpp"
 #include "helpdialog.hpp"

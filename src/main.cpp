@@ -7,7 +7,7 @@
 //
 
 #include "config.hpp"
-#include "foldersearch.hpp"
+#include "mainwindow.hpp"
 #include "version.hpp"
 #include <QApplication>
 #include <QDebug>

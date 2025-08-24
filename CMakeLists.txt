@@ -46,8 +46,8 @@ set(PROJECT_SOURCES
     src/fileremover-v3.hpp
     src/folderscanner.hpp
     src/folderscanner.cpp
-    src/foldersearch.hpp
-    src/foldersearch.cpp
+    src/mainwindow.hpp
+    src/mainwindow.cpp
     src/scanparams.hpp
     src/util.hpp
     src/util.cpp
