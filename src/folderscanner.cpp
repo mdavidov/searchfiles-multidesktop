@@ -151,21 +151,9 @@ void FolderScanner::getFileInfos(const QString& dirPath, QFileInfoList& infos) /
     QDir dir(dirPath);
     if (!params.nameFilters.empty()) {
         dir.setNameFilters(params.nameFilters);
-        dir.setFilter(params.itemTypeFilter);
-        infos = dir.entryInfoList();
     }
-    else {
-        getAllItems(dirPath, infos);
-    }
-}
-
-void FolderScanner::getAllItems(const QString& path, QFileInfoList& infos) const
-{
-    if (stopped)
-        return;
-    const QDir dir = QDir(path);
-    const auto filters = QDir::AllEntries | QDir::AllDirs | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot;
-    infos = dir.entryInfoList(filters);
+    dir.setFilter(params.itemTypeFilter);
+    infos = dir.entryInfoList();
 }
 
 quint64 FolderScanner::combinedSize(const QFileInfoList& infos)
@@ -343,7 +331,7 @@ uint64pair FolderScanner::deepCountSize(const QString& startPath)
         }
 
         QFileInfoList infos;
-        getAllItems(dirPath, infos);
+        getFileInfos(dirPath, infos);
         for (const auto& info : infos) {
             processEvents();
             if (stopped) {

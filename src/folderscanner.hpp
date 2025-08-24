@@ -191,15 +191,13 @@ public:
     bool appendOrExcludeItem(const QString& dirPath, const QFileInfo& info);
     void getAllDirs(const QString& path, QFileInfoList& infos);
     void getFileInfos(const QString& path, QFileInfoList& infos) /*const*/;
-    void getAllItems(const QString& path, QFileInfoList& infos) const;
-    // Not necessary: void updateTotals(const QString& path);
     bool stringContainsAllWords(const QString& str, const QStringList& words);
     bool stringContainsAnyWord(const QString& str, const QStringList& words);
     bool fileContainsAllWordsChunked(const QString& path, const QStringList& words);
     bool fileContainsAnyWordChunked(const QString& path, const QStringList& words);
 
 private:
-    mutable std::shared_mutex mutex;  // mutable allows modification in const methods
+    mutable std::shared_mutex mutex;  /// mutable allows modification in const methods
     bool stopped{ false };
 
     qint64 prevEvents{ 0 };

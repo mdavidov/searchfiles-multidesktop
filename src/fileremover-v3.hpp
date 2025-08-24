@@ -178,7 +178,7 @@ private:
     {
         set_thread_name("Frv3FileRemover");
         const auto tid = std::hash<std::thread::id>{}(std::this_thread::get_id());
-        qDebug() << "Frv3::FileRemover: Thread function STARTED;  name: Frv3FileRemover" << "id:" << get_readable_thread_id() << " hash:" << tid;
+        qDebug() << "Frv3::FileRemover: Thread STARTED;  name: Frv3FileRemover" << "tid:" << get_readable_thread_id() << " hash:" << tid;
         auto success = true;
         auto nbrDel = uint64_t(0);
         auto size = (uint64_t)0;
@@ -207,7 +207,6 @@ private:
                     std::lock_guard<std::mutex> lock(mutex_);
                     if (progressCallback_) {
                         progressCallback_(row, QString::fromStdString(path), size, rmOk, nbrDel);
-                        // qDebug() << "rmOk:" << rmOk << "removed dir:" << path.c_str() << "nd:" << nd << "nbrDel:" << nbrDel;
                     }
                     if (nd <= 0)
                         success = false;
@@ -221,7 +220,7 @@ private:
         if (completionCallback_) {
             completionCallback_(success);
         }
-        qDebug() << "Frv3::FileRemover: Thread function FINISHED; name: Frv3FileRemover" << "id:" << get_readable_thread_id() << " hash:" << tid;
+        qDebug() << "Frv3::FileRemover: Thread FINISHED; name: Frv3FileRemover" << "tid:" << get_readable_thread_id() << " hash:" << tid;
     }
 
     std::jthread worker_;

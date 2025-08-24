@@ -432,6 +432,7 @@ void MainWindow::deleteBtnClicked()
     if (!_stopped) {
         stopAllThreads();
     }
+    _nbrDeleted = 0;
     setStopped(false);
     _removal = true;
     processEvents();
@@ -458,18 +459,14 @@ void MainWindow::deleteBtnClicked()
 void MainWindow::getSelectedItems(IntQStringMap& itemList)
 {
     const QList<QTableWidgetItem*> selectedItems = filesTable->selectedItems();
-    for (const auto item : selectedItems)
-    {
-        if (filesTable->column( item) == RELPATH_COL_IDX)
-        {
-            if (_stopped)
-                return;
-            const auto info = QFileInfo(item->data(Qt::UserRole).toString());
-            const auto path = QDir::toNativeSeparators(info.absoluteFilePath());
-            const auto row = filesTable->row(item);
-            itemList.insert(std::make_pair(row, path));
-            processEvents();
-        }
+    for (const auto item : selectedItems) {
+        if (_stopped)
+            return;
+        const auto info = QFileInfo(item->data(Qt::UserRole).toString());
+        const auto path = QDir::toNativeSeparators(info.absoluteFilePath());
+        const auto row = filesTable->row(item);
+        itemList.insert(std::make_pair(row, path));
+        processEvents();
     }
     qDebug() << "NBR SELECTED" << itemList.size();
 }
@@ -485,6 +482,7 @@ void MainWindow::shredBtnClicked()
         #endif
         // return;
     }
+    _nbrDeleted = 0;
     setStopped(false);
     _removal = true;
     opStart = steady_clock::now();
@@ -518,6 +516,7 @@ void MainWindow::SetDirPath( const QString& dirPath)
 
 void MainWindow::Clear()
 {
+    filesTable->clearContents();
     filesTable->setRowCount(0);
     filesTable->hide();
     filesTable->show();
@@ -833,7 +832,6 @@ QFileSystemModel* MainWindow::newFileSystemModel(QCompleter* completer, const QS
     fileSystemModel->setResolveSymlinks( false);
     fileSystemModel->setFilter( QDir::Dirs | QDir::Drives  | QDir::Hidden  | QDir::System | QDir::NoDotAndDotDot);
     fileSystemModel->setRootPath(currentDir);
-    //fileSystemModel->sort(0, Qt::AscendingOrder);
     return fileSystemModel;
 }
 
@@ -959,7 +957,7 @@ void MainWindow::appendItemToTable(const QString& filePath, const QFileInfo& fin
     if (relPath.startsWith( QDir::separator()))
         relPath = relPath.right( relPath.length() - 1);
     relPath = "{SF}/" + relPath + (relPath.length() > 0 ? "/" : "");
-    auto filePathItem = new QTableWidgetItem( QDir::toNativeSeparators( relPath));
+    auto filePathItem = new QTableWidgetItem(QDir::toNativeSeparators(relPath));
     filePathItem->setFlags( filePathItem->flags() ^ Qt::ItemIsEditable);
     filePathItem->setData( Qt::UserRole, QDir::toNativeSeparators( filePath));
     auto fpTooltip = QDir::toNativeSeparators(finfo.absolutePath());
@@ -1060,8 +1058,6 @@ void MainWindow::flushItemBuffer() {
 
 void MainWindow::createFilesTable()
 {
-    //if (filesTable)
-    //    delete filesTable;
     filesTable = new QTableWidget(0, N_COL, this);
     filesTable->setParent(this);
     filesTable->setColumnCount(N_COL);
@@ -1452,10 +1448,8 @@ void MainWindow::itemSized(const QString& path, const QFileInfo& info) {
         filesFoundLabel->setText(path + " " + sizeToHumanReadable((quint64)info.size()));
 }
 
-void MainWindow::itemRemoved(int row, quint64 /*count*/, quint64 /*size*/, quint64 /*nbrDeleted*/) {
-    if (!_stopped) {
-        filesTable->removeRow(row);
-    }
+void MainWindow::itemRemoved(int /*row*/, quint64 /*count*/, quint64 /*size*/, quint64 /*nbrDeleted*/) {
+    /// Do not remove theh row here, all deleted rows will be removed in removalComplete()
 }
 
 void MainWindow::progressUpdate(const QString& path, quint64 totCount, quint64 totSize)
@@ -1476,25 +1470,23 @@ void MainWindow::removeRows()
 {
     {
         UpdateBlocker ub{ filesTable };
-        if (rowsToRemove_.size() == size_t(filesTable->rowCount())) {  /// Qt row count is int for some reason
+        if (rowsToRemove_.size() == size_t(filesTable->rowCount())) {
              filesTable->clearContents();
-            //createFilesTable();
+             filesTable->setRowCount(0);
         }
         else {
-            for (const auto rowRes : rowsToRemove_) {
-                if (rowRes.first >= 0 && rowRes.second) {
-                    auto item = filesTable->item(rowRes.first, RELPATH_COL_IDX);
-                    delete item;
-                    filesTable->removeRow(rowRes.first);
+            for (const auto row : rowsToRemove_) {
+                if (row >= 0 && row < filesTable->rowCount()) {
+                    filesTable->removeRow(row);
                 }
             }
         }
-    } /// UpdateBlocker ub goes OUT OF SCOPE here, table updates and signals are enabled
+    }
+    /// UpdateBlocker ub goes OUT OF SCOPE here, table updates & signals are enabled
 
     rowsToRemove_.clear();
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
     filesTable->setSortingEnabled(true);
-    //filesTable->update();
     processEvents();
 }
 
@@ -1509,8 +1501,8 @@ void MainWindow::removalProgress(int row, const QString& /*path*/, uint64_t /*si
                                     QString("Failed to remove some items. Removed %1 items").arg(_nbrDeleted);
         filesFoundLabel->setText(text);
     }
-    //itemRemoved(row, 1, size, nbrDeleted);
-    rowsToRemove_.insert({ row, rmOk });
+    if (rmOk)
+        rowsToRemove_.insert(row);
 }
 
 void MainWindow::removalComplete(bool success) {
@@ -1520,9 +1512,9 @@ void MainWindow::removalComplete(bool success) {
     if (success && _nbrDeleted > 0) {
         suffix += ", deleted " + QString::number(_nbrDeleted) + " items";
     }
-    suffix += " | Please search again to see all changes.";
     opEnd = steady_clock::now();
     const auto text = prefix + suffix + ", took " + getElapsedTimeStr();
+    suffix += " | Please search again to see all changes";
     filesFoundLabel->setText(text);
     qDebug() << text;
     _removal = false;

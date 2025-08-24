@@ -11,6 +11,7 @@
 #include "folderscanner.hpp"
 #include <chrono>
 #include <memory>
+#include <set>
 #include <QtWidgets/QMainWindow>
 #include <QDir>
 #include <QElapsedTimer>
@@ -141,9 +142,8 @@ private:
     std::shared_ptr<Frv3::FileRemover> removerFrv3;
 
     /// We need to remove rows in decreasing order of row indices,
-    /// so we use a map sorted in descending (std::greater<int>) order.
-    /// @param Boolean type is the result of file/folder removal.
-    std::map<int, bool, std::greater<int>> rowsToRemove_;
+    /// so we use a set sorted in descending order (std::greater<int>).
+    std::set<int, std::greater<int>> rowsToRemove_;
 
     void removeRows();
     void removalProgress(int row, const QString& path, uint64_t size, bool rmOk, uint64_t nbrDel);
@@ -242,9 +242,9 @@ private:
     QAction* propertiesAct;
     QMenu* contextMenu;
 
-    QWidget * centralWgt;
+    QWidget* centralWgt;
 
-    QFileSystemModel * fileSystemModel;
+    QFileSystemModel* fileSystemModel;
     bool _ignoreDirPathChange; // TODO move to Completer (which will subclass QCompleter
     QTimer _completerTimer;    // TODO move to Completer (which will subclass QCompleter
     QElapsedTimer _editTextTimeDiff; // TODO move to Completer (which will subclass QCompleter
