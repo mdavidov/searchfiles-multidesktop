@@ -88,7 +88,7 @@ namespace Frv2
                                 qDebug() << "RM FAILED:" << ec.message() << " Path:" << fsPath.string().c_str();
                             }
                             QMetaObject::invokeMethod(m_uiObject,
-                                [this, row, path, size, rmOk, nbrDel](){ m_progressCb(row, path, size, rmOk, nbrDel); },
+                                [this, row, fsPath, size, rmOk, nbrDel](){ m_progressCb(row, fsPath.string().c_str(), size, rmOk, nbrDel); },
                                 Qt::QueuedConnection);
                         }
                         catch (const fs::filesystem_error& e) {

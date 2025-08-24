@@ -46,7 +46,7 @@ using std::endl;
 class FileRemover : public mmd::IFileRemover
 {
 public:
-    FileRemover() {
+    explicit FileRemover(QObject* uiObject) : m_uiObject(uiObject) {
         stop_req = false;
     }
 
@@ -206,7 +206,9 @@ private:
                     nbrDel += nd;
                     std::lock_guard<std::mutex> lock(mutex_);
                     if (progressCallback_) {
-                        progressCallback_(row, QString::fromStdString(path), size, rmOk, nbrDel);
+                        QMetaObject::invokeMethod(m_uiObject,
+                            [this, row, pathQstr, size, rmOk, nbrDel]() { progressCallback_(row, pathQstr, size, rmOk, nbrDel); },
+                            Qt::QueuedConnection);
                     }
                     if (nd <= 0)
                         success = false;
@@ -218,7 +220,9 @@ private:
             }
         }
         if (completionCallback_) {
-            completionCallback_(success);
+            QMetaObject::invokeMethod(m_uiObject,
+                [this, success]() { completionCallback_(success); },
+                Qt::QueuedConnection);
         }
         qDebug() << "Frv3::FileRemover: Thread FINISHED; name: Frv3FileRemover" << "tid:" << get_readable_thread_id() << " hash:" << tid;
     }
@@ -227,6 +231,7 @@ private:
     std::mutex mutex_;
     std::stop_token stop_token_;
     bool stop_req{ false };
+    QObject* m_uiObject;
     mmd::ProgressCallback progressCallback_;
     mmd::CompletionCallback completionCallback_;
 };

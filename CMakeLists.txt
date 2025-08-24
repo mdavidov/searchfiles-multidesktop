@@ -104,30 +104,3 @@ elseif(WIN32)
         WIN32_EXECUTABLE TRUE
     )
 endif()
-
-find_package(Doxygen OPTIONAL COMPONENTS dot)
-
-if(DOXYGEN_FOUND)
-    message(STATUS "Doxygen not found. Documentation will not be generated.")
-    set(DOXYGEN_PROJECT_NAME ${PROJECT_NAME})
-    set(DOXYGEN_PROJECT_VERSION ${PROJECT_VERSION})
-
-    set(DOXYGEN_INPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include")
-    set(DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/docs")
-
-    # doxygen_add_docs(
-    #     doxygen
-    #     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    #     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    #     COMMENT "Generating API documentation with Doxygen"
-    #     CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile"
-    # )
-    add_custom_target(doc
-        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Generating API documentation with Doxygen"
-        VERBATIM
-    )
-else()
-    message(STATUS "Doxygen not found. Documentation will not be re-generated.")
-endif()

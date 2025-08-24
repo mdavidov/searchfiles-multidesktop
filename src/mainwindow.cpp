@@ -770,7 +770,8 @@ inline void MainWindow::processEvents()
 
 QPushButton* MainWindow::createButton(const QString& text, const char* member, QWidget* parent)
 {
-    QPushButton *button = new QPushButton(text, parent);
+    QPushButton* button = new QPushButton(text, parent);
+    button->setObjectName(text);
     const bool c = connect(button, SIGNAL(clicked()), this, member); Q_ASSERT(c); (void)c;
     return button;
 }
@@ -1449,7 +1450,7 @@ void MainWindow::itemSized(const QString& path, const QFileInfo& info) {
 }
 
 void MainWindow::itemRemoved(int /*row*/, quint64 /*count*/, quint64 /*size*/, quint64 /*nbrDeleted*/) {
-    /// Do not remove theh row here, all deleted rows will be removed in removalComplete()
+    /// Do not remove the row here, all deleted rows will be removed in removalComplete()
 }
 
 void MainWindow::progressUpdate(const QString& path, quint64 totCount, quint64 totSize)
@@ -1557,7 +1558,7 @@ void MainWindow::deepRemoveFilesOnThread_Frv2(const IntQStringMap& rowPathMap)
 void MainWindow::deepRemoveFilesOnThread_Frv3(const IntQStringMap& rowPathMap)
 {
     _removal = true;
-    removerFrv3 = std::make_shared<Frv3::FileRemover>();
+    removerFrv3 = std::make_shared<Frv3::FileRemover>(this);
     auto msg = "Removing files and folders...";
     filesFoundLabel->setText(msg);
     qDebug() << msg;
