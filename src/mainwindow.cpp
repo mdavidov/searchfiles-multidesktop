@@ -92,6 +92,7 @@ void MainWindow::closeEvent(QCloseEvent* event) {
     if (shouldAllowClose) {
         stopAllThreads();
         event->accept();
+        QCoreApplication::quit();
     }
     else {
         event->ignore();  // Prevents closing
