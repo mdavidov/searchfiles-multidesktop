@@ -38,7 +38,6 @@ set(PROJECT_SOURCES
     src/common.hpp
     src/config.hpp
     src/config.cpp
-    src/get_readable_thread_id.hpp
     src/set_thread_name.cpp
     src/set_thread_name.hpp
     src/set_thread_name_win.hpp

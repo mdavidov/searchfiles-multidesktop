@@ -9,7 +9,6 @@
 
 #include "ifileremover.hpp"
 #include "common.hpp"
-#include "get_readable_thread_id.hpp"
 #include "set_thread_name.hpp"
 #include <filesystem>
 #include <functional>

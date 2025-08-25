@@ -202,8 +202,8 @@ QT_END_NAMESPACE
 #define eCod_EXCL_HIDDEN_ITEMS          tr("Exclude hidden folders, files and shortcuts. Note: ALL sub-folders, files and shortcuts (hidden or not) under a hidden folder are also excluded.")
 #define eCod_SHOW_EXCL_OPTS_TIP         tr("Hide exclusion options.")
 #define eCod_HIDE_EXCL_OPTS_TIP         tr("Show exclusion options.")
-#define eCod_BROWSE_FOLDERS_TIP         tr("Use the system dialog to select a folder and set it as the search folder.")
-#define eCod_BROWSE_GO_UP_TIP           tr("Go up in the folder hierarchy and set parent as the search folder.")
+#define eCod_BROWSE_FOLDERS_TIP         tr("Use the system dialog to select a folder, set it as the search folder, and search.")
+#define eCod_BROWSE_GO_UP_TIP           tr("Go up in the folder hierarchy, set parent as the search folder, and search.")
 #define OvSk_FsOp_DIR_NOT_EXISTS_TXT    tr("The selected folder could not be found. Please check the whole path, and if you are using a removable or network drive make sure it's properly inserted or connected. Not found:\n\n")
 #define OvSk_FsOp_SELECT_ITEM_TYPE_TXT  tr("Select at least one filesystem item type please: Files, Folders and/or Shortcuts.")
 

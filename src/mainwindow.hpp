@@ -214,27 +214,27 @@ private:
     QHBoxLayout*itmTypeCheckLout;
     QHBoxLayout*wordsLout;
 
-    QLabel *    maxSubDirDepthLbl;
-    QRadioButton * unlimSubDirDepthBtn;
-    QRadioButton * limSubDirDepthBtn;
-    QLineEdit * maxSubDirDepthEdt;
-    QHBoxLayout * subDirDepthLout;
-    QHBoxLayout * navigLout;
+    QLabel*    maxSubDirDepthLbl;
+    QRadioButton* unlimSubDirDepthBtn;
+    QRadioButton* limSubDirDepthBtn;
+    QLineEdit* maxSubDirDepthEdt;
+    QHBoxLayout* subDirDepthLout;
+    QHBoxLayout* navigLout;
 
-    QToolButton * toggleExclBtn;
-    QLineEdit * exclByFileNameCombo;
-    QLineEdit * exclByFolderNameCombo;
-    QLineEdit * exclFilesByTextCombo;
-    QCheckBox * exclHiddenCheck;
+    QToolButton* toggleExclBtn;
+    QLineEdit* exclByFileNameCombo;
+    QLineEdit* exclByFolderNameCombo;
+    QLineEdit* exclFilesByTextCombo;
+    QCheckBox* exclHiddenCheck;
 
-    QToolButton *browseButton;
-    QToolButton *goUpButton;
-    QPushButton *findButton;
-    QPushButton *deleteButton;
-    QPushButton *shredButton;
-    QPushButton *cancelButton;
+    QToolButton* browseButton;
+    QToolButton* goUpButton;
+    QPushButton* findButton;
+    QPushButton* deleteButton;
+    QPushButton* shredButton;
+    QPushButton* cancelButton;
 
-    QTableWidget *filesTable;
+    QTableWidget* filesTable;
 
     QList<QShortcut*> shortcuts;
     QAction* openRunAct;

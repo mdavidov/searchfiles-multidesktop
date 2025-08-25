@@ -424,7 +424,7 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
 
     // For each dir that was selected (i.e. it's in rowPathMap):
     // deep remove its files until maxDepth is reached.
-    if (maxDepth > 0) {  /// maxDepth == -1 means unlimitted, >= 0 means limited
+    if (maxDepth > 0) {  // maxDepth == -1 means unlimitted, >= 0 means limited
         for (const auto& rowNpath : dirMap) {
             deepRemLimitedImpl(rowNpath.second, maxDepth, rowNpath.first, nbrDeleted);
         }
@@ -436,7 +436,7 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
 bool FolderScanner::deepRemLimitedImpl(const QString& startPath, const int maxDepth, int row, quint64& nbrDeleted)
 {
     std::queue<std::pair<QString, int>> dirQ;
-    dirQ.push({ startPath, 1 }); /// start at level 1
+    dirQ.push({ startPath, 1 }); // start at level 1 here!
     auto res = true;
 
     while (!dirQ.empty() && !stopped) {
@@ -471,7 +471,7 @@ bool FolderScanner::deepRemLimitedImpl(const QString& startPath, const int maxDe
             }
         }
 
-        /// If the containing folder is empty, remove it.
+        // If the containing folder is empty, remove it.
         if (currDepth > 1)
             row = -1;
         const auto rd = rmEmptyDir(dirPath, row, nbrDeleted);
@@ -484,7 +484,7 @@ bool FolderScanner::doRemoveOneFileOrDir(const QFileInfo& info, int row, quint64
 {
     auto res = true;
     if (!info.isDir()) {
-        /// RM FILE or SYMLINK
+        // RM FILE or SYMLINK
         QFile file(info.absoluteFilePath());
         const auto size = info.size();
         const auto rmok = file.remove();
@@ -499,7 +499,7 @@ bool FolderScanner::doRemoveOneFileOrDir(const QFileInfo& info, int row, quint64
         }
     }
     else {
-        /// RM DIR if it's empty
+        // RM DIR if it's empty
         res = rmEmptyDir(info.absoluteFilePath(), row, nbrDeleted);
     }
     return res;
@@ -507,7 +507,7 @@ bool FolderScanner::doRemoveOneFileOrDir(const QFileInfo& info, int row, quint64
 
 bool FolderScanner::rmEmptyDir(const QString& dirPath, int row, quint64& nbrDeleted)
 {
-    /// RM DIR if it's empty
+    // RM DIR if it's empty
     QDir dir(dirPath);
     if (!dir.isEmpty())
         return true;

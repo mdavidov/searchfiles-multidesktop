@@ -102,7 +102,6 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
     : QMainWindow(parent)
     , _ignoreDirPathChange(false)
-    , _origDirPath( QDir::toNativeSeparators( QStandardPaths::locate( QStandardPaths::HomeLocation, "", QStandardPaths::LocateDirectory)))
     , _maxSubDirDepth(0)
     , _unlimSubDirDepth(true)
     , _stopped(true)
@@ -110,6 +109,10 @@ MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
     , _gettingSize(false)
 {
     qRegisterMetaType<mmd::MainWindow>("mmd::MainWindow");
+    const auto homePath = QStandardPaths::locate(QStandardPaths::HomeLocation, "",
+                                                 QStandardPaths::LocateDirectory);
+    _origDirPath = QDir::toNativeSeparators(homePath);
+
     prevEvents = 0;
     eventsTimer.start();
     prevProgress = 0;
@@ -141,7 +144,7 @@ MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
 
     createContextMenu();
 
-    /// Menu bar
+    // Menu bar
     {
         QMenu* helpMenu = menuBar()->addMenu("&Help");
         QAction* aboutAction = helpMenu->addAction("&About");
@@ -153,6 +156,8 @@ MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
     findButton->setDefault(true);
     findButton->setFocus();
     setStopped(true);
+
+    findBtnClicked();
 }
 
 MainWindow::~MainWindow()
@@ -162,13 +167,14 @@ MainWindow::~MainWindow()
 void MainWindow::createSubDirLayout()
 {
     maxSubDirDepthLbl = new QLabel(tr("Max subfolder depth: "), this);
-    setAllTips(maxSubDirDepthLbl, tr("Specify unlimited or maximum sub-folder depth."));
+    setAllTips(maxSubDirDepthLbl, tr("Specify unlimited (-1) or maximum sub-folder depth (>= 0)."));
     unlimSubDirDepthBtn = new QRadioButton(tr("Unlimited "), this);
     unlimSubDirDepthBtn->setChecked(true);
     limSubDirDepthBtn = new QRadioButton(tr("Limited to: "), this);
     maxSubDirDepthEdt = new QLineEdit(this);
     maxSubDirDepthEdt->setEnabled(false);
     maxSubDirDepthEdt->setFixedWidth(60);
+
     QIntValidator* intValidator = new QIntValidator(this);
     intValidator->setBottom(0);
     maxSubDirDepthEdt->setValidator(intValidator);
@@ -178,12 +184,13 @@ void MainWindow::createSubDirLayout()
     subDirDepthGrp->addButton(limSubDirDepthBtn,   1);
 
     subDirDepthLout = new QHBoxLayout(this);
-    subDirDepthLout->addWidget( maxSubDirDepthLbl);
-    subDirDepthLout->addWidget( unlimSubDirDepthBtn);
-    subDirDepthLout->addWidget( limSubDirDepthBtn);
-    subDirDepthLout->addWidget( maxSubDirDepthEdt);
+    subDirDepthLout->addWidget(maxSubDirDepthLbl);
+    subDirDepthLout->addWidget(unlimSubDirDepthBtn);
+    subDirDepthLout->addWidget(limSubDirDepthBtn);
+    subDirDepthLout->addWidget(maxSubDirDepthEdt);
     subDirDepthLout->addStretch();
-    bool c = connect(unlimSubDirDepthBtn, &QRadioButton::toggled, this, &MainWindow::unlimSubDirDepthToggled); Q_ASSERT(c); (void)c;
+    connect(unlimSubDirDepthBtn, &QRadioButton::toggled,
+            this, &MainWindow::unlimSubDirDepthToggled);
 }
 
 void MainWindow::createItemTypeCheckLayout()
@@ -214,7 +221,7 @@ void MainWindow::createNavigLayout()
     bool c = connect(browseButton, SIGNAL(clicked()), this, SLOT(browseBtnClicked())); Q_ASSERT(c);
 
     goUpButton = new QToolButton(this);
-    goUpButton->setText(tr("^"));
+    goUpButton->setText(tr("^ Up"));
     setAllTips(goUpButton, eCod_BROWSE_GO_UP_TIP);
     c = connect(goUpButton, SIGNAL(clicked()), this, SLOT(goUpBtnClicked())); Q_ASSERT(c);
 
@@ -378,20 +385,21 @@ void MainWindow::goUpBtnClicked()
     if (dirPath.isEmpty())
         return;
     QDir dir(dirPath);
-
     const bool ok = dir.cdUp();
-    if (ok)
-        SetDirPath( QDir::toNativeSeparators( dir.absolutePath()));
-    else if (dirPath.length() <= eCod_MIN_PATH_LEN)
-        SetDirPath( "");
+    if (ok) {
+        SetDirPath(QDir::toNativeSeparators(dir.absolutePath()));
+        findBtnClicked();
+    }
 }
 
 void MainWindow::browseBtnClicked()
 {
     const QString selDir = QFileDialog::getExistingDirectory(this, tr("Select folder"),
                             dirComboBox->currentText().trimmed());
-    if (!selDir.isEmpty())
-        SetDirPath(selDir);
+    if (!selDir.isEmpty()) {
+        SetDirPath(QDir::toNativeSeparators(selDir));
+        findBtnClicked();
+    }
 }
 
 void MainWindow::showMoreOptions(bool show)
@@ -452,13 +460,13 @@ void MainWindow::performDeletion()
 
     setParamsFromUi();
 
-    /// REMOVE ITEMS
+    // REMOVE ITEMS
     if (_maxSubDirDepth < 0) {
         // UNLIMITED SUBFOLDER DEPTH
         deepRemoveFilesOnThread_Frv3(itemList);
     }
     else {
-        /// LIMITED SUBFOLDER DEPTH
+        // LIMITED SUBFOLDER DEPTH
         deepRemoveLimitedOnThread(itemList);
     }
 }
@@ -480,7 +488,7 @@ void MainWindow::getSelectedItems(IntQStringMap& itemList)
 
 void MainWindow::cancelBtnClicked()
 {
-    /// scanThreadFinished() does almost everything necessary, so we don't need to do much here
+    // scanThreadFinished() does almost everything necessary, so we don't need to do much here
     stopAllThreads();
     if (_removal) {
         removalComplete(false);
@@ -530,31 +538,31 @@ void MainWindow::setStopped(bool stopped)
     }
     std::this_thread::sleep_for(200ms);
 
-    findButton->setEnabled(     _stopped);
-    deleteButton->setEnabled(   _stopped && filesTable->selectedItems().count() > 0);
-    // shredButton->setEnabled(    _stopped && filesTable->selectedItems().count() > 0);
-    cancelButton->setEnabled(  !_stopped);
+    findButton->setEnabled(_stopped);
+    deleteButton->setEnabled(_stopped && filesTable->selectedItems().count() > 0);
+    // shredButton->setEnabled(_stopped && filesTable->selectedItems().count() > 0);
+    cancelButton->setEnabled(!_stopped);
     searchFolderLbl->setEnabled(_stopped);
-    namesLineEdit->setEnabled(  _stopped);
-    dirComboBox->setEnabled(    _stopped);
-    // itmTypeLbl->setEnabled(     _stopped);
-    filesCheck->setEnabled(     _stopped);
-    foldersCheck->setEnabled(   _stopped);
-    symlinksCheck->setEnabled(  _stopped);
+    namesLineEdit->setEnabled(_stopped);
+    dirComboBox->setEnabled(_stopped);
+    // itmTypeLbl->setEnabled(_stopped);
+    filesCheck->setEnabled(_stopped);
+    foldersCheck->setEnabled(_stopped);
+    symlinksCheck->setEnabled(_stopped);
     unlimSubDirDepthBtn->setEnabled(_stopped);
-    limSubDirDepthBtn->setEnabled(  _stopped);
-    maxSubDirDepthEdt->setEnabled(  _stopped && limSubDirDepthBtn->isChecked());
-    maxSubDirDepthLbl->setEnabled(  _stopped);
-    goUpButton->setEnabled(     _stopped);
-    browseButton->setEnabled(   _stopped);
-    wordsLineEdit->setEnabled(  _stopped && filesCheck->isChecked());
-    matchCaseCheck->setEnabled( _stopped && filesCheck->isChecked());
+    limSubDirDepthBtn->setEnabled(_stopped);
+    maxSubDirDepthEdt->setEnabled(_stopped && limSubDirDepthBtn->isChecked());
+    maxSubDirDepthLbl->setEnabled(_stopped);
+    goUpButton->setEnabled(_stopped);
+    browseButton->setEnabled(_stopped);
+    wordsLineEdit->setEnabled( _stopped && filesCheck->isChecked());
+    matchCaseCheck->setEnabled(_stopped && filesCheck->isChecked());
     exclByFolderNameCombo->setEnabled(_stopped);
     exclByFileNameCombo->setEnabled(_stopped);
     exclFilesByTextCombo->setEnabled(_stopped);
     exclHiddenCheck->setEnabled(_stopped);
     filesTable->horizontalHeader()->setEnabled( _stopped);
-    filesTable->verticalHeader()->setEnabled(   _stopped);
+    filesTable->verticalHeader()->setEnabled(_stopped);
 }
 
 QString MainWindow::getElapsedTimeStr() const
@@ -663,10 +671,17 @@ void MainWindow::setParamsFromUi() // before starting search
         _maxSubDirDepth = -1;
     }
     else {
-        bool maxValid = false;
-        _maxSubDirDepth =  maxSubDirDepthEdt->text().toInt(&maxValid);
-        if (!maxValid)
+        const auto txt = maxSubDirDepthEdt->text().trimmed();
+        if (txt.isEmpty()) {
             _maxSubDirDepth = 0;
+            maxSubDirDepthEdt->setText("0");
+        }
+        else {
+            bool maxValid = false;
+            _maxSubDirDepth =  txt.toInt(&maxValid);
+            if (!maxValid)
+                _maxSubDirDepth = 0;
+        }
     }
 }
 
@@ -759,7 +774,7 @@ inline void MainWindow::processEvents()
 {
     const auto elapsed = eventsTimer.elapsed();
     const auto diff = elapsed - prevEvents;
-    if (diff >= 1'000) {  // msec
+    if (diff >= 500) {  // msec
         prevEvents = elapsed;
         qApp->processEvents(QEventLoop::AllEvents, 300);
     }
@@ -1316,18 +1331,14 @@ void MainWindow::unlimSubDirDepthToggled(bool /*checked*/)
 {
     _unlimSubDirDepth = unlimSubDirDepthBtn->isChecked();
     if (_unlimSubDirDepth) {
-        bool maxValid = false;
-        _maxSubDirDepth =  maxSubDirDepthEdt->text().toInt(&maxValid);
-        if (!maxValid) {
-            _maxSubDirDepth = 0;
-            maxSubDirDepthEdt->setText("0");
-        }
-        maxSubDirDepthEdt->setEnabled(false);
+        _maxSubDirDepth = -1;
         maxSubDirDepthEdt->setText("");
+        maxSubDirDepthEdt->setEnabled(false);
     }
     else {
+        _maxSubDirDepth = 0;
+        maxSubDirDepthEdt->setText("0");
         maxSubDirDepthEdt->setEnabled(true);
-        maxSubDirDepthEdt->setText(QString("%1").arg(_maxSubDirDepth));
     }
 }
 
@@ -1480,7 +1491,7 @@ void MainWindow::removeRows()
             }
         }
     }
-    /// UpdateBlocker ub goes OUT OF SCOPE here, table updates & signals are enabled
+    // UpdateBlocker ub goes OUT OF SCOPE here, table updates & signals are enabled
 
     rowsToRemove_.clear();
     filesTable->sortByColumn(-1, Qt::AscendingOrder);
@@ -1492,7 +1503,7 @@ void MainWindow::removalProgress(int row, const QString& /*path*/, uint64_t /*si
     _nbrDeleted = nbrDel;
     const auto elapsed = progressTimer.elapsed();
     const auto diff = elapsed - prevProgress;
-    if (diff >= 1'000) {  // msec
+    if (diff >= 500) {  // msec
         prevProgress = elapsed;
         const QString text = rmOk ? QString("Removed %1 items").arg(_nbrDeleted) :
                                     QString("Failed to remove some items. Removed %1 items").arg(_nbrDeleted);

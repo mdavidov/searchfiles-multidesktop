@@ -9,7 +9,6 @@
 
 #include "ifileremover.hpp"
 #include "common.hpp"
-#include "get_readable_thread_id.hpp"
 #include "set_thread_name.hpp"
 #include <atomic>
 #include <chrono>
@@ -63,7 +62,7 @@ public:
         progressCallback_ = std::move(progressCb);
         completionCallback_ = std::move(completionCb);
 
-        // Create jthread with captures by reference to class members
+        // Create jthread with captures by 'this' to class members
         worker_ = std::jthread([this, rowPathMap](std::stop_token stoken) {
                 stop_token_ = stoken;
                 stop_req = false;
