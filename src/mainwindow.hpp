@@ -169,7 +169,7 @@ private:
 
     void deepScanFolderOnThread(const QString& startPath, const int maxDepth);
     void scanThreadFinished();
-    void deepRemoveLimitedOnThread(const IntQStringMap& itemList, const int maxDepth);
+    void deepRemoveLimitedOnThread(const IntQStringMap& itemList);
     void deepRemoveFilesOnThread_Frv2(const IntQStringMap& paths);
     void deepRemoveFilesOnThread_Frv3(const IntQStringMap& rowPathMap);
     void getSizeOnThread(const IntQStringMap& itemList);

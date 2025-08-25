@@ -449,6 +449,8 @@ void MainWindow::performDeletion()
     IntQStringMap itemList;
     getSelectedItems(itemList);
 
+    setParamsFromUi();
+
     /// REMOVE ITEMS
     if (_maxSubDirDepth < 0) {
         // UNLIMITED SUBFOLDER DEPTH
@@ -456,7 +458,7 @@ void MainWindow::performDeletion()
     }
     else {
         /// LIMITED SUBFOLDER DEPTH
-        deepRemoveLimitedOnThread(itemList, _maxSubDirDepth);
+        deepRemoveLimitedOnThread(itemList);
     }
 }
 
@@ -629,6 +631,7 @@ void MainWindow::setParamsFromUi() // before starting search
     // Moving worker object pointer to thread (scanner pointer below)
     // only sets which thread (scanThread) will execute worker's slots.
     scanner->moveToThread(scanThread.get());
+
     scanner->params.itemTypeFilter = _itemTypeFilter;
     scanner->params.inclFiles = filesCheck->isChecked();
     scanner->params.inclFolders = foldersCheck->isChecked();
@@ -1390,16 +1393,16 @@ void MainWindow::getSizeOnThread(const IntQStringMap& itemList)
     scanThread->start();
 }
 
-void MainWindow::deepRemoveLimitedOnThread(const IntQStringMap& itemList, const int maxDepth)
+void MainWindow::deepRemoveLimitedOnThread(const IntQStringMap& itemList)
 {
+    const auto maxDepth = _maxSubDirDepth;
+
     scanThread = std::make_shared<QThread>(this);
     scanThread->setObjectName("RemoveLimitedThread");
     connect(scanThread.get(), &QThread::started, [this, itemList, maxDepth]() {
         scanner->deepRemoveLimited(itemList, maxDepth);
     });
     connect(scanThread.get(), &QThread::finished, this, &MainWindow::scanThreadFinished);
-
-    setParamsFromUi();
 
     connect(scanner.get(), &FolderScanner::itemRemoved, this, &MainWindow::itemRemoved);
     connect(scanner.get(), &FolderScanner::progressUpdate, this, &MainWindow::progressUpdate);
@@ -1499,15 +1502,18 @@ void MainWindow::removalProgress(int row, const QString& /*path*/, uint64_t /*si
 }
 
 void MainWindow::removalComplete(bool success) {
-    removeRows(); // files that failed to delete will not be removed from the table
-    const QString prefix = "COMPLETED | ";
-    QString suffix = (success && _nbrDeleted > 0) ? "DELETION SUCCESSFUL" : "SOME FAILED to DELETE";
-    if (success && _nbrDeleted > 0) {
-        suffix += ", deleted " + QString::number(_nbrDeleted) + " items";
-    }
     opEnd = steady_clock::now();
-    const auto text = prefix + suffix + ", took " + getElapsedTimeStr();
-    suffix += " | Please search again to see all changes";
+    removeRows(); // files that failed to delete will not be removed from the table
+
+    const QString prefix = "COMPLETED";
+    QString suffix;
+    if (_nbrDeleted > 0) {
+        suffix = success ? " | DELETION SUCCESSFUL" : " | SOME FAILED to DELETE";
+    }
+    suffix += " | deleted " + QString::number(_nbrDeleted) + " items" +
+              ", took " + getElapsedTimeStr();
+    suffix += (_nbrDeleted == 0) ? " | Selected item(s) may not exist, please search again. Also check the \"Max subfolder depth\" setting above." : "";
+    const auto text = prefix + suffix;
     filesFoundLabel->setText(text);
     qDebug() << text;
     // _removal = false; will be done in scanThreadFinished
@@ -1533,6 +1539,7 @@ void MainWindow::deepRemoveFilesOnThread_Frv2(const IntQStringMap& rowPathMap)
 
     // NOTE: QMetaObject::invokeMethod with Qt::QueuedConnection
     //  is done in Frv2::FileRemover::removeFilesAndFolders02()
+    opStart = steady_clock::now();
 
     // DO IT NOW
     removerFrv2->removeFilesAndFolders(
@@ -1571,6 +1578,7 @@ void MainWindow::deepRemoveFilesOnThread_Frv3(const IntQStringMap& rowPathMap)
             removalComplete(success);
         }, Qt::QueuedConnection);
     });
+    opStart = steady_clock::now();
 
     // DO IT NOW
     removerFrv3->removeFilesAndFolders(
