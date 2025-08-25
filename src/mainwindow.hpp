@@ -110,6 +110,7 @@ public slots:
     void deleteBtnClicked();
     void shredBtnClicked();
     void cancelBtnClicked();
+    void performDeletion();
 
 protected:
     void keyReleaseEvent(QKeyEvent* ev) override;
@@ -176,6 +177,7 @@ private:
 
     void flushItemBuffer();
 
+    void setParamsFromUi();
     bool findFilesPrep();
     void setStopped(bool stopped);
     QString getElapsedTimeStr() const;

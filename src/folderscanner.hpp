@@ -182,7 +182,7 @@ public slots:
     uint64pair deepCountSize(const QString& startPath);
     void deepRemove(const IntQStringMap& itemList);
     void deepRemoveLimited(const IntQStringMap& itemList, const int maxDepth);
-    bool deepRemLimitedImpl(const QString& startPath, const int maxDepth, quint64& nbrDeleted);
+    bool deepRemLimitedImpl(const QString& startPath, const int maxDepth, int row, quint64& nbrDeleted);
     bool doRemoveOneFileOrDir(const QFileInfo& info, int row, quint64& nbrDeleted);
     bool rmEmptyDir(const QString& dirPath, int row, quint64& nbrDeleted);
 
