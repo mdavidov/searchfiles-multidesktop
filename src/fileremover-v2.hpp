@@ -53,8 +53,8 @@ namespace Frv2
                 [this](std::stop_token stoken)
                 {
                     set_thread_name("Frv2FileRemover");
-                    const auto tid = std::hash<std::thread::id>{}(std::this_thread::get_id());
-                    qDebug() << "Frv2::FileRemover: Thread STARTED;  name: Frv2FileRemover" << "tid:" << get_readable_thread_id() << " hash:" << tid;
+                    const auto handle = this->m_worker.native_handle();
+                    qDebug() << "Frv2::FileRemover: Thread STARTED;  name: Frv2FileRemover" << "native_handle:" << handle;
                     auto success = true;
                     auto nbrDel = uint64_t(0);
 
@@ -103,7 +103,7 @@ namespace Frv2
                     QMetaObject::invokeMethod(m_uiObject,
                         [this, success]() { m_completionCb(success); },
                         Qt::QueuedConnection);
-                    qDebug() << "Frv2::FileRemover: Thread FINISHED; name: Frv2FileRemover" << "tid:" << get_readable_thread_id() << " hash:" << tid;
+                    qDebug() << "Frv2::FileRemover: Thread FINISHED; name: Frv2FileRemover" << "native_handle:" << handle;
                 });
         }
 

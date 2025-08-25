@@ -17,6 +17,12 @@
         "__bit_reference": "cpp",
         "future": "cpp",
         "ios": "cpp",
-        "string": "cpp"
+        "string": "cpp",
+        "fstream": "cpp",
+        "mutex": "cpp",
+        "condition_variable": "cpp",
+        "shared_mutex": "cpp",
+        "stacktrace": "cpp",
+        "thread": "cpp"
     }
 }

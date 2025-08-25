@@ -67,7 +67,7 @@ public:
         worker_ = std::jthread([this, rowPathMap](std::stop_token stoken) {
                 stop_token_ = stoken;
                 stop_req = false;
-                rmFilesAndDirs(rowPathMap);
+                rmFilesAndDirs(this, rowPathMap);
             }
         );
     }
@@ -174,11 +174,11 @@ public:
     }
 
 private:
-    void rmFilesAndDirs(const IntQStringMap& rowPathMap)
+    void rmFilesAndDirs(FileRemover* ptr, const IntQStringMap& rowPathMap)
     {
         set_thread_name("Frv3FileRemover");
-        const auto tid = std::hash<std::thread::id>{}(std::this_thread::get_id());
-        qDebug() << "Frv3::FileRemover: Thread STARTED;  name: Frv3FileRemover" << "tid:" << get_readable_thread_id() << " hash:" << tid;
+        const auto handle = ptr->worker_.native_handle();
+        qDebug() << "Frv3::FileRemover: Thread STARTED;  name: Frv3FileRemover" << "native_handle:" << handle;
         auto success = true;
         auto nbrDel = uint64_t(0);
         auto size = (uint64_t)0;
@@ -224,7 +224,7 @@ private:
                 [this, success]() { completionCallback_(success); },
                 Qt::QueuedConnection);
         }
-        qDebug() << "Frv3::FileRemover: Thread FINISHED; name: Frv3FileRemover" << "tid:" << get_readable_thread_id() << " hash:" << tid;
+        qDebug() << "Frv3::FileRemover: Thread FINISHED; name: Frv3FileRemover" << "native_handle:" << handle;
     }
 
     std::jthread worker_;
