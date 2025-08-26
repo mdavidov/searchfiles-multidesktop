@@ -95,7 +95,7 @@ public:
     explicit MainWindow(const QString& dirPath, QWidget* parent = nullptr);
     ~MainWindow();
 
-    void SetDirPath( const QString & dirPath);
+    void setDirPath( const QString & dirPath);
     mmd::FsOpType GetOp() const { return _opType; }
     void Clear();
 
@@ -122,7 +122,7 @@ private slots:
     void goUpBtnClicked();
     void browseBtnClicked();
     void toggleExclClicked();
-    void openFileOfItem(int row, int column);
+    void itemDoubleClicked(int row, int column);
     void itemSelectionChanged();
     void dirPathEditTextChanged(const QString & text);
     void completerTimeout();

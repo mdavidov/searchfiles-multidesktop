@@ -109,6 +109,7 @@ MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
     , _gettingSize(false)
 {
     qRegisterMetaType<mmd::MainWindow>("mmd::MainWindow");
+
     const auto homePath = QStandardPaths::locate(QStandardPaths::HomeLocation, "",
                                                  QStandardPaths::LocateDirectory);
     _origDirPath = QDir::toNativeSeparators(homePath);
@@ -132,15 +133,15 @@ MainWindow::MainWindow( const QString& /*dirPath*/, QWidget* parent)
 
     showMoreOptions(true);
     itemSelectionChanged();
-    SetDirPath(_origDirPath);
+    setDirPath(_origDirPath);
 
     _completerTimer.setSingleShot(true);
-    bool c = connect(&_completerTimer, SIGNAL(timeout()), this, SLOT(completerTimeout())); Q_ASSERT(c);
+    connect(&_completerTimer, SIGNAL(timeout()), this, SLOT(completerTimeout()));
     _editTextTimeDiff.restart();
 
-    c = connect(filesCheck,    SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int))); Q_ASSERT(c); (void)c;
-    c = connect(foldersCheck,  SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int))); Q_ASSERT(c); (void)c;
-    c = connect(symlinksCheck, SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int))); Q_ASSERT(c); (void)c;
+    connect(filesCheck,    SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int)));
+    connect(foldersCheck,  SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int)));
+    connect(symlinksCheck, SIGNAL(stateChanged(int)), this, SLOT(scopeCheckClicked(int)));
 
     createContextMenu();
 
@@ -387,7 +388,7 @@ void MainWindow::goUpBtnClicked()
     QDir dir(dirPath);
     const bool ok = dir.cdUp();
     if (ok) {
-        SetDirPath(QDir::toNativeSeparators(dir.absolutePath()));
+        setDirPath(QDir::toNativeSeparators(dir.absolutePath()));
         findBtnClicked();
     }
 }
@@ -397,7 +398,7 @@ void MainWindow::browseBtnClicked()
     const QString selDir = QFileDialog::getExistingDirectory(this, tr("Select folder"),
                             dirComboBox->currentText().trimmed());
     if (!selDir.isEmpty()) {
-        SetDirPath(QDir::toNativeSeparators(selDir));
+        setDirPath(QDir::toNativeSeparators(selDir));
         findBtnClicked();
     }
 }
@@ -497,16 +498,16 @@ void MainWindow::cancelBtnClicked()
     _stopped = true;
 }
 
-void MainWindow::SetDirPath( const QString& dirPath)
+void MainWindow::setDirPath(const QString& dirPath)
 {
     if (dirPath.isEmpty()) {
         dirComboBox->setCurrentText("");
         return;
     }
-    _origDirPath = QDir::toNativeSeparators( dirPath);
+    _origDirPath = QDir::toNativeSeparators(dirPath);
     if (dirComboBox->findText(_origDirPath) == -1)
         dirComboBox->addItem(_origDirPath);
-    dirComboBox->setCurrentIndex( dirComboBox->findText(_origDirPath));
+    dirComboBox->setCurrentIndex(dirComboBox->findText(_origDirPath));
 }
 
 void MainWindow::Clear()
@@ -1125,24 +1126,33 @@ void MainWindow::createFilesTable()
     filesTable->setColumnWidth(col,    60);
     // filesTable->horizontalHeader()->setSectionResizeMode(N_COL-1, QHeaderView::Stretch);
 #endif
-
-    //modifyFont(filesTable, +1.0, true, false, false);
-
-    bool
-    c = connect( filesTable, SIGNAL(cellActivated(int,int)),
-                 this, SLOT(openFileOfItem(int,int))); Q_ASSERT(c); (void)c;
-    c = connect( filesTable, SIGNAL(itemSelectionChanged()),
-                 this, SLOT(itemSelectionChanged())); Q_ASSERT(c); (void)c;
+    // QTableWidget::cellActivated is the double click signal,
+    // itemDoubleClicked does NOT seem to work!
+    connect(filesTable, &QTableWidget::cellActivated,
+            this, &MainWindow::itemDoubleClicked);
+    connect(filesTable, &QTableWidget::itemSelectionChanged,
+            this, &MainWindow::itemSelectionChanged);
 
     filesTable->setContextMenuPolicy(Qt::CustomContextMenu);
-    const auto conn = connect(filesTable, &QTableWidget::customContextMenuRequested,
-                              this, &MainWindow::showContextMenu);
+    connect(filesTable, &QTableWidget::customContextMenuRequested,
+            this, &MainWindow::showContextMenu);
 }
 
-void MainWindow::openFileOfItem(int row, int /* column */)
+void MainWindow::itemDoubleClicked(int row, int /*column*/)
 {
-    QTableWidgetItem* item = filesTable->item(row, RELPATH_COL_IDX);
-    QDesktopServices::openUrl(QUrl::fromLocalFile(item->data(Qt::UserRole).toString()));
+    const auto item = filesTable->item(row, RELPATH_COL_IDX);
+    const auto path = item->data(Qt::UserRole).toString();
+    const auto finfo = QFileInfo(path);
+    if (!finfo.exists()) {
+        return;
+    }
+    if (finfo.isDir()) {
+        setDirPath(QDir::toNativeSeparators(finfo.absoluteFilePath()));
+        findBtnClicked();
+    }
+    else {
+        QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+    }
 }
 
 void MainWindow::itemSelectionChanged()
@@ -1167,7 +1177,6 @@ void MainWindow::createContextMenu()
         propertiesAct = nullptr;
     #endif
 
-    // Connect using new syntax
     connect(openRunAct, &QAction::triggered, this, &MainWindow::openRunSlot);
     connect(openContaingFolderAct, &QAction::triggered, this, &MainWindow::openContainingFolderSlot);
     connect(copyPathAct, &QAction::triggered, this, &MainWindow::copyPathSlot);
