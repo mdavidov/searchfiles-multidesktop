@@ -69,6 +69,7 @@ public:
                 rmFilesAndDirs(this, rowPathMap);
             }
         );
+        worker_.detach(); // Detach the thread to allow it to run independently
     }
 
     /// Set progress updates callback
@@ -83,7 +84,7 @@ public:
         completionCallback_ = std::move(callback);
     }
 
-    void stop() {
+    void stop() override {
         std::lock_guard<std::mutex> lock(mutex_);
         stop_req = true;
         worker_.request_stop();
@@ -204,7 +205,7 @@ private:
                             [this, row, pathQstr, size, rmOk, nbrDel]() { progressCallback_(row, pathQstr, size, rmOk, nbrDel); },
                             Qt::QueuedConnection);
                     }
-                    if (nd <= 0)
+                    if (!rmOk)
                         success = false;
                 }
             }

@@ -101,10 +101,10 @@ namespace Frv2
                         [this, success]() { m_completionCb(success); },
                         Qt::QueuedConnection);
                 });
+                m_worker.detach(); // Detach the thread to allow it to run independently
         }
 
-        void stop()
-        {
+        void stop() override {
             m_worker.request_stop();
         }
 

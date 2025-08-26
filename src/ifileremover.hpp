@@ -37,6 +37,12 @@ public:
         mmd::ProgressCallback progressCb,
         mmd::CompletionCallback completionCb
     ) = 0;
+
+    /// @brief Request to stop the ongoing removal operation.
+    /// Each implementation must be able to stop the current
+    /// removal procedure when requested.
+    ///
+    virtual void stop() = 0;
 };
 
 } // namespace mmd
