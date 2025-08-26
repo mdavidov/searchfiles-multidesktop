@@ -54,8 +54,6 @@ void FolderScanner::reportProgress(const QString& path, bool doit /*= false*/) {
         prevProgress = elapsed;
         if (!stopped)
             emit progressUpdate(path, totCount, totSize);
-        else
-            qDebug() << "FolderScanner::reportProgress STOPPING";
     }
 }
 
@@ -203,7 +201,6 @@ bool FolderScanner::fileContainsAllWordsChunked(const QString& filePath, const Q
     if (file.size() == 0 || QFileInfo(file).fileName() == ".DS_Store")
         return false;
     if (!file.open(QIODevice::ReadOnly)) {
-        qDebug() << "Cannot open file, error" << file.errorString();
         return false;
     }
     static constexpr qint64 CHUNK_SIZE = 200 * 1024 * 1024;
@@ -226,7 +223,6 @@ bool FolderScanner::fileContainsAnyWordChunked(const QString& filePath, const QS
     if (file.size() == 0 || QFileInfo(file).fileName() == ".DS_Store")
         return false;
     if (!file.open(QIODevice::ReadOnly)) {
-        qDebug() << "Cannot open file, error" << file.errorString();
         return false;
     }
     static constexpr qint64 CHUNK_SIZE = 200 * 1024 * 1024;
@@ -245,9 +241,6 @@ bool FolderScanner::fileContainsAnyWordChunked(const QString& filePath, const QS
 
 void FolderScanner::deepScan(const QString& startPath, const int maxDepth)
 {
-    qDebug() << "FolderScanner: Thread function STARTED,  name:"
-             << QThread::currentThread()->objectName()
-             << "ID:" << QThread::currentThreadId();
     stopped = false;
     zeroCounters();
     QString lastPath;
@@ -299,9 +292,6 @@ void FolderScanner::deepScan(const QString& startPath, const int maxDepth)
         emit scanComplete();
     }
     stopped = true;
-    qDebug() << "FolderScanner: Thread function FINISHED, name:"
-             << QThread::currentThread()->objectName()
-             << "ID:" << QThread::currentThreadId();
 }
 
 uint64pair FolderScanner::deepCountSize(const QString& startPath)
@@ -362,37 +352,33 @@ void FolderScanner::deepRemove(const IntQStringMap& rowPathMap)
     quint64 nbrDeleted = 0;
     for (const auto& rowPath : rowPathMap)
     {
-        try {
-            processEvents();
-            if (stopped)
-                return;
-            const auto path = rowPath.second;
-            const auto info = QFileInfo(path);
+        processEvents();
+        if (stopped)
+            return;
+        const auto path = rowPath.second;
+        const auto info = QFileInfo(path);
 
-            if (!info.isDir()) {
-                // RM FILE or SYMLINK
-                QFile file(path);
-                const auto size = info.size();
-                const auto rmok = file.remove();
-                if (rmok) {
-                    ++nbrDeleted;
-                    emit itemRemoved(rowPath.first, 1, (quint64)size, nbrDeleted);
-                }
-            }
-            else if (!isSymbolic(info)) {
-                // RM DIR
-                QDir dir(path);
-                // Getting dir size (deepCountSize(path)) could be hugely time consuming
-                const auto rmok = dir.removeRecursively();
-                processEvents();
-                if (rmok) {
-                    ++nbrDeleted;
-                    emit itemRemoved(rowPath.first, 1, 0, nbrDeleted);
-                }
+        if (!info.isDir()) {
+            // RM FILE or SYMLINK
+            QFile file(path);
+            const auto size = info.size();
+            const auto rmok = file.remove();
+            if (rmok) {
+                ++nbrDeleted;
+                emit itemRemoved(rowPath.first, 1, (quint64)size, nbrDeleted);
             }
         }
-        catch (const std::exception& ex) { qDebug() << "EXCEPTION: " << ex.what(); }
-        catch (...) { qDebug() << "caught ... EXCEPTION"; }
+        else if (!isSymbolic(info)) {
+            // RM DIR
+            QDir dir(path);
+            // Getting dir size (deepCountSize(path)) could be hugely time consuming
+            const auto rmok = dir.removeRecursively();
+            processEvents();
+            if (rmok) {
+                ++nbrDeleted;
+                emit itemRemoved(rowPath.first, 1, 0, nbrDeleted);
+            }
+        }
     }
     stopped = true;
 }
@@ -409,7 +395,6 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
     for (const auto& rowNpath : rowPathMap) {
         processEvents();
         if (stopped) {
-            qDebug() << "deepRemoveLimited: emit removalCancelled; STOPPED";
             emit removalCancelled();
             return;
         }
@@ -430,7 +415,6 @@ void FolderScanner::deepRemoveLimited(const IntQStringMap& rowPathMap, const int
             deepRemLimitedImpl(rowNpath.second, maxDepth, rowNpath.first, nbrDeleted);
         }
     }
-    qDebug() << "deepRemoveLimited: emit removalComplete; nbrDeleted = " << nbrDeleted;
     emit removalComplete(res);
 }
 
@@ -448,13 +432,11 @@ bool FolderScanner::deepRemLimitedImpl(const QString& startPath, const int maxDe
         getAllDirs(dirPath, dirInfos);
         for (const auto& dir : dirInfos) {
             if (stopped) {
-                qDebug() << "deepRemLimitedImpl: STOPPED @ line 445";
                 emit removalCancelled();
                 return res;
             }
             if (currDepth < maxDepth) {
                 dirQ.push({ dir.absoluteFilePath(), currDepth + 1 });
-                qDebug() << "deepRemLimitedImpl: dirQ.push" << dir.absoluteFilePath() << "currDepth" << currDepth << "maxDepth" << maxDepth;
             }
         }
             
@@ -463,7 +445,6 @@ bool FolderScanner::deepRemLimitedImpl(const QString& startPath, const int maxDe
         for (const auto& info : infos) {
             processEvents();
             if (stopped) {
-                qDebug() << "deepRemLimitedImpl: STOPPED @ line 458";
                 emit removalCancelled();
                 return res;
             }
@@ -492,11 +473,9 @@ bool FolderScanner::doRemoveOneFileOrDir(const QFileInfo& info, int row, quint64
         if (rmok) {
             ++nbrDeleted;
             emit itemRemoved(row, 1, (quint64)size, nbrDeleted);
-            qDebug() << "Removed" << info.absoluteFilePath() << "size" << size << "nbrDeleted" << nbrDeleted;
         }
         else {
             res = false;
-            qDebug() << "FAILED to remove" << info.absoluteFilePath() << "size" << size << "nbrDeleted" << nbrDeleted;
         }
     }
     else {
@@ -517,11 +496,9 @@ bool FolderScanner::rmEmptyDir(const QString& dirPath, int row, quint64& nbrDele
     if (rmok) {
         ++nbrDeleted;
         emit itemRemoved(row, 1, 0, nbrDeleted);
-        qDebug() << "Removed" << dirPath << "nbrDeleted" << nbrDeleted;
         return true;
     }
     else {
-        qDebug() << "FAILED to remove" << dirPath << "nbrDeleted" << nbrDeleted;
         return false;
     }
 }

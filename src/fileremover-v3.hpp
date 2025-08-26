@@ -117,12 +117,10 @@ public:
         }
         else {
             rmOk = false;
-            qDebug() << "RM FAILED:" << ec.message() << ". file:" << path.string().c_str() << "nbrDel:" << nbrDel;
         }
         std::lock_guard<std::mutex> lock(mutex_);
         if (progressCallback_) {
             progressCallback_(row, QString::fromStdString(path.string()), size, rmOk, nbrDel);
-            // qDebug() << "rmOk:" << rmOk << "removed file:" << path.string().c_str() << "nbrDel:" << nbrDel;
         }
         return rmOk;
     }
@@ -135,7 +133,6 @@ public:
                 return rmOk;
             try {
                 if (!entry.exists(ec)) {
-                    qDebug() << "FS item does not exist:" << entry.path().string().c_str();
                     continue; // It could have been already removed
                 }
                 if (!entry.is_directory(ec)) {
@@ -144,7 +141,7 @@ public:
             }
             catch (const fs::filesystem_error& ex) {
                 rmOk = false;
-                cout << "[EXCEPTION] " << ex.what() << endl;
+                cout << "EXCEPTION: " << ex.what() << endl;
             }
         }
         return rmOk;
@@ -155,7 +152,6 @@ public:
         try {
             std::error_code ec;
             if (!fs::exists(path, ec)) {
-                qDebug() << "FS item does not exist:" << path.string().c_str();
                 return true; // It could have been already removed
             }
             if (!fs::is_directory(path, ec)) {
@@ -176,8 +172,8 @@ private:
     void rmFilesAndDirs(FileRemover* ptr, const IntQStringMap& rowPathMap)
     {
         set_thread_name("Frv3FileRemover");
-        const auto handle = ptr->worker_.native_handle();
-        qDebug() << "Frv3::FileRemover: Thread STARTED;  name: Frv3FileRemover" << "native_handle:" << handle;
+        const auto handle = ptr->worker_.native_handle(); (void)handle;
+        // qDebug() << "Frv3::FileRemover: Thread STARTED;  name: Frv3FileRemover" << "native_handle:" << handle;
         auto success = true;
         auto nbrDel = uint64_t(0);
         auto size = (uint64_t)0;
@@ -188,7 +184,6 @@ private:
             auto rmOk = false;
             std::error_code ec;
             if (!fs::exists(path, ec)) {
-                qDebug() << "FS item does not exist:" << path.c_str();
                 continue; // It could have been already removed
             }
             try {
@@ -215,7 +210,7 @@ private:
             }
             catch (const fs::filesystem_error& e) {
                 success = false;
-                qDebug() << "Remove ERROR:" << e.what();
+                qDebug() << "EXCEPTION:" << e.what();
             }
         }
         if (completionCallback_) {
@@ -223,7 +218,6 @@ private:
                 [this, success]() { completionCallback_(success); },
                 Qt::QueuedConnection);
         }
-        qDebug() << "Frv3::FileRemover: Thread FINISHED; name: Frv3FileRemover" << "native_handle:" << handle;
     }
 
     std::jthread worker_;

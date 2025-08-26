@@ -52,8 +52,8 @@ namespace Frv2
                 [this](std::stop_token stoken)
                 {
                     set_thread_name("Frv2FileRemover");
-                    const auto handle = this->m_worker.native_handle();
-                    qDebug() << "Frv2::FileRemover: Thread STARTED;  name: Frv2FileRemover" << "native_handle:" << handle;
+                    const auto handle = this->m_worker.native_handle(); (void)handle;
+                    // qDebug() << "Frv2::FileRemover: Thread STARTED;  name: Frv2FileRemover" << "native_handle:" << handle;
                     auto success = true;
                     auto nbrDel = uint64_t(0);
 
@@ -68,7 +68,6 @@ namespace Frv2
                             uint64_t size = 0;
                             std::error_code ec;
                             if (!fs::exists(fsPath, ec)) {
-                                qDebug() << "FS item does not exist:" << fsPath.string().c_str();
                                 continue; // It could have been already removed
                             }
                             const bool isDir = fs::is_directory(fsPath);
@@ -84,7 +83,6 @@ namespace Frv2
                             }
                             if (ec.value() != 0) {
                                 success = false;
-                                qDebug() << "RM FAILED:" << ec.message() << " Path:" << fsPath.string().c_str();
                             }
                             QMetaObject::invokeMethod(m_uiObject,
                                 [this, row, fsPath, size, rmOk, nbrDel](){ m_progressCb(row, fsPath.string().c_str(), size, rmOk, nbrDel); },
@@ -92,7 +90,7 @@ namespace Frv2
                         }
                         catch (const fs::filesystem_error& e) {
                             success = false;
-                            const QString errMsg = "Remove EXCEPTION: " + QString(e.what());
+                            const QString errMsg = "EXCEPTION: " + QString(e.what());
                             qDebug() << errMsg;
                             QMetaObject::invokeMethod(m_uiObject,
                                 [this, errMsg]() { m_progressCb(0, errMsg, 0, false, 0); },
@@ -102,7 +100,6 @@ namespace Frv2
                     QMetaObject::invokeMethod(m_uiObject,
                         [this, success]() { m_completionCb(success); },
                         Qt::QueuedConnection);
-                    qDebug() << "Frv2::FileRemover: Thread FINISHED; name: Frv2FileRemover" << "native_handle:" << handle;
                 });
         }
 

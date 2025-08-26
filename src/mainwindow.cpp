@@ -72,7 +72,6 @@ void MainWindow::stopAllThreads() {
             std::this_thread::sleep_for(sleepLen);
         }
         if (!scanThread->isFinished()) {
-            qDebug() << "MainWindow::stopAllThreads: calling thread TERMINATE";
             scanThread->terminate();
         }
         scanThread->wait();
@@ -484,7 +483,6 @@ void MainWindow::getSelectedItems(IntQStringMap& itemList)
         itemList.insert(std::make_pair(row, path));
         processEvents();
     }
-    qDebug() << "NBR SELECTED" << itemList.size();
 }
 
 void MainWindow::cancelBtnClicked()
@@ -617,9 +615,8 @@ void MainWindow::setFilesFoundLabel(const QString& prefix, bool appendCounts /*=
                                 //.arg(totItemsSizeStr);
     }
     filesFoundLabel->setText(foundLabelText);
-    qDebug() << foundLabelText;
     if ((_foundCount + _dirCount + _symlinkCount) != quint64(filesTable->rowCount())) {
-        qDebug() << "WARNING: TOT COUNT" << (_foundCount + _dirCount + _symlinkCount)
+        qDebug() << "ERROR: TOT COUNT" << (_foundCount + _dirCount + _symlinkCount)
                  << "!= TABLE ROW COUNT" << filesTable->rowCount();
     }
 }
@@ -637,10 +634,6 @@ void MainWindow::setParamsFromUi() // before starting search
         _itemTypeFilter |= QDir::Hidden;
 
     scanner = std::make_shared<FolderScanner>();
-
-    // Moving worker object pointer to thread (scanner pointer below)
-    // only sets which thread (scanThread) will execute worker's slots.
-    scanner->moveToThread(scanThread.get());
 
     scanner->params.itemTypeFilter = _itemTypeFilter;
     scanner->params.inclFiles = filesCheck->isChecked();
@@ -699,7 +692,6 @@ bool MainWindow::findFilesPrep()
     const auto dirComboCurrent = dirComboBox->currentText().trimmed();
     if (dirComboCurrent.length() == 0) {
         const auto msg = QString("Select a folder to search please.");
-        qDebug() << msg;
         setFilesFoundLabel(msg);
         #if !defined(Q_OS_MAC)
             QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, msg);
@@ -708,17 +700,14 @@ bool MainWindow::findFilesPrep()
         return false;
     }
     _origDirPath = QDir::toNativeSeparators(dirComboCurrent);
-    qDebug() << "_origDirPath" << _origDirPath;
     if (_origDirPath.startsWith("~")) {
         _origDirPath = (_origDirPath.length() > 1) ?
             QDir::homePath() + _origDirPath.sliced(1) :
             QDir::homePath();
-        qDebug() << "_origDirPath" << _origDirPath;
     }
     QDir origDir = QDir(_origDirPath);
     if (_origDirPath.isEmpty() || !origDir.exists()) {
         const auto msg = OvSk_FsOp_DIR_NOT_EXISTS_TXT + _origDirPath;
-        qDebug() << msg;
         setFilesFoundLabel(msg);
         #if !defined(Q_OS_MAC)
             QMessageBox::warning(this, OvSk_FsOp_APP_NAME_TXT, msg);
@@ -762,9 +751,6 @@ void MainWindow::findBtnClicked()
     if (!findFilesPrep()) {
         return;
     }
-    // Moving worker object pointer to thread (scanner pointer below)
-    // only sets which thread (scanThread) will execute worker's slots.
-    scanner->moveToThread(scanThread.get());
     setStopped(false);
     opStart = steady_clock::now();
 
@@ -1066,8 +1052,6 @@ void MainWindow::flushItemBuffer() {
             .arg(OvSk_FsOp_SYMLINKS_TXT)
             .arg(QDir::toNativeSeparators(lastPath)));
     }
-    //qDebug() << "Item buffer flushed, current row count " << rowCount;
-    //processEvents();
 }
 
 void MainWindow::createFilesTable()
@@ -1189,13 +1173,11 @@ void MainWindow::createContextMenu()
 void MainWindow::showContextMenu(const QPoint& point)
 {
     if (!contextMenu) {
-        qDebug() << "Context menu not created, nullptr.";
         return;
     }
     // Get the item at the click position
     QTableWidgetItem* item = filesTable->itemAt(point);
     if (!item) {
-        qDebug() << "No item at click position.";
         return;
     }
 
@@ -1245,7 +1227,6 @@ void MainWindow::copyPathSlot() {
     }
     auto clipboard = QApplication::clipboard();
     if (!clipboard) {
-        qDebug() << "copyPathSlot: Clipboard not available.";
         return;
     }
     const auto item = selectedItems.first();
@@ -1318,7 +1299,7 @@ void MainWindow::propertiesSlot() {
     sei.nShow = SW_SHOW;
     sei.fMask = SEE_MASK_INVOKEIDLIST;
     if (!ShellExecuteEx(&sei)) {
-        qDebug() << "propertiesSlot: Failed to open properties dialog";
+        qDebug() << "ERROR: Failed to open properties dialog using ShellExecuteEx()";
     }
 #endif
 }
@@ -1420,6 +1401,11 @@ void MainWindow::deepRemoveLimitedOnThread(const IntQStringMap& itemList)
 
     scanThread = std::make_shared<QThread>(this);
     scanThread->setObjectName("RemoveLimitedThread");
+
+    // Moving worker object pointer to thread (scanner pointer below)
+    // only sets which thread (scanThread) will execute worker's slots.
+    scanner->moveToThread(scanThread.get());
+
     connect(scanThread.get(), &QThread::started, [this, itemList, maxDepth]() {
         scanner->deepRemoveLimited(itemList, maxDepth);
     });
@@ -1536,7 +1522,6 @@ void MainWindow::removalComplete(bool success) {
     suffix += (_nbrDeleted == 0) ? " | Selected item(s) may not exist, please search again. Also check the \"Max subfolder depth\" setting above." : "";
     const auto text = prefix + suffix;
     filesFoundLabel->setText(text);
-    qDebug() << text;
     // _removal = false; will be done in scanThreadFinished
     // which happens after the removal is complete
     stopAllThreads();
@@ -1544,7 +1529,7 @@ void MainWindow::removalComplete(bool success) {
 
     // Refresh the table to ensure it is up-to-date!
     // const auto fut = std::async(std::launch::async, [this]() {
-    //     std::this_thread::sleep_for(300ms); // Give some time for the UI to update
+    //     std::this_thread::sleep_for(300ms); // Give some time to user to see the result
     //     QMetaObject::invokeMethod(this, "findBtnClicked", Qt::QueuedConnection);
     // });
     // (void)fut; // Avoid unused variable warning
@@ -1556,7 +1541,6 @@ void MainWindow::deepRemoveFilesOnThread_Frv2(const IntQStringMap& rowPathMap)
     removerFrv2 = std::make_shared<Frv2::FileRemover>(this);
     auto msg = "Removing files and folders...";
     filesFoundLabel->setText(msg);
-    qDebug() << msg;
 
     // NOTE: QMetaObject::invokeMethod with Qt::QueuedConnection
     //  is done in Frv2::FileRemover::removeFilesAndFolders02()
@@ -1582,7 +1566,6 @@ void MainWindow::deepRemoveFilesOnThread_Frv3(const IntQStringMap& rowPathMap)
     removerFrv3 = std::make_shared<Frv3::FileRemover>(this);
     auto msg = "Removing files and folders...";
     filesFoundLabel->setText(msg);
-    qDebug() << msg;
 
     // Set up progress callback (can update UI)
     removerFrv3->setProgressCallback([this](int row, const QString& path, uint64_t size, bool rmOk, uint64_t nbrDel)
