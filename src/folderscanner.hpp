@@ -197,8 +197,7 @@ public:
     bool fileContainsAnyWordChunked(const QString& path, const QStringList& words);
 
 private:
-    mutable std::shared_mutex mutex;  /// mutable allows modification in const methods
-    bool stopped{ false };
+    std::atomic<bool> stopped{ false };
 
     qint64 prevEvents{ 0 };
     QElapsedTimer eventsTimer;

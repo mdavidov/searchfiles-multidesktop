@@ -68,13 +68,12 @@ void FolderScanner::processEvents()
 }
 
 void FolderScanner::stop() {
-    std::unique_lock<std::shared_mutex> lock(mutex);
     stopped = true;
+    emit scanCancelled();
 }
 
 bool FolderScanner::isStopped() const {
-    std::shared_lock<std::shared_mutex> lock(mutex);
-    return stopped;
+    return stopped.load();
 }
 
 bool FolderScanner::appendOrExcludeItem(const QString& /*dirPath*/, const QFileInfo& info)

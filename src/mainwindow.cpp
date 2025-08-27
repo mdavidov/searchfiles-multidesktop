@@ -62,30 +62,20 @@ using namespace std::chrono;
 using namespace std::chrono_literals;
 
 void MainWindow::stopAllThreads() {
-    static constexpr auto sleepLen = 300ms;
     if (scanner) {
         scanner->stop();
-        std::this_thread::sleep_for(sleepLen);
     }
     if (scanThread) {
-        std::this_thread::sleep_for(sleepLen);
         scanThread->exit(0);
-        for (int i = 0; !scanThread->isFinished() && i < 10 ; ++i) {
-            std::this_thread::sleep_for(sleepLen);
-        }
-        if (!scanThread->isFinished()) {
-            scanThread->terminate();
-        }
         scanThread->wait();
     }
     if (removerFrv2) {
-        removerFrv2->stop();
-        std::this_thread::sleep_for(sleepLen);
+        removerFrv2->stop(); // Cannot join as the std::jthread has been detached in Frv2 removeFilesAndFolders()
     }
     if (removerFrv3) {
-        removerFrv3->stop();
-        std::this_thread::sleep_for(sleepLen);
+        removerFrv3->stop(); // Cannot join as the std::jthread has been detached in Frv3 removeFilesAndFolders()
     }
+    std::this_thread::sleep_for(100ms); // This is because we cannot join() detached threads
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
@@ -490,12 +480,12 @@ void MainWindow::getSelectedItems(IntQStringMap& itemList)
 void MainWindow::cancelBtnClicked()
 {
     // scanThreadFinished() does almost everything necessary, so we don't need to do much here
+    _stopped = true;
     stopAllThreads();
     if (_removal) {
         removalComplete(false);
     }
     _removal = false;
-    _stopped = true;
 }
 
 void MainWindow::setDirPath(const QString& dirPath)
@@ -537,7 +527,6 @@ void MainWindow::setStopped(bool stopped)
         filesTable->setSortingEnabled(true);
         filesTable->sortByColumn(-1, Qt::AscendingOrder);
     }
-    std::this_thread::sleep_for(200ms);
 
     findButton->setEnabled(_stopped);
     deleteButton->setEnabled(_stopped && filesTable->selectedItems().count() > 0);
@@ -619,7 +608,7 @@ void MainWindow::setFilesFoundLabel(const QString& prefix, bool appendCounts /*=
     filesFoundLabel->setText(foundLabelText);
     if ((_foundCount + _dirCount + _symlinkCount) != quint64(filesTable->rowCount())) {
         qDebug() << "ERROR: TOT COUNT" << (_foundCount + _dirCount + _symlinkCount)
-                 << "!= TABLE ROW COUNT" << filesTable->rowCount();
+                 << "!= ROW COUNT" << filesTable->rowCount();
     }
 }
 
@@ -1038,13 +1027,13 @@ void MainWindow::flushItemBuffer() {
                            rowItems[NAME_COL_IDX]->data(Qt::DisplayRole).toString();
             }
         }
-    } // ub goes OUT OF SCOPE here, table updates and signals are enabled
+    }
+    // UpdateBlocker ub goes OUT OF SCOPE here, table updates and signals are enabled
     itemBuffer.clear();
     const auto rowCount = (quint64)filesTable->rowCount();
-    if ((_foundCount + _dirCount + _symlinkCount) < rowCount) {
-        qDebug() << "ERROR: (_foundCount + _dirCount + _symlinkCount)" <<
-                            (_foundCount + _dirCount + _symlinkCount) << 
-                            "< rowCount" << rowCount;
+    if ((_foundCount + _dirCount + _symlinkCount) != rowCount) {
+        qDebug() << "ERROR: TOT COUNT" << (_foundCount + _dirCount + _symlinkCount)
+                 << "!= ROW COUNT" << rowCount;
     }
     if (!_gettingSize) {
         filesFoundLabel->setText(QString("%1 matching files, %2 folders, %3 %4...  Searching through %5")
@@ -1517,10 +1506,10 @@ void MainWindow::removalComplete(bool success) {
     stopRemoverThreads();
     removeRows(); // files that failed to delete will not be removed from the table
 
-    const QString prefix = "COMPLETED";
+    const QString prefix = _stopped ? "INTERRUPTED" : "COMPLETED";
     QString suffix;
     if (_nbrDeleted > 0) {
-        suffix = success ? " | DELETION SUCCESSFUL" : " | SOME FAILED to DELETE";
+        suffix = (success && !_stopped) ? " | DELETION SUCCESSFUL" : " | SOME FAILED to DELETE";
     }
     suffix += " | deleted " + QString::number(_nbrDeleted) + " items" +
               ", took " + getElapsedTimeStr();
@@ -1530,26 +1519,15 @@ void MainWindow::removalComplete(bool success) {
     // _removal = false; will be done in scanThreadFinished
     // which happens after the removal is complete
     setStopped(true);
-
-    // Refresh the table to ensure it is up-to-date!
-    // const auto fut = std::async(std::launch::async, [this]() {
-    //     std::this_thread::sleep_for(300ms); // Give some time to user to see the result
-    //     QMetaObject::invokeMethod(this, "findBtnClicked", Qt::QueuedConnection);
-    // });
-    // (void)fut; // Avoid unused variable warning
 }
 
 void MainWindow::stopRemoverThreads()
 {
     if (removerFrv2) {
         removerFrv2->stop();
-        std::this_thread::sleep_for(100ms);
-        removerFrv2.reset();
     }
     if (removerFrv3) {
         removerFrv3->stop();
-        std::this_thread::sleep_for(100ms);
-        removerFrv3.reset();
     }
 }
 

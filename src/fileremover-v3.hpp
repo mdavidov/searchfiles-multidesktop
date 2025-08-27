@@ -69,12 +69,11 @@ public:
                 rmFilesAndDirs(this, rowPathMap);
             }
         );
-        worker_.detach(); // Detach the thread to allow it to run independently
+        worker_.detach();
     }
 
     void stop() override {
-        std::lock_guard<std::mutex> lock(mutex_);
-        stop_req = true;
+        stop_req = true; // std::atomic<bool>
         worker_.request_stop();
     }
 
@@ -224,7 +223,7 @@ private:
     std::jthread worker_;
     std::mutex mutex_;
     std::stop_token stop_token_;
-    bool stop_req{ false };
+    std::atomic<bool> stop_req{ false };
     QObject* m_uiObject;
     mmd::ProgressCallback progressCallback_;
     mmd::CompletionCallback completionCallback_;
