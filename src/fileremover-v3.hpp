@@ -46,7 +46,6 @@ class FileRemover : public mmd::IFileRemover
 {
 public:
     explicit FileRemover(QObject* uiObject) : m_uiObject(uiObject) {
-        stop_req = false;
     }
 
     ~FileRemover() override {
@@ -63,17 +62,14 @@ public:
         completionCallback_ = std::move(completionCb);
 
         // Create jthread with captures by 'this' to class members
-        worker_ = std::jthread([this, rowPathMap](std::stop_token stoken) {
-                stop_token_ = stoken;
-                stop_req = false;
-                rmFilesAndDirs(this, rowPathMap);
-            }
-        );
+        worker_ = std::jthread([this, rowPathMap](std::stop_token stok) {
+            stok_ = stok;
+            rmFilesAndDirs(this, rowPathMap);
+        });
         worker_.detach();
     }
 
     void stop() override {
-        stop_req = true; // std::atomic<bool>
         worker_.request_stop();
     }
 
@@ -97,7 +93,7 @@ public:
     DeepDirCount deepCount(const fs::path& path) {
         DeepDirCount count;
         for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
-            if (stop_req)
+            if (stok_.stop_requested())
                 return count;
             if (entry.is_directory())
                 count.folders++;
@@ -129,7 +125,7 @@ public:
         auto rmOk = true;
         std::error_code ec;
         for (const auto& entry : rec_dir_it(path, dir_opts::skip_permission_denied)) {
-            if (stop_req)
+            if (stok_.stop_requested())
                 return rmOk;
             try {
                 if (!entry.exists(ec)) {
@@ -177,8 +173,9 @@ private:
         auto success = true;
         auto nbrDel = uint64_t(0);
         auto size = (uint64_t)0;
+
         for (const auto& [row, pathQstr] : rowPathMap) {
-            if (stop_req)
+            if (stok_.stop_requested())
                 return;
             const auto path = pathQstr.toStdString();
             auto rmOk = false;
@@ -191,7 +188,7 @@ private:
                 if (!deepRemoveFiles(row, path, nbrDel, size)) {
                     success = false;
                 }
-                if (stop_req)
+                if (stok_.stop_requested())
                     return;
                 // Dirs are now empty, it's going to be fast to remove all
                 if (fs::is_directory(path, ec)) {
@@ -213,6 +210,7 @@ private:
                 qDebug() << "EXCEPTION:" << e.what();
             }
         }
+
         if (completionCallback_) {
             QMetaObject::invokeMethod(m_uiObject,
                 [this, success]() { completionCallback_(success); },
@@ -222,8 +220,7 @@ private:
 
     std::jthread worker_;
     std::mutex mutex_;
-    std::stop_token stop_token_;
-    std::atomic<bool> stop_req{ false };
+    std::stop_token stok_;
     QObject* m_uiObject;
     mmd::ProgressCallback progressCallback_;
     mmd::CompletionCallback completionCallback_;

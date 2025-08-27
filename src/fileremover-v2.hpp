@@ -48,8 +48,8 @@ namespace Frv2
             m_rowPathMap = rowPathMap; // Store paths as member variable
 
             // Create jthread with captures by reference to class members
-            m_worker = std::jthread([this](std::stop_token stoken) {
-                rmFilesAndDirs(this, stoken);
+            m_worker = std::jthread([this](std::stop_token stok) {
+                rmFilesAndDirs(this, stok);
             });
             m_worker.detach();
         }
@@ -59,7 +59,7 @@ namespace Frv2
         }
 
     private:
-        void rmFilesAndDirs(FileRemover* ptr, std::stop_token stoken)
+        void rmFilesAndDirs(FileRemover* ptr, std::stop_token stok)
         {
             set_thread_name("Frv2FileRemover");
             const auto handle = ptr->m_worker.native_handle(); (void)handle;
@@ -68,8 +68,8 @@ namespace Frv2
             auto nbrDel = uint64_t(0);
 
             for (const auto &[row, path] : m_rowPathMap) {
-                if (stoken.stop_requested()) {
-                    break;
+                if (stok.stop_requested()) {
+                    return;
                 }
                 const fs::path fsPath = path.toStdString();
                 try
@@ -107,6 +107,7 @@ namespace Frv2
                         Qt::QueuedConnection);
                 }
             }
+
             QMetaObject::invokeMethod(m_uiObject,
                 [this, success]() { m_completionCb(success); },
                 Qt::QueuedConnection);
