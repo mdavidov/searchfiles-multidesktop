@@ -105,6 +105,7 @@ public slots:
     void itemRemoved(int row, quint64 count, quint64 size, quint64 nbrDeleted);
     void progressUpdate(const QString& path, quint64 totCount, quint64 totSize);
     void removalComplete(bool success);
+    void stopRemoverThreads();
 
     void findBtnClicked();
     void deleteBtnClicked();

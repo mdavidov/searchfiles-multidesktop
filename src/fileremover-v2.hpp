@@ -48,60 +48,10 @@ namespace Frv2
             m_rowPathMap = rowPathMap; // Store paths as member variable
 
             // Create jthread with captures by reference to class members
-            m_worker = std::jthread(
-                [this](std::stop_token stoken)
-                {
-                    set_thread_name("Frv2FileRemover");
-                    const auto handle = this->m_worker.native_handle(); (void)handle;
-                    // qDebug() << "Frv2::FileRemover: Thread STARTED;  name: Frv2FileRemover" << "native_handle:" << handle;
-                    auto success = true;
-                    auto nbrDel = uint64_t(0);
-
-                    for (const auto &[row, path] : m_rowPathMap) {
-                        if (stoken.stop_requested()) {
-                            break;
-                        }
-                        const fs::path fsPath = path.toStdString();
-                        try
-                        {
-                            bool rmOk = false;
-                            uint64_t size = 0;
-                            std::error_code ec;
-                            if (!fs::exists(fsPath, ec)) {
-                                continue; // It could have been already removed
-                            }
-                            const bool isDir = fs::is_directory(fsPath);
-                            if (isDir) {
-                                const auto nd = fs::remove_all(fsPath, ec);
-                                rmOk = (ec.value() == 0);
-                                nbrDel += nd;
-                            }
-                            else {
-                                size = fs::file_size(fsPath); // MUST BE DONE BEFORE REMOVAL
-                                rmOk = fs::remove(fsPath, ec);
-                                ++nbrDel;
-                            }
-                            if (ec.value() != 0) {
-                                success = false;
-                            }
-                            QMetaObject::invokeMethod(m_uiObject,
-                                [this, row, fsPath, size, rmOk, nbrDel](){ m_progressCb(row, fsPath.string().c_str(), size, rmOk, nbrDel); },
-                                Qt::QueuedConnection);
-                        }
-                        catch (const fs::filesystem_error& e) {
-                            success = false;
-                            const QString errMsg = "EXCEPTION: " + QString(e.what());
-                            qDebug() << errMsg;
-                            QMetaObject::invokeMethod(m_uiObject,
-                                [this, errMsg]() { m_progressCb(0, errMsg, 0, false, 0); },
-                                Qt::QueuedConnection);
-                        }
-                    }
-                    QMetaObject::invokeMethod(m_uiObject,
-                        [this, success]() { m_completionCb(success); },
-                        Qt::QueuedConnection);
-                });
-                m_worker.detach(); // Detach the thread to allow it to run independently
+            m_worker = std::jthread([this](std::stop_token stoken) {
+                rmFilesAndDirs(this, stoken);
+            });
+            m_worker.detach();
         }
 
         void stop() override {
@@ -109,6 +59,59 @@ namespace Frv2
         }
 
     private:
+        void rmFilesAndDirs(FileRemover* ptr, std::stop_token stoken)
+        {
+            set_thread_name("Frv2FileRemover");
+            const auto handle = ptr->m_worker.native_handle(); (void)handle;
+            // qDebug() << "Frv2::FileRemover: Thread STARTED;  name: Frv2FileRemover" << "native_handle:" << handle;
+            auto success = true;
+            auto nbrDel = uint64_t(0);
+
+            for (const auto &[row, path] : m_rowPathMap) {
+                if (stoken.stop_requested()) {
+                    break;
+                }
+                const fs::path fsPath = path.toStdString();
+                try
+                {
+                    bool rmOk = false;
+                    uint64_t size = 0;
+                    std::error_code ec;
+                    if (!fs::exists(fsPath, ec)) {
+                        continue; // It could have been already removed
+                    }
+                    const bool isDir = fs::is_directory(fsPath);
+                    if (isDir) {
+                        const auto nd = fs::remove_all(fsPath, ec);
+                        rmOk = (ec.value() == 0);
+                        nbrDel += nd;
+                    }
+                    else {
+                        size = fs::file_size(fsPath); // MUST BE DONE BEFORE REMOVAL
+                        rmOk = fs::remove(fsPath, ec);
+                        ++nbrDel;
+                    }
+                    if (ec.value() != 0) {
+                        success = false;
+                    }
+                    QMetaObject::invokeMethod(m_uiObject,
+                        [this, row, fsPath, size, rmOk, nbrDel](){ m_progressCb(row, fsPath.string().c_str(), size, rmOk, nbrDel); },
+                        Qt::QueuedConnection);
+                }
+                catch (const fs::filesystem_error& e) {
+                    success = false;
+                    const QString errMsg = "EXCEPTION: " + QString(e.what());
+                    qDebug() << errMsg;
+                    QMetaObject::invokeMethod(m_uiObject,
+                        [this, errMsg]() { m_progressCb(0, errMsg, 0, false, 0); },
+                        Qt::QueuedConnection);
+                }
+            }
+            QMetaObject::invokeMethod(m_uiObject,
+                [this, success]() { m_completionCb(success); },
+                Qt::QueuedConnection);
+        };
+
         QObject* m_uiObject;
         std::jthread m_worker;
         IntQStringMap m_rowPathMap;

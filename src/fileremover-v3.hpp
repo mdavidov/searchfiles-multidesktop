@@ -72,6 +72,12 @@ public:
         worker_.detach(); // Detach the thread to allow it to run independently
     }
 
+    void stop() override {
+        std::lock_guard<std::mutex> lock(mutex_);
+        stop_req = true;
+        worker_.request_stop();
+    }
+
     /// Set progress updates callback
     void setProgressCallback(mmd::ProgressCallback callback) {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -82,12 +88,6 @@ public:
     void setCompletionCallback(mmd::CompletionCallback callback) {
         std::lock_guard<std::mutex> lock(mutex_);
         completionCallback_ = std::move(callback);
-    }
-
-    void stop() override {
-        std::lock_guard<std::mutex> lock(mutex_);
-        stop_req = true;
-        worker_.request_stop();
     }
 
     struct DeepDirCount {
@@ -180,7 +180,7 @@ private:
         auto size = (uint64_t)0;
         for (const auto& [row, pathQstr] : rowPathMap) {
             if (stop_req)
-                break;
+                return;
             const auto path = pathQstr.toStdString();
             auto rmOk = false;
             std::error_code ec;
@@ -193,7 +193,7 @@ private:
                     success = false;
                 }
                 if (stop_req)
-                    break;
+                    return;
                 // Dirs are now empty, it's going to be fast to remove all
                 if (fs::is_directory(path, ec)) {
                     const auto nd = fs::remove_all(path, ec);

@@ -47,6 +47,8 @@
 extern "C" void showFileProperties(const char* filePath);
 #endif
 
+using namespace std::chrono_literals;
+
 namespace mmd
 {
 const int N_COL = 7;
@@ -1435,6 +1437,8 @@ void MainWindow::scanThreadFinished()
     _removal = false;
     _gettingSize = false;
     setStopped(true);
+    scanThread.reset();
+    scanner.reset();
 }
 
 void MainWindow::itemFound(const QString& path, const QFileInfo& info) {
@@ -1510,6 +1514,7 @@ void MainWindow::removalProgress(int row, const QString& /*path*/, uint64_t /*si
 
 void MainWindow::removalComplete(bool success) {
     opEnd = steady_clock::now();
+    stopRemoverThreads();
     removeRows(); // files that failed to delete will not be removed from the table
 
     const QString prefix = "COMPLETED";
@@ -1524,7 +1529,6 @@ void MainWindow::removalComplete(bool success) {
     filesFoundLabel->setText(text);
     // _removal = false; will be done in scanThreadFinished
     // which happens after the removal is complete
-    stopAllThreads();
     setStopped(true);
 
     // Refresh the table to ensure it is up-to-date!
@@ -1533,6 +1537,20 @@ void MainWindow::removalComplete(bool success) {
     //     QMetaObject::invokeMethod(this, "findBtnClicked", Qt::QueuedConnection);
     // });
     // (void)fut; // Avoid unused variable warning
+}
+
+void MainWindow::stopRemoverThreads()
+{
+    if (removerFrv2) {
+        removerFrv2->stop();
+        std::this_thread::sleep_for(100ms);
+        removerFrv2.reset();
+    }
+    if (removerFrv3) {
+        removerFrv3->stop();
+        std::this_thread::sleep_for(100ms);
+        removerFrv3.reset();
+    }
 }
 
 void MainWindow::deepRemoveFilesOnThread_Frv2(const IntQStringMap& rowPathMap)
