@@ -62,7 +62,7 @@ elseif(WIN32)
     set(PROJECT_SOURCES ${PROJECT_SOURCES} foldersearch.rc)
 endif()
 
-qt_add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+qt6_add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Core

@@ -12,6 +12,8 @@ installers/qtifw/packages/au.com.devonline.foldersearch/data/
 
 # Mac C & C++ build files
 *.app/
+*.dSYM/
+*.dylib
 *.o
 
 # Visual Studio files

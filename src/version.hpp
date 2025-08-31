@@ -8,7 +8,7 @@
 //
 
 #define OvSk_FsOp_APP_VERSION_STR       "8.9"
-#define OvSk_FsOp_APP_BUILD_NBR_STR     " 20250827 "
+#define OvSk_FsOp_APP_BUILD_NBR_STR     " 20250901 "
 
 #define OvSk_FsOp_APP_NAME_TXT          "FolderSearch"
 #define OvSk_FsOp_APP_NM_TXT            "FolderSearch"
