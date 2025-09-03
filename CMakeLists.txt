@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(foldersearch VERSION 8.5 LANGUAGES CXX)
+project(foldersearch VERSION 8.9 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

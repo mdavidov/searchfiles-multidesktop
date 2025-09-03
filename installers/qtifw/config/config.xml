@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Installer>
     <Name>DevOnline FolderSearch</Name>
-    <Version>8.5</Version>
+    <Version>8.9</Version>
     <Title>DevOnline FolderSearch</Title>
     <Publisher>DevOnline</Publisher>
-    <StartMenuDir>foldersearch</StartMenuDir>
+    <StartMenuDir>FolderSearch</StartMenuDir>
     <TargetDir>@HomeDir@/DevOnline/foldersearch</TargetDir>
 </Installer>

@@ -2,8 +2,8 @@
 <Package>
     <DisplayName>FolderSearch</DisplayName>
     <Description>Binary executable of the FolderSearch utility</Description>
-    <Version>8.5</Version>
-    <ReleaseDate>2025-08-13</ReleaseDate>
+    <Version>8.9</Version>
+    <ReleaseDate>2025-09-01</ReleaseDate>
     <RequiredDiskSpace>95000000</RequiredDiskSpace>
     <Default>true</Default>
     <Script>installscript.qs</Script>

@@ -93,7 +93,7 @@ qcbuild/
 [Oo]bj/
 
 Doxygen
-doc/
+dox/
 docs/
 
 # Build folder in the NuGet packages
